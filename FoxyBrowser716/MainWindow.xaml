@@ -47,12 +47,19 @@
             </Grid>
 
             <Grid DockPanel.Dock="Left" Background="#1E2332" Width="30" HorizontalAlignment="Left">
+                <StackPanel Name="Tabs" DockPanel.Dock="Top" VerticalAlignment="Top">
+                    <Button Name="TabHome" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Content="{wpf:MaterialIconExt Kind=Home}"></Button>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
+                    <Border Height="2" Margin="5" Background="White" HorizontalAlignment="Stretch"/>
+                    <Button Name="ButtonPin" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Content="{wpf:MaterialIconExt Kind=Pin}"></Button>
+                    <Button Name="ButtonBookmark" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Content="{wpf:MaterialIconExt Kind=Bookmark}"></Button>
+                </StackPanel>
             </Grid>
             
+            <Grid Name="MainGrid">
+                <Border BorderBrush="#FF9103" BorderThickness="2" Background="Black" Margin="0"/>
+            </Grid>
         </DockPanel>
-
-        <Grid Name="MainGrid">
-            
-        </Grid>
     </Grid>
 </Window>

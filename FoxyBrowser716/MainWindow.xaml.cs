@@ -27,6 +27,9 @@ public partial class MainWindow : Window
 		ButtonMenu,
 		ButtonSidePanel,
 		SearchButton,
+		TabHome,
+		ButtonPin,
+		ButtonBookmark
 	];
 	
 	public MainWindow()
