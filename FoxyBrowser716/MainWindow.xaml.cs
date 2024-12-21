@@ -11,6 +11,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
+using Microsoft.Web.WebView2.Core;
 using static FoxyBrowser716.ColorPalette;
 
 namespace FoxyBrowser716;
@@ -78,8 +79,37 @@ public partial class MainWindow : Window
 		};
 		StateChanged += Window_StateChanged;
 		Window_StateChanged(null, EventArgs.Empty);
+
+		Initialize();
 	}
 
+	private async void Initialize()
+	{
+		await WebView.EnsureCoreWebView2Async();
+
+		WebView.SourceChanged += (_, _) =>
+		{
+			SearchBox.Text = WebView.Source.ToString();
+		};
+			
+		WebView.CoreWebView2.Navigate("https://www.google.com");
+
+	}
+
+	private async void Search_Click(object? s, EventArgs e)
+	{
+		await WebView.EnsureCoreWebView2Async();
+
+		try
+		{
+			WebView.CoreWebView2.Navigate(SearchBox.Text);
+		}
+		catch (Exception exception)
+		{
+			WebView.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+		}
+	}
+	
 	private void Window_StateChanged(object? sender, EventArgs e)
 	{
 		ButtonMaximize.Content = WindowState == WindowState.Maximized ? new MaterialIcon { Kind = MaterialIconKind.FullscreenExit } :

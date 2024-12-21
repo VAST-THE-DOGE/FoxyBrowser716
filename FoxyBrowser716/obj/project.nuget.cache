@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "Qu1dn+tSaDM=",
+  "dgSpecHash": "qHzP3ToJDpI=",
   "success": true,
   "projectFilePath": "C:\\Users\\penfo\\RiderProjects\\FoxyBrowser716\\FoxyBrowser716\\FoxyBrowser716.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\penfo\\.nuget\\packages\\material.icons\\2.1.10\\material.icons.2.1.10.nupkg.sha512",
-    "C:\\Users\\penfo\\.nuget\\packages\\material.icons.wpf\\2.1.10\\material.icons.wpf.2.1.10.nupkg.sha512"
+    "C:\\Users\\penfo\\.nuget\\packages\\material.icons.wpf\\2.1.10\\material.icons.wpf.2.1.10.nupkg.sha512",
+    "C:\\Users\\penfo\\.nuget\\packages\\microsoft.web.webview2\\1.0.2950-prerelease\\microsoft.web.webview2.1.0.2950-prerelease.nupkg.sha512"
   ],
   "logs": []
 }

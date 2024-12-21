@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
         xmlns:local="clr-namespace:FoxyBrowser716"
+        xmlns:wpf2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="FoxyBrowser716"
         WindowStyle="None"
         AllowsTransparency="True" 
@@ -96,7 +97,7 @@
                                 </TextBox>
                             </Border>
     
-                            <Button Grid.Column="1"  Name="SearchButton" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Content="{wpf:MaterialIconExt Kind=SearchWeb}"></Button>
+                            <Button Grid.Column="1"  Name="SearchButton" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Click="Search_Click" Foreground="White" Content="{wpf:MaterialIconExt Kind=SearchWeb}"></Button>
                         </Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -119,7 +120,7 @@
                 
                 <Grid Name="MainGrid">
                     <Border BorderBrush="#FF9103" BorderThickness="2" Background="Black" Margin="0">
-                        
+                        <wpf2:WebView2 Name="WebView"/>
                     </Border>
                 </Grid>
             </DockPanel>

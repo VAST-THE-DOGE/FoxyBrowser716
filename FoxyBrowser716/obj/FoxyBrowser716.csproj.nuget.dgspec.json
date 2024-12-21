@@ -58,6 +58,10 @@
             "Material.Icons.WPF": {
               "target": "Package",
               "version": "[2.1.10, )"
+            },
+            "Microsoft.Web.WebView2": {
+              "target": "Package",
+              "version": "[1.0.2950-prerelease, )"
             }
           },
           "imports": [
