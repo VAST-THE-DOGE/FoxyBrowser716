@@ -31,6 +31,8 @@ public partial class MainWindow : Window
 		ButtonPin,
 		ButtonBookmark
 	];
+
+	private Rectangle _originalRectangle;
 	
 	public MainWindow()
 	{
@@ -115,7 +117,10 @@ public partial class MainWindow : Window
 
 	private void MaximizeRestore_Click(object sender, RoutedEventArgs e)
 	{
-		WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+		this.Left = 0;
+		this.Top = 0;
+		this.Width = SystemParameters.PrimaryScreenWidth;
+		this.Height = SystemParameters.PrimaryScreenHeight;
 	}
 
 	private void Close_Click(object sender, RoutedEventArgs e)
@@ -158,13 +163,13 @@ public partial class MainWindow : Window
 				senderRect.CaptureMouse();
 				if (senderRect.Name.ToLower().Contains("right"))
 				{
-					width += 5;
+					width += 1;
 					if (width > 0)
 						mainWindow.Width = width;
 				}
 				if (senderRect.Name.ToLower().Contains("left"))
 				{
-					width -= 5;
+					width -= 1;
 					mainWindow.Left += width;
 					width = mainWindow.Width - width;
 					if (width > 0)
@@ -174,13 +179,13 @@ public partial class MainWindow : Window
 				}
 				if (senderRect.Name.ToLower().Contains("bottom"))
 				{
-					height += 5;
+					height += 1;
 					if (height > 0)
 						mainWindow.Height = height;
 				}
 				if (senderRect.Name.ToLower().Contains("top"))
 				{
-					height -= 5;
+					height -= 1;
 					mainWindow.Top += height;
 					height = mainWindow.Height - height;
 					if (height > 0)

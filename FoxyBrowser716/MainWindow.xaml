@@ -69,8 +69,7 @@
                                    VerticalAlignment="Bottom"
                                    Cursor="SizeNESW"
                                    Style="{StaticResource RectBorderStyle}" />
-        <Grid Margin="2">
-            <DockPanel Background="White">
+            <DockPanel Background="White" Margin="2">
                 <Grid DockPanel.Dock="Top" Background="#1E2332" Height="30" VerticalAlignment="Top" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -124,6 +123,5 @@
                     </Border>
                 </Grid>
             </DockPanel>
-        </Grid>
     </Grid>
 </Window>
