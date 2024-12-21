@@ -6,13 +6,13 @@
         Title="FoxyBrowser716"
         WindowStyle="None"
         AllowsTransparency="True" 
-        Background="Transparent"
+        Background="#FF9103"
         MinWidth="500"
         MinHeight="300">
     <Window.Resources>
         <Style x:Key="RectBorderStyle" TargetType="Rectangle">
             <Setter Property="Focusable" Value="False" />
-            <Setter Property="Fill" Value="Orange" />
+            <Setter Property="Fill" Value="Transparent" />
             <Setter Property="Tag" Value="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
             <EventSetter Event="MouseLeftButtonDown" Handler="Resize_Init"/>
             <EventSetter Event="MouseLeftButtonUp" Handler="Resize_End"/>

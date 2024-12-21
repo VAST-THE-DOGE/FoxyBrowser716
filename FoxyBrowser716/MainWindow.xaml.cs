@@ -36,7 +36,7 @@ public partial class MainWindow : Window
 	{
 		InitializeComponent();
 		// BackImage.Source = Material.Icons.MaterialIconDataProvider.GetData(Material.Icons.MaterialIconKind.Close);
-
+		
 		foreach (var button in _normalButtons)
 		{
 			button.MouseEnter += (_, _) =>
@@ -46,6 +46,14 @@ public partial class MainWindow : Window
 			button.MouseLeave += (_, _) =>
 			{
 				ChangeColorAnimation(button.Background, AccentColor, MainColor);
+			};
+			button.PreviewMouseLeftButtonDown += (_, _) =>
+			{
+				button.Foreground = new SolidColorBrush(HighlightColor);
+			};
+			button.PreviewMouseLeftButtonUp += (_, _) =>
+			{
+				ChangeColorAnimation(button.Foreground, HighlightColor, Colors.White);
 			};
 		}
 
