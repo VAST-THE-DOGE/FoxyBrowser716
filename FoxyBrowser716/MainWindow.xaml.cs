@@ -9,6 +9,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Material.Icons;
+using Material.Icons.WPF;
 using static FoxyBrowser716.ColorPalette;
 
 namespace FoxyBrowser716;
@@ -24,6 +26,7 @@ public partial class MainWindow : Window
 		ButtonMinimize,
 		ButtonMenu,
 		ButtonSidePanel,
+		SearchButton,
 	];
 	
 	public MainWindow()
@@ -35,25 +38,42 @@ public partial class MainWindow : Window
 		{
 			button.MouseEnter += (_, _) =>
 			{
-				ChangeBackColorAnimation(button, MainColor, AccentColor);
+				ChangeColorAnimation(button.Background, MainColor, AccentColor);
 			};
 			button.MouseLeave += (_, _) =>
 			{
-				ChangeBackColorAnimation(button, AccentColor, MainColor);
+				ChangeColorAnimation(button.Background, AccentColor, MainColor);
 			};
 		}
+
+		SearchBox.GotKeyboardFocus += (_, _) =>
+		{
+			ChangeColorAnimation(SearchBackground.BorderBrush, Colors.White, HighlightColor);
+		};
+		SearchBox.LostKeyboardFocus += (_, _) =>
+		{
+			ChangeColorAnimation(SearchBackground.BorderBrush, HighlightColor, Colors.White);
+		};
 		
 		ButtonClose.MouseEnter += (_, _) =>
 		{
-			ChangeBackColorAnimation(ButtonClose, MainColor, Colors.Red);
+			ChangeColorAnimation(ButtonClose.Background, MainColor, Colors.Red);
 		};
 		ButtonClose.MouseLeave += (_, _) =>
 		{
-			ChangeBackColorAnimation(ButtonClose, Colors.Red, MainColor);
+			ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor);
 		};
+		StateChanged += Window_StateChanged;
+		Window_StateChanged(null, EventArgs.Empty);
 	}
 
-	private static void ChangeBackColorAnimation(Control control, Color from, Color to, double time=0.2)
+	private void Window_StateChanged(object? sender, EventArgs e)
+	{
+		ButtonMaximize.Content = WindowState == WindowState.Maximized ? new MaterialIcon { Kind = MaterialIconKind.FullscreenExit } :
+			new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+	}
+	
+	private static void ChangeColorAnimation(Brush brush, Color from, Color to, double time=0.2)
 	{
 		var colorAnimation = new ColorAnimation
 		{
@@ -62,7 +82,7 @@ public partial class MainWindow : Window
 			Duration = new Duration(TimeSpan.FromSeconds(time)),
 			EasingFunction = new QuadraticEase()
 		};
-		control.Background.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
+		brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
 	}
 	
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

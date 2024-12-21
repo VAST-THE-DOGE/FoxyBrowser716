@@ -11,24 +11,48 @@
     <Grid>
         <DockPanel Background="White">
             <Grid DockPanel.Dock="Top" Background="#1E2332" Height="30" VerticalAlignment="Top" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                     <Button Name="ButtonSidePanel" Width="30" Height="30" BorderThickness="0" Background="#00000000" Foreground="White" Content="{wpf:MaterialIconExt Kind=ArrowExpandRight}"></Button>
                     <Button Name="ButtonMenu" Width="30" Height="30" BorderThickness="0" Background="#00000000" Foreground="White" Content="{wpf:MaterialIconExt Kind=HamburgerMenu}"></Button>
                     <Border Width="2" Height="20" Margin="5" Background="White" VerticalAlignment="Stretch"/>
                     <TextBlock Text="FoxyBrowser716"  Foreground="White" VerticalAlignment="Center" Margin="5"/>
                 </StackPanel>
-            
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Margin="50,0,50,0">
+                    <Grid VerticalAlignment="Center" Width="Auto" Height="30">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="5" Background="#36405B" Margin="5">
+                            <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Foreground="White" Background="Transparent" BorderBrush="Transparent" Height="30">
+
+
+                            </TextBox>
+                        </Border>
+
+                        <Button Grid.Column="1"  Name="SearchButton" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Content="{wpf:MaterialIconExt Kind=SearchWeb}"></Button>
+                    </Grid>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Name="ButtonMinimize" Width="30" Height="30" BorderThickness="0" Background="#00000000" Foreground="White" Click="Minimize_Click" Content="{wpf:MaterialIconExt Kind=Minimize}"></Button>
-                    <Button Name="ButtonMaximize" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Click="MaximizeRestore_Click" Content="{wpf:MaterialIconExt Kind=WindowMaximize}"></Button>
-                    <Button Name="ButtonClose" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White"  Click="Close_Click" Content="{wpf:MaterialIconExt Kind=Close}">
-                    </Button>
+                    <Button Name="ButtonMaximize" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White" Click="MaximizeRestore_Click"></Button>
+                    <Button Name="ButtonClose" Width="30" Height="30" BorderThickness="0" Background="#002D2D30" Foreground="White"  Click="Close_Click" Content="{wpf:MaterialIconExt Kind=Close}"></Button>
                 </StackPanel>
             </Grid>
 
+            <Grid DockPanel.Dock="Left" Background="#1E2332" Width="30" HorizontalAlignment="Left">
+            </Grid>
+            
         </DockPanel>
 
         <Grid Name="MainGrid">
+            
         </Grid>
     </Grid>
 </Window>
