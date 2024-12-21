@@ -1,9 +1,11 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -33,7 +35,14 @@ public partial class MainWindow : Window
 		ButtonBookmark
 	];
 
-	private Rectangle _originalRectangle;
+	private int _currentTabId;
+	private int _tabCounter;
+
+	private Rect _originalRectangle;
+
+	private record WebsiteTab(CoreWebView2 TabCore, int tabId);
+	
+	private WebsiteTab[] _tabs;
 	
 	public MainWindow()
 	{
@@ -112,8 +121,11 @@ public partial class MainWindow : Window
 	
 	private void Window_StateChanged(object? sender, EventArgs e)
 	{
-		ButtonMaximize.Content = WindowState == WindowState.Maximized ? new MaterialIcon { Kind = MaterialIconKind.FullscreenExit } :
-			new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+		if (WindowState == WindowState.Maximized)
+		{
+			WindowState = WindowState.Normal;
+			EnterFullscreen();
+		}
 	}
 	
 	private static void ChangeColorAnimation(Brush brush, Color from, Color to, double time=0.2)
@@ -132,26 +144,115 @@ public partial class MainWindow : Window
 	{
 		if (e.ClickCount == 2)
 		{
-			WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+			MaximizeRestore_Click(null, EventArgs.Empty);
 		}
 		else
 		{
+			if (_inFullscreen)
+				ExitFullscreen();
+			_originalRectangle = new Rect(Left, Top, Width, Height);
 			DragMove();
 		}
 	}
 
-	private void Minimize_Click(object sender, RoutedEventArgs e)
+	private void Minimize_Click(object? sender, EventArgs e)
 	{
 		WindowState = WindowState.Minimized;
 	}
 
-	private void MaximizeRestore_Click(object sender, RoutedEventArgs e)
+	private bool _inFullscreen;
+	private void MaximizeRestore_Click(object? sender, EventArgs e)
 	{
-		this.Left = 0;
-		this.Top = 0;
-		this.Width = SystemParameters.PrimaryScreenWidth;
-		this.Height = SystemParameters.PrimaryScreenHeight;
+		if (_inFullscreen)
+			ExitFullscreen();
+		else
+			EnterFullscreen();
 	}
+
+	#region FullscreenStuff
+	private void EnterFullscreen()
+	{
+		_inFullscreen = true;
+		_originalRectangle = new Rect(Left, Top, Width, Height);
+		
+		var screen = GetCurrentScreen();
+		
+		this.Left = screen.Left;
+		this.Top = screen.Top;
+		this.Width = screen.Width;
+		this.Height = screen.Height;
+		ButtonMaximize.Content =new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
+	}
+
+	private void ExitFullscreen()
+	{
+		_inFullscreen = false;
+		this.Left = _originalRectangle.Left;
+		this.Top = _originalRectangle.Top;
+		this.Width = _originalRectangle.Width;
+		this.Height = _originalRectangle.Height;
+		ButtonMaximize.Content =new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+	}
+	
+	private Rect GetCurrentScreen()
+	{
+		var hWnd = new WindowInteropHelper(this).Handle;
+
+		// Get the monitor associated with the window handle
+		IntPtr hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+
+		// Initialize the MONITORINFO structure
+		MONITORINFO monitorInfo = new MONITORINFO();
+		monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+
+		// Get the monitor information
+		if (GetMonitorInfo(hMonitor, ref monitorInfo))
+		{
+			return new Rect(monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Top, monitorInfo.rcMonitor.Width, monitorInfo.rcMonitor.Height);
+		}
+
+		// Return default screen if monitor info fails
+		return new Rect(0, 0, SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height);
+	}
+
+	#region Windows API Methods
+
+	// Get the monitor's handle from a window handle
+	[DllImport("user32.dll")]
+	private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+	// Get information about a monitor
+	[DllImport("user32.dll")]
+	private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+	// Monitor Info Struct
+	[StructLayout(LayoutKind.Sequential)]
+	public struct MONITORINFO
+	{
+		public int cbSize;
+		public RECT rcMonitor;
+		public RECT rcWork;
+		public uint dwFlags;
+	}
+
+	// Rect struct to define monitor size
+	[StructLayout(LayoutKind.Sequential)]
+	public struct RECT
+	{
+		public int Left;
+		public int Top;
+		public int Right;
+		public int Bottom;
+
+		public int Width => Right - Left;
+		public int Height => Bottom - Top;
+	}
+
+	// Constants
+	const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+	#endregion
+	#endregion
 
 	private void Close_Click(object sender, RoutedEventArgs e)
 	{
