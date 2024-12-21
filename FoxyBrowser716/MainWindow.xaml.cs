@@ -21,7 +21,9 @@ public partial class MainWindow : Window
 	private Control[] _normalButtons =>
 	[
 		ButtonMaximize,
-		ButtonMinimize
+		ButtonMinimize,
+		ButtonMenu,
+		ButtonSidePanel,
 	];
 	
 	public MainWindow()
