@@ -18,11 +18,29 @@ namespace FoxyBrowser716;
 /// </summary>
 public partial class MainWindow : Window
 {
+	private Control[] _normalButtons =>
+	[
+		ButtonMaximize,
+		ButtonMinimize
+	];
+	
 	public MainWindow()
 	{
 		InitializeComponent();
 		// BackImage.Source = Material.Icons.MaterialIconDataProvider.GetData(Material.Icons.MaterialIconKind.Close);
 
+		foreach (var button in _normalButtons)
+		{
+			button.MouseEnter += (_, _) =>
+			{
+				ChangeBackColorAnimation(button, MainColor, AccentColor);
+			};
+			button.MouseLeave += (_, _) =>
+			{
+				ChangeBackColorAnimation(button, AccentColor, MainColor);
+			};
+		}
+		
 		ButtonClose.MouseEnter += (_, _) =>
 		{
 			ChangeBackColorAnimation(ButtonClose, MainColor, Colors.Red);
