@@ -92,8 +92,6 @@
     
                             <Border Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" CornerRadius="5" Background="#36405B" Margin="5">
                                 <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Foreground="White" Background="Transparent" BorderBrush="Transparent" Height="30">
-    
-    
                                 </TextBox>
                             </Border>
     
@@ -119,8 +117,7 @@
                 </Grid>
                 
                 <Grid Name="MainGrid">
-                    <Border BorderBrush="#FF9103" BorderThickness="2" Background="Black" Margin="0">
-                        <wpf2:WebView2 Name="WebView"/>
+                    <Border Name="MainPanel" BorderBrush="#FF9103" BorderThickness="2" Background="Black" Margin="0">
                     </Border>
                 </Grid>
             </DockPanel>

@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.IO;
+using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +16,7 @@ using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 using static FoxyBrowser716.ColorPalette;
 
 namespace FoxyBrowser716;
@@ -40,29 +43,130 @@ public partial class MainWindow : Window
 
 	private Rect _originalRectangle;
 
-	private record WebsiteTab(CoreWebView2 TabCore, int tabId);
+	private record WebsiteTab
+	{
+		public event Action UrlChanged;
+		public event Action ImageChanged;
+		
+		public WebView2 TabCore;
+		public int TabId;
+		public Image Icon;
+		public string Title;
+		public WebsiteTab(WebView2 tabCore,  int tabId)
+		{
+			TabCore = tabCore;
+			TabId = tabId;
+
+			Initialize();
+		}
+
+		private async Task Initialize()
+		{
+			await TabCore.EnsureCoreWebView2Async();
+			
+			Title = TabCore.CoreWebView2.DocumentTitle;
+			
+			Icon = new Image
+			{
+				Source = CreateCircleWithLetter(26,26, Title.Length > 0 ? Title[0].ToString() : "_", Brushes.DimGray, Brushes.White),
+				Width = 26,
+				Height = 26,
+				Margin = new Thickness(1),
+			}; 
+			
+			RefreshImage();
+			
+			TabCore.SourceChanged += (_,_) =>
+			{
+				Title = TabCore.CoreWebView2.DocumentTitle;
+				UrlChanged?.Invoke();
+				RefreshImage();
+			};
+		}
+		
+		private async Task RefreshImage()
+		{
+			try
+			{
+				Icon = new Image
+				{
+					Source = await GetImageSourceFromStreamAsync(await TabCore.CoreWebView2.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png)),
+					Width = 26,
+					Height = 26,
+					Margin = new Thickness(1),
+				};
+			}
+			catch
+			{
+				Icon = new Image
+				{
+					Source = CreateCircleWithLetter(26,26,Title.Length > 0 ? Title[0].ToString() : "", Brushes.DimGray, Brushes.White),
+					Width = 26,
+					Height = 26,
+					Margin = new Thickness(1),
+				}; 
+			}
+			ImageChanged?.Invoke();
+		}
+	};
 	
-	private WebsiteTab[] _tabs;
-	
+	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
+	{
+		if (stream == null)
+			return null;
+
+		var bitmap = new BitmapImage();
+		bitmap.BeginInit();
+		bitmap.StreamSource = stream;
+		bitmap.CacheOption = BitmapCacheOption.OnLoad;
+		bitmap.EndInit();
+
+		stream.Close();
+
+		return bitmap;
+	}
+
+	private static BitmapSource CreateCircleWithLetter(int width, int height, string letter, Brush circleBrush,
+		Brush textBrush)
+	{
+		var drawingVisual = new DrawingVisual();
+		using (var dc = drawingVisual.RenderOpen())
+		{
+			dc.DrawEllipse(circleBrush, null, new Point(width / 2.0, height / 2.0), width / 2.0, height / 2.0);
+
+			var formattedText = new FormattedText(
+				letter,
+				System.Globalization.CultureInfo.CurrentCulture,
+				FlowDirection.LeftToRight,
+				new Typeface("Arial"),
+				Math.Min(width, height) / 2.0,
+				textBrush,
+				VisualTreeHelper.GetDpi(drawingVisual).PixelsPerDip);
+
+			var textPosition = new Point(
+				(width - formattedText.Width) / 2,
+				(height - formattedText.Height) / 2);
+			dc.DrawText(formattedText, textPosition);
+		}
+		
+		var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+		bitmap.Render(drawingVisual);
+
+		return bitmap;
+	}
+
+	private List<WebsiteTab> _tabs = [];
+
 	public MainWindow()
 	{
 		InitializeComponent();
 		// BackImage.Source = Material.Icons.MaterialIconDataProvider.GetData(Material.Icons.MaterialIconKind.Close);
-		
+
 		foreach (var button in _normalButtons)
 		{
-			button.MouseEnter += (_, _) =>
-			{
-				ChangeColorAnimation(button.Background, MainColor, AccentColor);
-			};
-			button.MouseLeave += (_, _) =>
-			{
-				ChangeColorAnimation(button.Background, AccentColor, MainColor);
-			};
-			button.PreviewMouseLeftButtonDown += (_, _) =>
-			{
-				button.Foreground = new SolidColorBrush(HighlightColor);
-			};
+			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
+			button.MouseLeave += (_, _) => { ChangeColorAnimation(button.Background, AccentColor, MainColor); };
+			button.PreviewMouseLeftButtonDown += (_, _) => { button.Foreground = new SolidColorBrush(HighlightColor); };
 			button.PreviewMouseLeftButtonUp += (_, _) =>
 			{
 				ChangeColorAnimation(button.Foreground, HighlightColor, Colors.White);
@@ -77,45 +181,134 @@ public partial class MainWindow : Window
 		{
 			ChangeColorAnimation(SearchBackground.BorderBrush, HighlightColor, Colors.White);
 		};
-		
-		ButtonClose.MouseEnter += (_, _) =>
-		{
-			ChangeColorAnimation(ButtonClose.Background, MainColor, Colors.Red);
-		};
-		ButtonClose.MouseLeave += (_, _) =>
-		{
-			ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor);
-		};
+
+		ButtonClose.MouseEnter += (_, _) => { ChangeColorAnimation(ButtonClose.Background, MainColor, Colors.Red); };
+		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor); };
 		StateChanged += Window_StateChanged;
 		Window_StateChanged(null, EventArgs.Empty);
+		
+		tabsChanged += RefreshTabs;
 
 		Initialize();
+		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+
+	}
+
+	private void RefreshTabs()
+	{
+		Tabs.Children.Clear();
+		Tabs.Children.Add(TabHome);
+		foreach (var tab in _tabs)
+		{
+			var button = new Button
+			{
+				Content = tab.Icon,
+				Width = 30,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent),
+			};
+
+			tab.UrlChanged += () =>
+			{
+				if (tab.TabId == _currentTabId)
+				{
+					SearchBox.Text = tab.TabCore.Source.ToString();
+				}
+
+				///tab.Title;
+			};
+
+			tab.ImageChanged += () =>
+			{
+				button.Content = tab.Icon;
+			};
+				
+			button.VerticalContentAlignment = VerticalAlignment.Stretch;
+			button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+
+			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); }; 
+			button.MouseLeave += (_, _) => { ChangeColorAnimation(button.Background, AccentColor, MainColor); };
+
+			button.PreviewMouseLeftButtonDown += async (_, _) =>
+			{
+				await SwapActiveTab(tab.TabId);
+			};
+
+			Tabs.Children.Add(button);
+		}
 	}
 
 	private async void Initialize()
 	{
-		await WebView.EnsureCoreWebView2Async();
+		var webView = await CreateTab("https://www.google.com/");
+		AddTab(webView);
+		
+		AddTab(await CreateTab("https://music.youtube.com/watch?v=5Duje_sZko8"));
+		AddTab(await CreateTab("https://music.youtube.com/watch?v=_egkqeKLUMY&si=CA9YlwUmG3kts2Si"));
+		AddTab(await CreateTab("https://discord.com/"));
+		AddTab(await CreateTab("https://store.steampowered.com/"));
 
-		WebView.SourceChanged += (_, _) =>
+
+		await SwapActiveTab(0);
+	}
+
+	private async Task<WebView2> CreateTab(string url)
+	{
+		var webView = new WebView2();
+		webView.EnsureCoreWebView2Async();
+		
+		try
 		{
-			SearchBox.Text = WebView.Source.ToString();
-		};
-			
-		WebView.CoreWebView2.Navigate("https://www.google.com");
-
+			webView.Source = new Uri(url);
+		}
+		catch (Exception exception)
+		{
+			webView.Source = new Uri($"https://www.google.com/search?q={url}");
+		}
+		
+		return webView;
+	}
+	
+	private event Action tabsChanged;
+	private void AddTab(WebView2 tabCore)
+	{
+		_tabs.Add(new WebsiteTab(tabCore, _tabCounter++));
+		tabsChanged?.Invoke();
+	}
+	private void RemoveTab(int id)
+	{
+		if (_tabs.FirstOrDefault(t => t.TabId == id) is {} tabToRemove)
+		{
+			_tabs.Remove(tabToRemove);
+			tabsChanged?.Invoke();
+		}
+	}
+	private async Task SwapActiveTab(int id)
+	{
+		var tabcore = _tabs.First(t => t.TabId == id).TabCore;
+		_currentTabId = id;
+		MainPanel.Child = tabcore;
+		await tabcore.EnsureCoreWebView2Async();
+		SearchBox.Text = tabcore.CoreWebView2.Source;
+		tabsChanged?.Invoke();
+	}
+	private async Task SwapTabLocation(int id)
+	{
+		tabsChanged?.Invoke();
 	}
 
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		await WebView.EnsureCoreWebView2Async();
+		var tabCore = _tabs.First(t => t.TabId == _currentTabId).TabCore;
+		await tabCore.EnsureCoreWebView2Async();
 
 		try
 		{
-			WebView.CoreWebView2.Navigate(SearchBox.Text);
+			tabCore.CoreWebView2.Navigate(SearchBox.Text);
 		}
 		catch (Exception exception)
 		{
-			WebView.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
 		}
 	}
 	
@@ -149,7 +342,8 @@ public partial class MainWindow : Window
 		else
 		{
 			if (_inFullscreen)
-				ExitFullscreen();
+				return;
+			
 			_originalRectangle = new Rect(Left, Top, Width, Height);
 			DragMove();
 		}
