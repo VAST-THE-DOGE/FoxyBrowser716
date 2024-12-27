@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -33,13 +34,17 @@ public partial class MainWindow : Window
 		ButtonMenu,
 		ButtonSidePanel,
 		SearchButton,
-		TabHome,
 		ButtonPin,
-		ButtonBookmark
+		ButtonBookmark,
+		RefreshButton,
+		BackButton, //TODO need custom animation logic.
+		ForwardButton
 	];
 
 	private int _currentTabId;
 	private int _tabCounter;
+	private bool _tabsExpanded;
+	private event Action _tabsExpandedChanged;
 
 	private Rect _originalRectangle;
 
@@ -72,11 +77,12 @@ public partial class MainWindow : Window
 				Width = 26,
 				Height = 26,
 				Margin = new Thickness(1),
+				RenderSize = new Size(26, 26)
 			}; 
 			
 			RefreshImage();
 			
-			TabCore.SourceChanged += (_,_) =>
+			TabCore.NavigationCompleted += (_,_) =>
 			{
 				Title = TabCore.CoreWebView2.DocumentTitle;
 				UrlChanged?.Invoke();
@@ -112,9 +118,6 @@ public partial class MainWindow : Window
 	
 	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
 	{
-		if (stream == null)
-			return null;
-
 		var bitmap = new BitmapImage();
 		bitmap.BeginInit();
 		bitmap.StreamSource = stream;
@@ -155,7 +158,7 @@ public partial class MainWindow : Window
 		return bitmap;
 	}
 
-	private List<WebsiteTab> _tabs = [];
+	private ConcurrentDictionary<int,WebsiteTab> _tabs = [];
 
 	public MainWindow()
 	{
@@ -191,23 +194,85 @@ public partial class MainWindow : Window
 
 		Initialize();
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+		
+		_tabsExpandedChanged += () =>
+		{
+			AddTabLabel.Visibility = _tabsExpanded ? Visibility.Visible : Visibility.Collapsed;
+		};
+		AddTabStack.MouseEnter += (_, _) => { ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
+		AddTabStack.MouseLeave += (_, _) => { ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		AddTabStack.PreviewMouseLeftButtonDown += (_, _) => { AddTabLabel.Foreground = new SolidColorBrush(HighlightColor); AddTabButton.Foreground = new SolidColorBrush(HighlightColor); };
+		AddTabStack.PreviewMouseLeftButtonUp += (_, _) => { 
+			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
+			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
+			AddTab_Click(null, EventArgs.Empty);
+		};
+	}
 
+	private async void AddTab_Click(object? sender, EventArgs e)
+	{
+		var newTab = await CreateTab("https://www.google.com/");
+		var id = AddTab(newTab);
+		await SwapActiveTab(id);
+	}
+
+	private void SidePanel_Click(object sender, EventArgs e)
+	{
+		_tabsExpanded = !_tabsExpanded;
+		ButtonSidePanel.Content = new MaterialIcon { Kind = _tabsExpanded ? MaterialIconKind.ArrowExpandLeft : MaterialIconKind.ArrowExpandRight };
+		_tabsExpandedChanged?.Invoke();
+		LeftBar.Width = _tabsExpanded ? 230 : 30;
 	}
 
 	private void RefreshTabs()
 	{
 		Tabs.Children.Clear();
-		Tabs.Children.Add(TabHome);
-		foreach (var tab in _tabs)
+		Tabs.Children.Add(AddTabStack);
+		foreach (var tab in _tabs.Values)
 		{
+			var stackPanel = new StackPanel
+			{
+				Orientation = Orientation.Horizontal,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent)
+			};
+
 			var button = new Button
 			{
 				Content = tab.Icon,
 				Width = 30,
 				Height = 30,
 				Background = new SolidColorBrush(Colors.Transparent),
+				BorderBrush = new SolidColorBrush(Colors.Transparent),
+				HorizontalAlignment = HorizontalAlignment.Left,
+				VerticalAlignment = VerticalAlignment.Stretch,
 			};
 
+			var titleBox = new Label()
+			{
+				Height = 30,
+				Content = tab.Title,
+				Foreground = Brushes.White,
+				Width = 170,
+				Background = new SolidColorBrush(Colors.Transparent),
+				Visibility = _tabsExpanded ? Visibility.Visible : Visibility.Collapsed,
+				HorizontalAlignment = HorizontalAlignment.Center,
+				VerticalAlignment = VerticalAlignment.Stretch,
+			};
+			
+			var closeButton = new Button
+			{
+				Content = new MaterialIcon { Kind = MaterialIconKind.Close },
+				Width = 30,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent),
+				BorderBrush = new SolidColorBrush(Colors.Transparent),
+				Foreground = new SolidColorBrush(Colors.White),
+				Visibility = _tabsExpanded ? Visibility.Visible : Visibility.Collapsed,
+				HorizontalAlignment = HorizontalAlignment.Right,
+				VerticalAlignment = VerticalAlignment.Stretch,
+			};
+			
 			tab.UrlChanged += () =>
 			{
 				if (tab.TabId == _currentTabId)
@@ -215,26 +280,64 @@ public partial class MainWindow : Window
 					SearchBox.Text = tab.TabCore.Source.ToString();
 				}
 
-				///tab.Title;
+				titleBox.Content = tab.Title;
 			};
 
 			tab.ImageChanged += () =>
 			{
 				button.Content = tab.Icon;
 			};
-				
-			button.VerticalContentAlignment = VerticalAlignment.Stretch;
-			button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+			
+			closeButton.PreviewMouseLeftButtonUp += (_, _) =>
+			{
+				RemoveTab(tab.TabId);
+			};
 
-			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); }; 
-			button.MouseLeave += (_, _) => { ChangeColorAnimation(button.Background, AccentColor, MainColor); };
+			closeButton.MouseEnter += (_, _) =>
+			{
+				ChangeColorAnimation(closeButton.Foreground, Colors.White, Colors.Red); 
+			}; 
+			closeButton.MouseLeave += (_, _) =>
+			{
+				ChangeColorAnimation(closeButton.Foreground, Colors.Red, Colors.White);
+			};
+			
+			stackPanel.MouseEnter += (_, _) =>
+			{
+				if (tab.TabId == _currentTabId) return;
+				ChangeColorAnimation(stackPanel.Background, MainColor, AccentColor); 
+			}; 
+			stackPanel.MouseLeave += (_, _) =>
+			{
+				if (tab.TabId == _currentTabId) return;
+				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
+			};
 
 			button.PreviewMouseLeftButtonDown += async (_, _) =>
 			{
 				await SwapActiveTab(tab.TabId);
 			};
+			titleBox.PreviewMouseLeftButtonDown += async (_, _) =>
+			{
+				await SwapActiveTab(tab.TabId);
+			};
 
-			Tabs.Children.Add(button);
+			_tabsExpandedChanged += () =>
+			{
+				titleBox.Visibility = _tabsExpanded ? Visibility.Visible : Visibility.Collapsed;
+				closeButton.Visibility = _tabsExpanded ? Visibility.Visible : Visibility.Collapsed;
+			};
+
+			if (tab.TabId == _currentTabId)
+			{
+				stackPanel.Background = new SolidColorBrush(HighlightColor);
+			}
+			
+			stackPanel.Children.Add(button);
+			stackPanel.Children.Add(titleBox);
+			stackPanel.Children.Add(closeButton);
+
+			Tabs.Children.Add(stackPanel);
 		}
 	}
 
@@ -270,27 +373,90 @@ public partial class MainWindow : Window
 	}
 	
 	private event Action tabsChanged;
-	private void AddTab(WebView2 tabCore)
+	private int AddTab(WebView2 tabCore)
 	{
-		_tabs.Add(new WebsiteTab(tabCore, _tabCounter++));
+		var tabId = _tabCounter++;
+		_tabs.TryAdd(tabId, new WebsiteTab(tabCore, tabId));
+		tabCore.Visibility = Visibility.Collapsed;
+		TabHolder.Children.Add(tabCore);
 		tabsChanged?.Invoke();
+		return tabId;
 	}
-	private void RemoveTab(int id)
+	private async void RemoveTab(int id)
 	{
-		if (_tabs.FirstOrDefault(t => t.TabId == id) is {} tabToRemove)
+		//check if the current tab is in use
+		if (_currentTabId == id)
 		{
-			_tabs.Remove(tabToRemove);
+			if (_tabs.Count > 1)
+			{
+				var newId = _tabs.First(t => t.Key != id).Key;
+				await SwapActiveTab(newId);
+
+			}
+			else
+			{
+				var webView = new WebView2();
+				webView.Source = new Uri($"https://www.google.com/");
+				await SwapActiveTab(AddTab(webView));
+			}
+		}
+		
+		//remove
+		if (_tabs.TryRemove(id, out var tabToRemove))
+		{
 			tabsChanged?.Invoke();
 		}
 	}
-	private async Task SwapActiveTab(int id)
+	
+	//TODO: use a grid and collapse unused tabs (keeping their cores active)
+	private bool swaping;
+	private int? nextToSwap;
+	private async Task SwapActiveTab(int id) 
 	{
-		var tabcore = _tabs.First(t => t.TabId == id).TabCore;
+		if (swaping)
+		{
+			nextToSwap = id;
+			return;
+		}
+		swaping = true;
+		
 		_currentTabId = id;
-		MainPanel.Child = tabcore;
+		var tabcore = _tabs.First(t => t.Value.TabId == _currentTabId).Value.TabCore;
 		await tabcore.EnsureCoreWebView2Async();
+		if (tabcore.CoreWebView2.IsSuspended)
+		{
+			tabcore.CoreWebView2.Resume();
+		}
+
+		foreach (var tab in _tabs.Where(t => t.Value.TabId != id && !tabcore.CoreWebView2.IsSuspended))
+		{
+			await tab.Value.TabCore.EnsureCoreWebView2Async();
+			if (tab.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
+				continue;
+			tab.Value.TabCore.CoreWebView2.TrySuspendAsync();
+		}
+		foreach (var tab in _tabs)
+		{
+			tab.Value.TabCore.Visibility = tab.Value.TabId == _currentTabId 
+				? Visibility.Visible 
+				: Visibility.Collapsed;
+		}
+		/*foreach (var tab in _tabs.Where(tab => tab.TabCore.Visibility == Visibility.Visible))
+		{
+			tab.TabCore.Visibility = Visibility.Collapsed;
+		}
+		tabcore.Visibility = Visibility.Visible;*/
 		SearchBox.Text = tabcore.CoreWebView2.Source;
+		BackButton.Foreground = tabcore.CanGoBack ? new SolidColorBrush(Color.FromRgb(255,255,255)) : new SolidColorBrush(Color.FromRgb(100,100,100));
+		ForwardButton.Foreground = tabcore.CanGoForward ? new SolidColorBrush(Color.FromRgb(255,255,255)) : new SolidColorBrush(Color.FromRgb(100,100,100));
 		tabsChanged?.Invoke();
+		
+		swaping = false;
+		if (nextToSwap is {} next)
+		{
+			nextToSwap = null;
+			await SwapActiveTab(next);
+		}
 	}
 	private async Task SwapTabLocation(int id)
 	{
@@ -299,7 +465,7 @@ public partial class MainWindow : Window
 
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		var tabCore = _tabs.First(t => t.TabId == _currentTabId).TabCore;
+		var tabCore = _tabs.First(t => t.Value.TabId == _currentTabId).Value.TabCore;
 		await tabCore.EnsureCoreWebView2Async();
 
 		try
@@ -522,4 +688,28 @@ public partial class MainWindow : Window
 		}
 	}
 	#endregion
+
+	private async void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
+	{
+		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		{
+			tab.TabCore.Reload();
+		}
+	}
+
+	private async void BackButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		{
+			tab.TabCore.GoBack();
+		}
+	}
+
+	private async void ForwardButton_OnClick(object sender, RoutedEventArgs e)
+	{
+		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		{
+			tab.TabCore.GoForward();
+		}
+	}
 }
