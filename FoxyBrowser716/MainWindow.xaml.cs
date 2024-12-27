@@ -28,18 +28,17 @@ public partial class MainWindow : Window
 	private bool _inFullscreen;
 
 	private Rect _originalRectangle;
-	private int _tabCounter;
 
 	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
 	private int? nextToSwap;
 
 	private bool swaping;
 
-	private readonly ConcurrentDictionary<int, string> _bookmarks = [];
-	private int _bookmarkCounter;
+	private static readonly ConcurrentDictionary<int, string> _bookmarks = [];
+	private static int _bookmarkCounter;
 	
-	private readonly ConcurrentDictionary<int, string> _pins = [];
-	private int _pinCounter;
+	private static readonly ConcurrentDictionary<int, string> _pins = [];
+	private static int _pinCounter;
 	
 	public MainWindow()
 	{
@@ -87,7 +86,7 @@ public partial class MainWindow : Window
 		{
 			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
-			AddTab_Click(null, EventArgs.Empty);
+			AddTab_Click();
 		};
 
 		LeftBar.MouseEnter += (_, _) =>
@@ -183,10 +182,9 @@ public partial class MainWindow : Window
 		return bitmap;
 	}
 
-	private async void AddTab_Click(object? sender, EventArgs e)
+	private async void AddTab_Click()
 	{
-		var newTab = await CreateTab("https://www.google.com/");
-		var id = AddTab(newTab);
+		var id = AddTab("https://www.google.com/");
 		await SwapActiveTab(id);
 	}
 
@@ -293,43 +291,32 @@ public partial class MainWindow : Window
 
 	private async void Initialize()
 	{
-		var options = new CoreWebView2EnvironmentOptions("--disable-features=RendererCodeIntegrity");
-		_environment = await CoreWebView2Environment.CreateAsync(null, "user_data_folder", options);
+		var options = new CoreWebView2EnvironmentOptions();
+		options.AreBrowserExtensionsEnabled = true;
+		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
+		_environment = await CoreWebView2Environment.CreateAsync(null, "UserData", options);
+		var id = AddTab("https://www.google.com/");
 
-		var webView = await CreateTab("https://www.google.com/");
-		AddTab(webView);
-
-
-		await SwapActiveTab(0);
+		await SwapActiveTab(id);
 	}
 
-	private async Task<WebView2> CreateTab(string url)
-	{
-		var webView = new WebView2();
-		webView.EnsureCoreWebView2Async(_environment);
-
-		try
-		{
-			webView.Source = new Uri(url);
-		}
-		catch (Exception exception)
-		{
-			webView.Source = new Uri($"https://www.google.com/search?q={url}");
-		}
-
-		return webView;
-	}
-
+	/// <summary>
+	/// This event fires whenever the amount of tabs are changed via the "AddTab," "RemoveTab," and "SwapTab" functions.
+	/// </summary>
 	private event Action tabsChanged;
 
-	private int AddTab(WebView2 tabCore)
+	/// <summary>
+	///  Creates a new tab and adds it to the _tabs dictionary.
+	/// </summary>
+	/// <param name="url">the requested starting url</param>
+	/// <returns>The id of the tab. This id can be used with the dictionary _tabs as the key.</returns>
+	private int AddTab(string url)
 	{
-		var tabId = _tabCounter++;
-		_tabs.TryAdd(tabId, new WebsiteTab(tabCore, tabId));
-		tabCore.Visibility = Visibility.Collapsed;
-		TabHolder.Children.Add(tabCore);
+		var tab = new WebsiteTab(url);
+		_tabs.TryAdd(tab.TabId, tab);
+		TabHolder.Children.Add(tab.TabCore);
 		tabsChanged?.Invoke();
-		return tabId;
+		return tab.TabId;
 	}
 
 	private async void RemoveTab(int id)
@@ -358,6 +345,10 @@ public partial class MainWindow : Window
 		}
 	}
 
+	/// <summary>
+	/// Swaps to another tab.
+	/// </summary>
+	/// <param name="id">The id of the tab to swap to.</param>
 	private async Task SwapActiveTab(int id)
 	{
 		if (swaping)
@@ -368,32 +359,36 @@ public partial class MainWindow : Window
 
 		swaping = true;
 
-		_currentTabId = id;
-		var tabcore = _tabs.First(t => t.Value.TabId == _currentTabId).Value.TabCore;
-		await tabcore.EnsureCoreWebView2Async(_environment);
-		tabcore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
-		if (tabcore.CoreWebView2.IsSuspended) tabcore.CoreWebView2.Resume();
-
-		foreach (var tab in _tabs.Where(t => t.Value.TabId != id && !tabcore.CoreWebView2.IsSuspended))
+		if (_tabs.TryGetValue(id, out var tab))
 		{
-			await tab.Value.TabCore.EnsureCoreWebView2Async(_environment);
-			if (tab.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
-				continue;
-			tab.Value.TabCore.CoreWebView2.TrySuspendAsync();
-		}
+			_currentTabId = id;
+			await tab.SetupTask;
+			var tabcore = tab.TabCore;
+		
+			if (tabcore.CoreWebView2.IsSuspended) tabcore.CoreWebView2.Resume();
 
-		foreach (var tab in _tabs)
-			tab.Value.TabCore.Visibility = tab.Value.TabId == _currentTabId
-				? Visibility.Visible
-				: Visibility.Collapsed;
-		SearchBox.Text = tabcore.CoreWebView2.Source;
-		BackButton.Foreground = tabcore.CanGoBack
-			? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-			: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-		ForwardButton.Foreground = tabcore.CanGoForward
-			? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-			: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-		tabsChanged?.Invoke();
+			foreach (var t in _tabs.Where(t => t.Value.TabId != id && !tabcore.CoreWebView2.IsSuspended))
+			{
+				await t.Value.TabCore.EnsureCoreWebView2Async(_environment);
+				if (t.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
+					continue;
+				t.Value.TabCore.CoreWebView2.TrySuspendAsync();
+			}
+
+			foreach (var t in _tabs)
+				t.Value.TabCore.Visibility = t.Value.TabId == _currentTabId
+					? Visibility.Visible
+					: Visibility.Collapsed;
+		
+			SearchBox.Text = tabcore.CoreWebView2.Source;
+			BackButton.Foreground = tabcore.CanGoBack
+				? new SolidColorBrush(Color.FromRgb(255, 255, 255))
+				: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+			ForwardButton.Foreground = tabcore.CanGoForward
+				? new SolidColorBrush(Color.FromRgb(255, 255, 255))
+				: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+			tabsChanged?.Invoke();
+		}
 
 		swaping = false;
 		if (nextToSwap is { } next)
@@ -410,16 +405,19 @@ public partial class MainWindow : Window
 
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		var tabCore = _tabs.First(t => t.Value.TabId == _currentTabId).Value.TabCore;
-		await tabCore.EnsureCoreWebView2Async(_environment);
+		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		{
+			var tabCore = tab.TabCore;
+			await tabCore.EnsureCoreWebView2Async(_environment);
 
-		try
-		{
-			tabCore.CoreWebView2.Navigate(SearchBox.Text);
-		}
-		catch (Exception exception)
-		{
-			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			try
+			{
+				tabCore.CoreWebView2.Navigate(SearchBox.Text);
+			}
+			catch (Exception exception)
+			{
+				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			}
 		}
 	}
 
@@ -432,6 +430,13 @@ public partial class MainWindow : Window
 		}
 	}
 
+	/// <summary>
+	/// Changes the color of a brush to do cool animations!
+	/// </summary>
+	/// <param name="brush">The brush that is animated such as "Control.Background." NOTE: The brush has to be custom (i.e. using new brush or specifying the color as hex '#000000' in xml)</param>
+	/// <param name="from">The color that the animation start from</param>
+	/// <param name="to">The color that the animation ends on (final color)</param>
+	/// <param name="time"></param>
 	private static void ChangeColorAnimation(Brush brush, Color from, Color to, double time = 0.2)
 	{
 		var colorAnimation = new ColorAnimation
@@ -499,42 +504,52 @@ public partial class MainWindow : Window
 
 		public readonly WebView2 TabCore;
 		public readonly int TabId;
-		public string Title;
+		public string Title { get; private set; }
 
-		public WebsiteTab(WebView2 tabCore, int tabId)
+		public readonly Task SetupTask;
+		
+		private static int _tabCounter;
+
+		public WebsiteTab(string url)
 		{
-			TabCore = tabCore;
-			TabId = tabId;
+			var webView = new WebView2();
+			webView.Visibility = Visibility.Collapsed;
+			
+			TabCore = webView;
+			TabId = _tabCounter++;
 
-			Initialize();
+			SetupTask = Initialize(url);
 		}
 
 		public event Action UrlChanged;
 		public event Action ImageChanged;
 
-		private async Task Initialize()
+		private async Task Initialize(string url)
 		{
 			await TabCore.EnsureCoreWebView2Async(_environment);
+			
+			TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
+			
+			await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(
+				@"C:\Users\penfo\RiderProjects\FoxyBrowser716\FoxyBrowser716\bin\Debug\net9.0-windows\uBlock0_1.61.2.chromium\uBlock0.chromium\");
+			var extensions = await TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
 
-			Title = TabCore.CoreWebView2.DocumentTitle;
-
-			Icon = new Image
-			{
-				Source = CreateCircleWithLetter(64, 64, Title.Length > 0 ? Title[0].ToString() : "_", Brushes.DimGray,
-					Brushes.White),
-				Width = 24,
-				Height = 24,
-				Margin = new Thickness(1)
-			};
-
-			RefreshImage();
-
-			TabCore.NavigationCompleted += (_, _) =>
+			
+			TabCore.NavigationCompleted += async (_, _) =>
 			{
 				Title = TabCore.CoreWebView2.DocumentTitle;
 				UrlChanged?.Invoke();
-				RefreshImage();
+				await RefreshImage();
 			};
+			
+			try
+			{
+				TabCore.Source = new Uri(url);
+			}
+			catch (Exception exception)
+			{
+				TabCore.Source = new Uri($"https://www.google.com/search?q={url}");
+			}
 		}
 
 		private async Task RefreshImage()
