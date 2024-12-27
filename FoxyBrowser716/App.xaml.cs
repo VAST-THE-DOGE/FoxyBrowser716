@@ -1,13 +1,10 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-using Color = System.Drawing.Color;
 
 namespace FoxyBrowser716;
 
 /// <summary>
-/// Interaction logic for App.xaml
+///     Interaction logic for App.xaml
 /// </summary>
 public partial class App : Application
 {
@@ -15,9 +12,8 @@ public partial class App : Application
 
 public static class ColorPalette
 {
-	public static System.Windows.Media.Color MainColor => System.Windows.Media.Color.FromRgb(30, 35, 50);
-	public static System.Windows.Media.Color AccentColor => System.Windows.Media.Color.FromRgb(54, 64, 91);
-	
-	public static System.Windows.Media.Color HighlightColor => System.Windows.Media.Color.FromRgb(255, 145, 3);
+	public static Color MainColor => Color.FromRgb(30, 35, 50);
+	public static Color AccentColor => Color.FromRgb(54, 64, 91);
 
+	public static Color HighlightColor => Color.FromRgb(255, 145, 3);
 }
