@@ -35,6 +35,12 @@ public partial class MainWindow : Window
 
 	private bool swaping;
 
+	private readonly ConcurrentDictionary<int, string> _bookmarks = [];
+	private int _bookmarkCounter;
+	
+	private readonly ConcurrentDictionary<int, string> _pins = [];
+	private int _pinCounter;
+	
 	public MainWindow()
 	{
 		InitializeComponent();
@@ -113,6 +119,14 @@ public partial class MainWindow : Window
 
 			// Apply the animation to the Grid's Height
 			LeftBar.BeginAnimation(WidthProperty, animation);
+		};
+
+		SearchBox.KeyDown += (_, e) =>
+		{
+			if (e.Key == Key.Enter)
+			{
+				Search_Click(null, EventArgs.Empty);
+			}
 		};
 	}
 
@@ -222,10 +236,20 @@ public partial class MainWindow : Window
 				HorizontalAlignment = HorizontalAlignment.Right,
 				VerticalAlignment = VerticalAlignment.Stretch
 			};
+			
 
 			tab.UrlChanged += () =>
 			{
-				if (tab.TabId == _currentTabId) SearchBox.Text = tab.TabCore.Source.ToString();
+				if (tab.TabId == _currentTabId)
+				{
+					SearchBox.Text = tab.TabCore.Source.ToString();
+					BackButton.Foreground = tab.TabCore.CanGoBack
+						? new SolidColorBrush(Color.FromRgb(255, 255, 255))
+						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+					ForwardButton.Foreground = tab.TabCore.CanGoForward
+						? new SolidColorBrush(Color.FromRgb(255, 255, 255))
+						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+				}
 
 				titleBox.Content = tab.Title;
 			};
@@ -379,7 +403,7 @@ public partial class MainWindow : Window
 		}
 	}
 
-	private async Task SwapTabLocation(int id)
+	private async Task SwapTabLocation(int id) //TODO
 	{
 		tabsChanged?.Invoke();
 	}
@@ -519,8 +543,7 @@ public partial class MainWindow : Window
 			{
 				Icon = new Image
 				{
-					Source = CreateCircleWithLetter(64, 64, Title.Length > 0 ? Title[0].ToString() : "",
-						Brushes.DimGray, Brushes.White),
+					Source = await GetImageSourceFromStreamAsync(await TabCore.CoreWebView2.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png)),
 					Width = 24,
 					Height = 24,
 					Margin = new Thickness(1),

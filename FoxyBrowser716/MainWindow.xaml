@@ -162,7 +162,7 @@
                                 VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="230">
                         <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin" Width="30"
                                 Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
-                                Content="{wpf:MaterialIconExt Kind=Pin}" />
+                                Content="{wpf:MaterialIconExt Kind=PinOutline}" />
                         <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelPin" Width="200"
                                Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
                             Pin Tab
@@ -172,7 +172,7 @@
                                 VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="230">
                         <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark" Width="30"
                                 Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
-                                Content="{wpf:MaterialIconExt Kind=Bookmark}" />
+                                Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" />
                         <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelBookmark" Width="200"
                                Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
                             Bookmark Tab
