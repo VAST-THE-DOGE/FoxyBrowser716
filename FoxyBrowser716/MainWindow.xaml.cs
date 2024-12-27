@@ -530,10 +530,8 @@ public partial class MainWindow : Window
 			
 			TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
 			
-			await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(
-				@"C:\Users\penfo\RiderProjects\FoxyBrowser716\FoxyBrowser716\bin\Debug\net9.0-windows\uBlock0_1.61.2.chromium\uBlock0.chromium\");
-			var extensions = await TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-
+			//TODO: get this working with any computer, preferably just a folder.
+			//await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(@"C:\Users\penfo\RiderProjects\FoxyBrowser716\FoxyBrowser716\bin\Debug\net9.0-windows\uBlock0_1.61.2.chromium\uBlock0.chromium\");
 			
 			TabCore.NavigationCompleted += async (_, _) =>
 			{
