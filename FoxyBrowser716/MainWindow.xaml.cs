@@ -488,11 +488,11 @@ public partial class MainWindow : Window
 	}
 
 // Menu action handlers (replace with your actual logic)
-private void OpenSettings() => MessageBox.Show("✨ Settings clicked!");
-private void OpenBookmarks() => MessageBox.Show("✨ Bookmarks clicked!");
-private void OpenHistory() => MessageBox.Show("✨ History clicked!");
-private void OpenDownloads() => MessageBox.Show("✨ Downloads clicked!");
-private void OpenExtensions() => MessageBox.Show("✨ Extensions clicked!");
+private void OpenSettings() => MessageBox.Show("Settings clicked!");
+private void OpenBookmarks() => MessageBox.Show("Bookmarks clicked!");
+private void OpenHistory() => MessageBox.Show("History clicked!");
+private void OpenDownloads() => MessageBox.Show("Downloads clicked!");
+private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
 	private async void Initialize()
 	{
 		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
