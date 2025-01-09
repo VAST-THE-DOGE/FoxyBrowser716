@@ -34,6 +34,7 @@ public record WebsiteTab
 
 	public event Action UrlChanged;
 	public event Action ImageChanged;
+	public event Action TitleChanged;
 
 	private async Task Initialize(string url)
 	{
@@ -41,16 +42,20 @@ public record WebsiteTab
 			
 		TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
 			
-		//TODO: get this working with any computer, preferably just a folder.
-		//await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(@"C:\Users\penfo\RiderProjects\FoxyBrowser716\FoxyBrowser716\bin\Debug\net9.0-windows\uBlock0_1.61.2.chromium\uBlock0.chromium\");
 		await LoadExtensions();
 		
-		TabCore.NavigationCompleted += async (_, _) =>
+		TabCore.SourceChanged += async (_, _) =>
+		{
+			UrlChanged?.Invoke();
+		};
+
+		TabCore.NavigationCompleted += (_, _) =>
 		{
 			Title = TabCore.CoreWebView2.DocumentTitle;
-			UrlChanged?.Invoke();
-			await RefreshImage();
+			TitleChanged?.Invoke();
 		};
+		
+		TabCore.CoreWebView2.FaviconChanged += async (_, _) => await RefreshImage();
 			
 		try
 		{

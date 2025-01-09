@@ -15,6 +15,7 @@ using Material.Icons.WPF;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using static FoxyBrowser716.ColorPalette;
+using Path = System.IO.Path;
 
 namespace FoxyBrowser716;
 
@@ -34,10 +35,10 @@ public partial class MainWindow : Window
 
 	private bool swaping;
 
-	private static readonly ConcurrentDictionary<int, string> _bookmarks = [];
+	private static readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];
 	private static int _bookmarkCounter;
 	
-	private static readonly ConcurrentDictionary<int, string> _pins = [];
+	private static readonly ConcurrentDictionary<int, TabInfo> _pins = [];
 	private static int _pinCounter;
 	
 	public MainWindow()
@@ -86,6 +87,48 @@ public partial class MainWindow : Window
 			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
 			AddTab_Click();
+		};
+		
+		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
+		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		StackPin.PreviewMouseLeftButtonDown += (_, _) =>
+		{
+			LabelPin.Foreground = new SolidColorBrush(HighlightColor);
+			ButtonPin.Foreground = new SolidColorBrush(HighlightColor);
+		};
+		StackPin.PreviewMouseLeftButtonUp += async (_, _) =>
+		{
+			ChangeColorAnimation(ButtonPin.Foreground, HighlightColor, Colors.White);
+			ChangeColorAnimation(LabelPin.Foreground, HighlightColor, Colors.White);
+			
+			var tab = _tabs.TryGetValue(_currentTabId, out var tabRaw) ? tabRaw : new WebsiteTab("https://www.google.com/");
+
+			if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+				LabelPin.Content = "Pin Tab";
+				await RemovePin(_pins.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
+			}
+			else
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+				LabelPin.Content = "Unpin Tab";
+				await AddPin(tab);
+			}
+		};
+		
+		StackBookmark.MouseEnter += (_, _) => { ChangeColorAnimation(StackBookmark.Background, MainColor, AccentColor); };
+		StackBookmark.MouseLeave += (_, _) => { ChangeColorAnimation(StackBookmark.Background, AccentColor, MainColor); };
+		StackBookmark.PreviewMouseLeftButtonDown += (_, _) =>
+		{
+			LabelBookmark.Foreground = new SolidColorBrush(HighlightColor);
+			ButtonBookmark.Foreground = new SolidColorBrush(HighlightColor);
+		};
+		StackBookmark.PreviewMouseLeftButtonUp += (_, _) =>
+		{
+			ChangeColorAnimation(ButtonBookmark.Foreground, HighlightColor, Colors.White);
+			ChangeColorAnimation(LabelBookmark.Foreground, HighlightColor, Colors.White);
+			MessageBox.Show("Not implemented yet");
 		};
 
 		LeftBar.MouseEnter += (_, _) =>
@@ -143,6 +186,125 @@ public partial class MainWindow : Window
 	{
 		var id = AddTab("https://www.google.com/");
 		await SwapActiveTab(id);
+	}
+	
+	private void RefreshPins()
+	{
+		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		{
+			if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+				LabelPin.Content = "Unpin Tab";
+			}
+			else
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+				LabelPin.Content = "Pin Tab";
+			}
+		}
+		PinnedTabs.Children.Clear();
+		foreach (var pin in _pins)
+		{
+			var stackPanel = new StackPanel
+			{
+				Orientation = Orientation.Horizontal,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent)
+			};
+
+			var button = new Button
+			{
+				Content = pin.Value.Image,
+				Width = 30,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent),
+				BorderBrush = new SolidColorBrush(Colors.Transparent),
+				HorizontalAlignment = HorizontalAlignment.Left,
+				VerticalAlignment = VerticalAlignment.Stretch
+			};
+
+			var titleBox = new Label
+			{
+				Height = 30,
+				Content = pin.Value.Title,
+				Foreground = Brushes.White,
+				Width = 170,
+				Background = new SolidColorBrush(Colors.Transparent),
+				HorizontalAlignment = HorizontalAlignment.Center,
+				VerticalAlignment = VerticalAlignment.Stretch
+			};
+
+			var closeButton = new Button
+			{
+				Content = new MaterialIcon { Kind = MaterialIconKind.Close },
+				Width = 30,
+				Height = 30,
+				Background = new SolidColorBrush(Colors.Transparent),
+				BorderBrush = new SolidColorBrush(Colors.Transparent),
+				Foreground = new SolidColorBrush(Colors.White),
+				HorizontalAlignment = HorizontalAlignment.Right,
+				VerticalAlignment = VerticalAlignment.Stretch
+			};
+
+			closeButton.PreviewMouseLeftButtonUp += async (_, _) => await RemovePin(pin.Key);
+
+			closeButton.MouseEnter += (_, _) =>
+			{
+				ChangeColorAnimation(closeButton.Foreground, Colors.White, Colors.Red);
+			};
+			closeButton.MouseLeave += (_, _) =>
+			{
+				ChangeColorAnimation(closeButton.Foreground, Colors.Red, Colors.White);
+			};
+
+			stackPanel.MouseEnter += (_, _) =>
+			{
+				ChangeColorAnimation(stackPanel.Background, MainColor, AccentColor);
+			};
+			stackPanel.MouseLeave += (_, _) =>
+			{
+				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
+			};
+
+			button.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(AddTab(pin.Value.Url)); };
+			titleBox.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(AddTab(pin.Value.Url)); };
+			
+			stackPanel.Children.Add(button);
+			stackPanel.Children.Add(titleBox);
+			stackPanel.Children.Add(closeButton);
+
+			PinnedTabs.Children.Add(stackPanel);
+		}
+	}
+	
+	private async Task RemovePin(int id)
+	{
+		_pins.TryRemove(id, out _);
+		
+		var saveTask = TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray());
+		
+		RefreshPins();
+		
+		await saveTask;
+	}
+	
+	private async Task AddPin(WebsiteTab tab)
+	{
+		var newInfo = new TabInfo()
+		{
+			Title = tab.Title,
+			Url = tab.TabCore.Source.ToString(),
+			Image = tab.Icon
+		};
+		
+		_pins.TryAdd(_pinCounter++, newInfo);
+		
+		var saveTask = TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray());
+		
+		RefreshPins();
+		
+		await saveTask;
 	}
 
 	private void RefreshTabs()
@@ -206,6 +368,20 @@ public partial class MainWindow : Window
 						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
 				}
 
+				if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+				{
+					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+					LabelPin.Content = "Unpin Tab";
+				}
+				else
+				{
+					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+					LabelPin.Content = "Pin Tab";
+				}
+			};
+
+			tab.TitleChanged += () =>
+			{
 				titleBox.Content = tab.Title;
 			};
 
@@ -245,9 +421,82 @@ public partial class MainWindow : Window
 			Tabs.Children.Add(stackPanel);
 		}
 	}
+	
+	private ContextMenu _menu;
 
+	private void ButtonMenu_Click(object sender, RoutedEventArgs e)
+	{
+		// Ensure old menu is cleared
+		if (_menu != null && _menu.IsOpen)
+		{
+			_menu.IsOpen = false;
+			return;
+		}
+
+		// Create the context menu
+		_menu = new ContextMenu
+		{
+			Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
+			BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
+			BorderThickness = new Thickness(1),
+			Padding = new Thickness(0),    
+			Margin = new Thickness(0),
+			StaysOpen = true,
+			Focusable = true,
+			HorizontalOffset = 30,
+		};
+
+		// Add menu items
+		var menuItems = new Dictionary<string, Action>
+		{
+			{ "⚙️ Settings", OpenSettings },
+			{ "📑 Bookmarks", OpenBookmarks },
+			{ "🕒 History", OpenHistory },
+			{ "⬇️ Downloads", OpenDownloads },
+			{ "🛠️ Extensions", OpenExtensions }
+		};
+
+		foreach (var menuItem in menuItems)
+		{
+			var item = new MenuItem
+			{
+				Header = menuItem.Key,
+				Background = Brushes.Transparent,
+				Foreground = Brushes.White,
+				HorizontalContentAlignment = HorizontalAlignment.Stretch,
+				Padding = new Thickness(5),  // Nice padding for items
+				FontSize = 14,
+				Focusable = false, // Disable annoying highlight outlines
+			};
+
+			item.MouseEnter += (s, _) =>
+				((MenuItem)s).Background = new SolidColorBrush(Color.FromRgb(40, 40, 60));
+			item.MouseLeave += (s, _) =>
+				((MenuItem)s).Background = Brushes.Transparent;
+
+			item.Click += (_, _) => menuItem.Value?.Invoke();
+			_menu.Items.Add(item);
+		}
+
+		// Open it below the button
+		_menu.PlacementTarget = (Button)sender;
+		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_menu.IsOpen = true;
+
+		// Handle clean-up
+		_menu.Closed += (_, _) => _menu = null; // Reset menu on close
+	}
+
+// Menu action handlers (replace with your actual logic)
+private void OpenSettings() => MessageBox.Show("✨ Settings clicked!");
+private void OpenBookmarks() => MessageBox.Show("✨ Bookmarks clicked!");
+private void OpenHistory() => MessageBox.Show("✨ History clicked!");
+private void OpenDownloads() => MessageBox.Show("✨ Downloads clicked!");
+private void OpenExtensions() => MessageBox.Show("✨ Extensions clicked!");
 	private async void Initialize()
 	{
+		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
+		
 		var options = new CoreWebView2EnvironmentOptions();
 		options.AreBrowserExtensionsEnabled = true;
 		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
@@ -255,6 +504,13 @@ public partial class MainWindow : Window
 		var id = AddTab("https://www.google.com/");
 
 		await SwapActiveTab(id);
+		
+		var pins = await loadPinTask;
+		foreach (var pin in pins)
+		{
+			_pins.TryAdd(_pinCounter++, pin);
+		}
+		RefreshPins();
 	}
 
 	/// <summary>

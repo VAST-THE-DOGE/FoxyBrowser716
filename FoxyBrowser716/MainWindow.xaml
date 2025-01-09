@@ -18,6 +18,67 @@
             <EventSetter Event="MouseLeftButtonUp" Handler="Resize_End" />
             <EventSetter Event="MouseMove" Handler="Resizeing_Form" />
         </Style>
+        <Style TargetType="MenuItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" /> <!-- Disable focus highlight -->
+            <!-- Completely override the default template -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid Background="{TemplateBinding Background}">
+                            <!-- Menu Item Border -->
+                            <Border
+                                Name="Border"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0">
+                                <!-- Text/Content of the MenuItem -->
+                                <ContentPresenter
+                                    ContentSource="Header"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="8,2,8,2" />
+                            </Border>
+                        </Grid>
+                        <!-- Hover Effect (Triggers) -->
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#28283C" /> <!-- Custom hover effect -->
+                                <Setter TargetName="Border" Property="BorderBrush" Value="#FF910F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#1E1E2D" /> <!-- Dark background -->
+            <Setter Property="BorderBrush" Value="#FF910F" /> <!-- Accent border -->
+            <Setter Property="BorderThickness" Value="1" /> <!-- Thin border -->
+            <Setter Property="Padding" Value="0" /> <!-- Remove internal padding -->
+            <Setter Property="Margin" Value="0" /> <!-- No additional margin -->
+            <Setter Property="SnapsToDevicePixels" Value="True" /> <!-- Crisp, clean rendering -->
+            <Setter Property="OverridesDefaultStyle" Value="True" /> <!-- WPF reset weapon -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border 
+                            Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            SnapsToDevicePixels="True">
+                            <StackPanel IsItemsHost="True" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <Rectangle x:Name="leftSizeGrip"
@@ -80,7 +141,9 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                             VerticalAlignment="Center">
                     <Button Name="ButtonMenu" Width="30" Height="30" BorderThickness="0" Background="#00000000"
-                            Foreground="White" Content="{wpf:MaterialIconExt Kind=HamburgerMenu}" />
+                            Foreground="White" Content="{wpf:MaterialIconExt Kind=HamburgerMenu}" Click="ButtonMenu_Click">
+
+                    </Button>
                     <Border Width="2" Height="20" Margin="5" Background="White" VerticalAlignment="Stretch" />
                     <TextBlock Text="FoxyBrowser716" Foreground="White" VerticalAlignment="Center" Margin="5" />
                 </StackPanel>
