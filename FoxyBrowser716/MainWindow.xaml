@@ -7,7 +7,8 @@
         AllowsTransparency="True"
         Background="#FF9103"
         MinWidth="500"
-        MinHeight="300">
+        MinHeight="300"
+        Icon="Foxybrowser716.ico">
     <Window.Resources>
         <Style x:Key="RectBorderStyle" TargetType="Rectangle">
             <Setter Property="Focusable" Value="False" />

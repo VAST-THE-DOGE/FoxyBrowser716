@@ -43,7 +43,6 @@ public partial class MainWindow : Window
 	public MainWindow()
 	{
 		InitializeComponent();
-		// BackImage.Source = Material.Icons.MaterialIconDataProvider.GetData(Material.Icons.MaterialIconKind.Close);
 
 		foreach (var button in _normalButtons)
 		{
@@ -136,51 +135,9 @@ public partial class MainWindow : Window
 		ButtonMenu,
 		SearchButton,
 		RefreshButton,
-		BackButton, //TODO need custom animation logic.
+		BackButton, //TODO: need custom animation logic.
 		ForwardButton
 	];
-
-	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
-	{
-		var bitmap = new BitmapImage();
-		bitmap.BeginInit();
-		bitmap.StreamSource = stream;
-		bitmap.CacheOption = BitmapCacheOption.OnLoad;
-		bitmap.EndInit();
-
-		stream.Close();
-
-		return bitmap;
-	}
-
-	private static BitmapSource CreateCircleWithLetter(int width, int height, string letter, Brush circleBrush,
-		Brush textBrush)
-	{
-		var drawingVisual = new DrawingVisual();
-		using (var dc = drawingVisual.RenderOpen())
-		{
-			dc.DrawEllipse(circleBrush, null, new Point(width / 2.0, height / 2.0), width / 2.0, height / 2.0);
-
-			var formattedText = new FormattedText(
-				letter,
-				CultureInfo.CurrentCulture,
-				FlowDirection.LeftToRight,
-				new Typeface("Arial"),
-				Math.Min(width, height) / 2.0,
-				textBrush,
-				VisualTreeHelper.GetDpi(drawingVisual).PixelsPerDip);
-
-			var textPosition = new Point(
-				(width - formattedText.Width) / 2,
-				(height - formattedText.Height) / 2);
-			dc.DrawText(formattedText, textPosition);
-		}
-
-		var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-		bitmap.Render(drawingVisual);
-
-		return bitmap;
-	}
 
 	private async void AddTab_Click()
 	{
@@ -294,7 +251,7 @@ public partial class MainWindow : Window
 		var options = new CoreWebView2EnvironmentOptions();
 		options.AreBrowserExtensionsEnabled = true;
 		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
-		_environment = await CoreWebView2Environment.CreateAsync(null, "UserData", options);
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
 		var id = AddTab("https://www.google.com/");
 
 		await SwapActiveTab(id);
@@ -369,7 +326,7 @@ public partial class MainWindow : Window
 
 			foreach (var t in _tabs.Where(t => t.Value.TabId != id && !tabcore.CoreWebView2.IsSuspended))
 			{
-				await t.Value.TabCore.EnsureCoreWebView2Async(_environment);
+				await t.Value.TabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
 				if (t.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
 					continue;
 				t.Value.TabCore.CoreWebView2.TrySuspendAsync();
@@ -398,17 +355,12 @@ public partial class MainWindow : Window
 		}
 	}
 
-	private async Task SwapTabLocation(int id) //TODO
-	{
-		tabsChanged?.Invoke();
-	}
-
 	private async void Search_Click(object? s, EventArgs e)
 	{
 		if (_tabs.TryGetValue(_currentTabId, out var tab))
 		{
 			var tabCore = tab.TabCore;
-			await tabCore.EnsureCoreWebView2Async(_environment);
+			await tabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
 
 			try
 			{
@@ -498,131 +450,72 @@ public partial class MainWindow : Window
 		if (_tabs.TryGetValue(_currentTabId, out var tab)) tab.TabCore.GoForward();
 	}
 
-	private record WebsiteTab
-	{
-		public Image Icon;
-
-		public readonly WebView2 TabCore;
-		public readonly int TabId;
-		public string Title { get; private set; }
-
-		public readonly Task SetupTask;
-		
-		private static int _tabCounter;
-
-		public WebsiteTab(string url)
-		{
-			var webView = new WebView2();
-			webView.Visibility = Visibility.Collapsed;
-			
-			TabCore = webView;
-			TabId = _tabCounter++;
-
-			SetupTask = Initialize(url);
-		}
-
-		public event Action UrlChanged;
-		public event Action ImageChanged;
-
-		private async Task Initialize(string url)
-		{
-			await TabCore.EnsureCoreWebView2Async(_environment);
-			
-			TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
-			
-			//TODO: get this working with any computer, preferably just a folder.
-			//await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(@"C:\Users\penfo\RiderProjects\FoxyBrowser716\FoxyBrowser716\bin\Debug\net9.0-windows\uBlock0_1.61.2.chromium\uBlock0.chromium\");
-			
-			TabCore.NavigationCompleted += async (_, _) =>
-			{
-				Title = TabCore.CoreWebView2.DocumentTitle;
-				UrlChanged?.Invoke();
-				await RefreshImage();
-			};
-			
-			try
-			{
-				TabCore.Source = new Uri(url);
-			}
-			catch (Exception exception)
-			{
-				TabCore.Source = new Uri($"https://www.google.com/search?q={url}");
-			}
-		}
-
-		private async Task RefreshImage()
-		{
-			try
-			{
-				Icon = new Image
-				{
-					Source = await GetImageSourceFromStreamAsync(await TabCore.CoreWebView2.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png)),
-					Width = 24,
-					Height = 24,
-					Margin = new Thickness(1),
-					Stretch = Stretch.Uniform
-				};
-			}
-			catch
-			{
-				Icon = new Image
-				{
-					Source = CreateCircleWithLetter(64, 64, Title.Length > 0 ? Title[0].ToString() : "",
-						Brushes.DimGray, Brushes.White),
-					Width = 24,
-					Height = 24,
-					Margin = new Thickness(1)
-				};
-			}
-
-			ImageChanged?.Invoke();
-		}
-	}
-
 	#region FullscreenStuff
 
 	private void EnterFullscreen()
 	{
-		_inFullscreen = true;
-		_originalRectangle = new Rect(Left, Top, Width, Height);
+		try
+		{
+			_inFullscreen = true;
+			_originalRectangle = new Rect(Left, Top, Width, Height);
 
-		var screen = GetCurrentScreen();
+			var screen = GetCurrentScreen();
 
-		Left = screen.Left;
-		Top = screen.Top;
-		Width = screen.Width;
-		Height = screen.Height;
-		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
+			Left = screen.Left;
+			Top = screen.Top;
+			Width = screen.Width;
+			Height = screen.Height;
+			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
 	}
 
 	private void ExitFullscreen()
 	{
-		_inFullscreen = false;
-		Left = _originalRectangle.Left;
-		Top = _originalRectangle.Top;
-		Width = _originalRectangle.Width;
-		Height = _originalRectangle.Height;
-		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+		try
+		{
+			_inFullscreen = false;
+			Left = _originalRectangle.Left;
+			Top = _originalRectangle.Top;
+			Width = _originalRectangle.Width;
+			Height = _originalRectangle.Height;
+			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
 	}
 
 	private Rect GetCurrentScreen()
 	{
-		var hWnd = new WindowInteropHelper(this).Handle;
+		try
+		{
+			var hWnd = new WindowInteropHelper(this).Handle;
 
-		// Get the monitor associated with the window handle
-		var hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+			// Get the monitor associated with the window handle
+			var hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
-		// Initialize the MONITORINFO structure
-		var monitorInfo = new MONITORINFO();
-		monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+			// Initialize the MONITORINFO structure
+			var monitorInfo = new MONITORINFO();
+			monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
 
-		// Get the monitor information
-		if (GetMonitorInfo(hMonitor, ref monitorInfo))
-			return new Rect(monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Top, monitorInfo.rcMonitor.Width,
-				monitorInfo.rcMonitor.Height);
+			// Get the monitor information
+			if (GetMonitorInfo(hMonitor, ref monitorInfo))
+				return new Rect(monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Top, monitorInfo.rcMonitor.Width,
+					monitorInfo.rcMonitor.Height);
 
-		// Return default screen if monitor info fails
-		return new Rect(0, 0, SystemParameters.WorkArea.Width, SystemParameters.WorkArea.Height);
+			// Return default screen if monitor info fails
+			return SystemParameters.WorkArea with { X = 0, Y = 0 };
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			return new Rect(0, 0, 200, 100);
+		}
 	}
 
 	#region Windows API Methods
@@ -668,70 +561,90 @@ public partial class MainWindow : Window
 	#region ResizeWindows
 
 	private bool ResizeInProcess;
-	private static CoreWebView2Environment _environment;
+	public static CoreWebView2Environment? WebsiteEnvironment { get; private set; }
 
 	private void Resize_Init(object sender, MouseButtonEventArgs e)
 	{
-		var senderRect = sender as Rectangle;
-		if (senderRect != null)
+		try
 		{
-			ResizeInProcess = true;
-			senderRect.CaptureMouse();
+			var senderRect = sender as Rectangle;
+			if (senderRect != null && !_inFullscreen)//TODO: verify that this works
+			{
+				ResizeInProcess = true;
+				senderRect.CaptureMouse();
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
 	private void Resize_End(object sender, MouseButtonEventArgs e)
 	{
-		var senderRect = sender as Rectangle;
-		if (senderRect != null)
+		try
 		{
-			ResizeInProcess = false;
-			;
-			senderRect.ReleaseMouseCapture();
+			var senderRect = sender as Rectangle;
+			if (senderRect != null)
+			{
+				ResizeInProcess = false;
+				senderRect.ReleaseMouseCapture();
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
 	private void Resizeing_Form(object sender, MouseEventArgs e)
 	{
-		if (ResizeInProcess)
+		try
 		{
-			var senderRect = sender as Rectangle;
-			var mainWindow = senderRect.Tag as Window;
-			if (senderRect != null)
+			if (ResizeInProcess)
 			{
-				var width = e.GetPosition(mainWindow).X;
-				var height = e.GetPosition(mainWindow).Y;
-				senderRect.CaptureMouse();
-				if (senderRect.Name.ToLower().Contains("right"))
+				var senderRect = sender as Rectangle;
+				var mainWindow = senderRect.Tag as Window;
+				if (senderRect != null)
 				{
-					width += 1;
-					if (width > 0)
-						mainWindow.Width = width;
-				}
+					var width = e.GetPosition(mainWindow).X;
+					var height = e.GetPosition(mainWindow).Y;
+					senderRect.CaptureMouse();
+					if (senderRect.Name.ToLower().Contains("right"))
+					{
+						width += 1;
+						if (width > 0)
+							mainWindow.Width = width;
+					}
 
-				if (senderRect.Name.ToLower().Contains("left"))
-				{
-					width -= 1;
-					mainWindow.Left += width;
-					width = mainWindow.Width - width;
-					if (width > 0) mainWindow.Width = width;
-				}
+					if (senderRect.Name.ToLower().Contains("left"))
+					{
+						width -= 1;
+						mainWindow.Left += width;
+						width = mainWindow.Width - width;
+						if (width > 0) mainWindow.Width = width;
+					}
 
-				if (senderRect.Name.ToLower().Contains("bottom"))
-				{
-					height += 1;
-					if (height > 0)
-						mainWindow.Height = height;
-				}
+					if (senderRect.Name.ToLower().Contains("bottom"))
+					{
+						height += 1;
+						if (height > 0)
+							mainWindow.Height = height;
+					}
 
-				if (senderRect.Name.ToLower().Contains("top"))
-				{
-					height -= 1;
-					mainWindow.Top += height;
-					height = mainWindow.Height - height;
-					if (height > 0) mainWindow.Height = height;
+					if (senderRect.Name.ToLower().Contains("top"))
+					{
+						height -= 1;
+						mainWindow.Top += height;
+						height = mainWindow.Height - height;
+						if (height > 0) mainWindow.Height = height;
+					}
 				}
 			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 

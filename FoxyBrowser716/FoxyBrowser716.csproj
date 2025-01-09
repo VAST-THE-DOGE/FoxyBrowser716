@@ -13,6 +13,7 @@
         <Version>0.0.1</Version>
         <Title>FoxyBrowser716</Title>
         <Authors>VAST THE DOGE + FoxyGuy716</Authors>
+        <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -31,4 +32,19 @@
         <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2950-prerelease"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="MiniFoxypfp-removebg-preview.ico" />
+      <Resource Include="MiniFoxypfp-removebg-preview.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
+      <None Remove="Foxybrowser716.ico" />
+      <Resource Include="Foxybrowser716.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="extensions\**\*" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    
 </Project>
