@@ -464,9 +464,9 @@ public partial class MainWindow : Window
 				Background = Brushes.Transparent,
 				Foreground = Brushes.White,
 				HorizontalContentAlignment = HorizontalAlignment.Stretch,
-				Padding = new Thickness(5),  // Nice padding for items
+				Padding = new Thickness(5),
 				FontSize = 14,
-				Focusable = false, // Disable annoying highlight outlines
+				Focusable = false,
 			};
 
 			item.MouseEnter += (s, _) =>
