@@ -22,7 +22,6 @@
         <Border Grid.Column="0" Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" Background="#36405B" Margin="0">
             <TextBox Name="SearchBox" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" 
                      TextAlignment="Left"
-                     Text="Test"
                      Foreground="White" Background="Transparent" BorderBrush="Transparent"
                      FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource FontSizeConverter}}" />
         </Border>
