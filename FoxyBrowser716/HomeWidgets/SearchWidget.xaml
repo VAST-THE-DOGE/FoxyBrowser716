@@ -5,30 +5,32 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:homeWidgets="clr-namespace:FoxyBrowser716.HomeWidgets"
                  xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+                 xmlns:local="clr-namespace:FoxyBrowser716.Converters"
                  mc:Ignorable="d"
                  d:DesignHeight="100" d:DesignWidth="750"
                  Background="Transparent">
+    <UserControl.Resources>
+        <local:ActualHeightToFontSizeConverter x:Key="FontSizeConverter" />
+    </UserControl.Resources>
     
-        <Grid Background="Transparent">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+    <Grid Background="Transparent">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
         
-            <Border Grid.Column="0" Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" Background="#36405B" Margin="0">
-                <Viewbox Stretch="Fill">
-                    <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Center" 
-                             TextAlignment="Left"
-                             Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Viewbox}}"
-                             Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Viewbox}}"
-                             Foreground="White" Background="Transparent" BorderBrush="Transparent" />
-                </Viewbox>
-            </Border>
+        <Border Grid.Column="0" Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" Background="#36405B" Margin="0">
+            <TextBox Name="SearchBox" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" 
+                     TextAlignment="Left"
+                     Text="Test"
+                     Foreground="White" Background="Transparent" BorderBrush="Transparent"
+                     FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource FontSizeConverter}}" />
+        </Border>
         
-            <Button Grid.Column="1" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" 
-                    Height="Auto" Name="SearchButton" BorderThickness="0"
-                    Background="#002D2D30" Click="SearchClick" Foreground="White"
-                    Content="{wpf:MaterialIconExt Kind=SearchWeb}" >
-            </Button>
-        </Grid>
-    </homeWidgets:IWidget>
+        <Button Grid.Column="1" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" 
+                Height="Auto" Name="SearchButton" BorderThickness="0"
+                Background="#002D2D30" Click="SearchClick" Foreground="White"
+                Content="{wpf:MaterialIconExt Kind=SearchWeb}" >
+        </Button>
+    </Grid>
+</homeWidgets:IWidget>
