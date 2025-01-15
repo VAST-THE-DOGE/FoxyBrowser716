@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VAST THE DOGE + FoxyGuy716")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.1")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.1+644ced138ed170eac20b32b42df088e1636dd769")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.1+ac87a3fb0639f27f11618a461b06a2c96594db3e")]
 [assembly: System.Reflection.AssemblyProductAttribute("FoxyBrowser716")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FoxyBrowser716")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.1")]

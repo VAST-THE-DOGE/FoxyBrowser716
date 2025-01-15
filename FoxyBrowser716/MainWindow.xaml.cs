@@ -575,9 +575,7 @@ private async void Initialize()
 			}
 			else
 			{
-				var webView = _tabs.First().Value.TabCore;
-				webView.Source = new Uri("https://www.google.com/");
-				return;
+				await SwapActiveTab(-1);
 			}
 		}
 
