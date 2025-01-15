@@ -27,6 +27,7 @@ public record WebsiteTab
 		webView.Visibility = Visibility.Collapsed;
 			
 		TabCore = webView;
+		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
 		TabId = _tabCounter++;
 
 		SetupTask = Initialize(url);

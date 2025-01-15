@@ -24,7 +24,9 @@ namespace FoxyBrowser716;
 /// </summary>
 public partial class MainWindow : Window
 {
-	private int _currentTabId;
+	private int _currentTabId = -1;
+
+	private HomePage _homePage;
 
 	private bool _inFullscreen;
 
@@ -75,22 +77,22 @@ public partial class MainWindow : Window
 		Initialize();
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
-		AddTabStack.MouseEnter += (_, _) => { ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
-		AddTabStack.MouseLeave += (_, _) => { ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		AddTabStack.MouseEnter += (_, _) => { if(_currentTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
+		AddTabStack.MouseLeave += (_, _) => { if(_currentTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
 		AddTabStack.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			AddTabLabel.Foreground = new SolidColorBrush(HighlightColor);
 			AddTabButton.Foreground = new SolidColorBrush(HighlightColor);
 		};
-		AddTabStack.PreviewMouseLeftButtonUp += (_, _) =>
+		AddTabStack.PreviewMouseLeftButtonUp += async (_, _) =>
 		{
 			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
-			AddTab_Click();
+			await SwapActiveTab(-1);
 		};
 		
 		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
-		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(StackPin.Background, AccentColor, MainColor); };
 		StackPin.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			LabelPin.Foreground = new SolidColorBrush(HighlightColor);
@@ -311,6 +313,14 @@ public partial class MainWindow : Window
 	{
 		Tabs.Children.Clear();
 		Tabs.Children.Add(AddTabStack);
+		if (_currentTabId == -1)
+		{
+			AddTabStack.Background = new SolidColorBrush(HighlightColor);
+		}
+		else
+		{
+			AddTabStack.Background = new SolidColorBrush(MainColor);
+		}
 		foreach (var tab in _tabs.Values)
 		{
 			var stackPanel = new StackPanel
@@ -426,14 +436,12 @@ public partial class MainWindow : Window
 
 	private void ButtonMenu_Click(object sender, RoutedEventArgs e)
 	{
-		// Ensure old menu is cleared
 		if (_menu != null && _menu.IsOpen)
 		{
 			_menu.IsOpen = false;
 			return;
 		}
 
-		// Create the context menu
 		_menu = new ContextMenu
 		{
 			Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
@@ -446,7 +454,6 @@ public partial class MainWindow : Window
 			HorizontalOffset = 30,
 		};
 
-		// Add menu items
 		var menuItems = new Dictionary<string, Action>
 		{
 			{ "⚙️ Settings", OpenSettings },
@@ -478,22 +485,35 @@ public partial class MainWindow : Window
 			_menu.Items.Add(item);
 		}
 
-		// Open it below the button
 		_menu.PlacementTarget = (Button)sender;
 		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
 		_menu.IsOpen = true;
 
-		// Handle clean-up
-		_menu.Closed += (_, _) => _menu = null; // Reset menu on close
+		_menu.Closed += (_, _) => _menu = null;
 	}
 
 // Menu action handlers (replace with your actual logic)
-private void OpenSettings() => MessageBox.Show("Settings clicked!");
-private void OpenBookmarks() => MessageBox.Show("Bookmarks clicked!");
-private void OpenHistory() => MessageBox.Show("History clicked!");
-private void OpenDownloads() => MessageBox.Show("Downloads clicked!");
-private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
-	private async void Initialize()
+private void OpenSettings()
+{
+}
+
+private void OpenBookmarks()
+{
+}
+
+private void OpenHistory()
+{
+}
+
+private void OpenDownloads()
+{
+}
+
+private void OpenExtensions()
+{
+}
+
+private async void Initialize()
 	{
 		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
 		
@@ -501,11 +521,22 @@ private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
 		options.AreBrowserExtensionsEnabled = true;
 		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
 		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
-		var id = AddTab("https://www.google.com/");
 
-		await SwapActiveTab(id);
+
 		
 		var pins = await loadPinTask;
+
+		tabsChanged += () =>
+		{
+			StackBookmark.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
+			StackPin.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
+			NavigationGrid.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
+		};
+		
+		await SwapActiveTab(-1);
+		TabHolder.Children.Add(_homePage);
+		
+		
 		foreach (var pin in pins)
 		{
 			_pins.TryAdd(_pinCounter++, pin);
@@ -561,7 +592,7 @@ private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
 	/// <summary>
 	/// Swaps to another tab.
 	/// </summary>
-	/// <param name="id">The id of the tab to swap to.</param>
+	/// <param name="id">The id of the tab to swap to. -1 is for home</param>
 	private async Task SwapActiveTab(int id)
 	{
 		if (swaping)
@@ -572,7 +603,27 @@ private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
 
 		swaping = true;
 
-		if (_tabs.TryGetValue(id, out var tab))
+		if (id == -1)
+		{
+			_homePage = new HomePage();
+			_homePage.OnSearch += async s =>
+			{
+				await SwapActiveTab(AddTab(s));
+			};
+			await _homePage.Initialize();
+			_currentTabId = id;
+			foreach (var t in _tabs)
+			{
+				t.Value.TabCore.Visibility = Visibility.Collapsed;
+				if (t.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
+					continue;
+				await t.Value.TabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
+				t.Value.TabCore.CoreWebView2.TrySuspendAsync();
+			}
+			_homePage.Visibility = Visibility.Visible;
+			tabsChanged?.Invoke();
+		}
+		else if (_tabs.TryGetValue(id, out var tab))
 		{
 			_currentTabId = id;
 			await tab.SetupTask;
@@ -645,7 +696,7 @@ private void OpenExtensions() => MessageBox.Show("Extensions clicked!");
 	/// <param name="from">The color that the animation start from</param>
 	/// <param name="to">The color that the animation ends on (final color)</param>
 	/// <param name="time"></param>
-	private static void ChangeColorAnimation(Brush brush, Color from, Color to, double time = 0.2)
+	public static void ChangeColorAnimation(Brush brush, Color from, Color to, double time = 0.2)
 	{
 		var colorAnimation = new ColorAnimation
 		{

@@ -1,0 +1,34 @@
+﻿<homeWidgets:IWidget x:Class="FoxyBrowser716.HomeWidgets.SearchWidget"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:homeWidgets="clr-namespace:FoxyBrowser716.HomeWidgets"
+                 xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+                 mc:Ignorable="d"
+                 d:DesignHeight="100" d:DesignWidth="750"
+                 Background="Transparent">
+    
+        <Grid Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+        
+            <Border Grid.Column="0" Name="SearchBackground" BorderBrush="#FFFFFF" BorderThickness="2" Background="#36405B" Margin="0">
+                <Viewbox Stretch="Fill">
+                    <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Center" 
+                             TextAlignment="Left"
+                             Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Viewbox}}"
+                             Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Viewbox}}"
+                             Foreground="White" Background="Transparent" BorderBrush="Transparent" />
+                </Viewbox>
+            </Border>
+        
+            <Button Grid.Column="1" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" 
+                    Height="Auto" Name="SearchButton" BorderThickness="0"
+                    Background="#002D2D30" Click="SearchClick" Foreground="White"
+                    Content="{wpf:MaterialIconExt Kind=SearchWeb}" >
+            </Button>
+        </Grid>
+    </homeWidgets:IWidget>
