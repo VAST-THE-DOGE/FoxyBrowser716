@@ -54,5 +54,25 @@
         <SubType>Designer</SubType>
       </Page>
     </ItemGroup>
+
+    <ItemGroup>
+      <Page Update="HomeWidgets\TimeDateWidget.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
+
+    <ItemGroup>
+<<<<<<< HEAD
+      <Page Update="HomeWidgets\YoutubeWidget.xaml">
+=======
+      <Page Update="HomeWidgets\TimeDateWidget.xaml">
+>>>>>>> origin/FoxyBranch
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
     
 </Project>

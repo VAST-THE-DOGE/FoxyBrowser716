@@ -126,6 +126,7 @@ public partial class HomePage : UserControl
 			"SearchWidget" => new SearchWidget(),
 			"TitleWidget" => new TitleWidget(),
 			"YoutubeWidget" => new YoutubeWidget(),
+			"TimeDateWidget" => new TimeDateWidget(),
 			_ => null
 		};
 	}
