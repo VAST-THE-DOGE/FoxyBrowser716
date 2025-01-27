@@ -113,6 +113,7 @@ public partial class HomePage : UserControl
 		{
 			"SearchWidget" => new SearchWidget(),
 			"TitleWidget" => new TitleWidget(),
+			"TimeDateWidget" => new TimeDateWidget(),
 			_ => null
 		};
 	}
