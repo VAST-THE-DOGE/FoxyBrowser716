@@ -46,5 +46,13 @@
     <ItemGroup>
         <None Include="extensions\**\*" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Page Update="HomeWidgets\YoutubeWidget.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
     
 </Project>

@@ -59,6 +59,15 @@ public partial class HomePage : UserControl
 				Column = 10,
 				RowSpan = 1,
 				ColumnSpan = 20
+			},
+			
+			new WidgetData
+			{
+				Name = "YoutubeWidget",
+				Row = 10,
+				Column = 6,
+				RowSpan = 3,
+				ColumnSpan = 5
 			}
 		];
 	}
@@ -92,6 +101,9 @@ public partial class HomePage : UserControl
 			if (widget is SearchWidget searchWidget)
 				searchWidget.OnSearch += s => OnSearch?.Invoke(s);
 			
+			else if (widget is YoutubeWidget youtubeWidget)
+				youtubeWidget.GoToYoutube += s => OnSearch?.Invoke(s);
+			
 			// do not await each task at one time,
 			// just add the task to a list and await all of them at one time
 			initTasks.Add(widget.Initialize());
@@ -113,6 +125,7 @@ public partial class HomePage : UserControl
 		{
 			"SearchWidget" => new SearchWidget(),
 			"TitleWidget" => new TitleWidget(),
+			"YoutubeWidget" => new YoutubeWidget(),
 			_ => null
 		};
 	}
