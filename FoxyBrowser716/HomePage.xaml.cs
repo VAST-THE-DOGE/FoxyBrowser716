@@ -15,7 +15,7 @@ public partial class HomePage : UserControl
 
 	private const string WidgetsFileName = "widgets.json";
 	private List<WidgetData> _savedWidgets;
-
+	
 	public HomePage()
 	{
 		InitializeComponent();
@@ -43,31 +43,21 @@ public partial class HomePage : UserControl
 
 		List<WidgetData> GetDefaultWidgets() =>
 		[
-			new WidgetData
+			new()
 			{
-				Name = "TitleWidget",
+				Name = TitleWidget.StaticWidgetName,
 				Row = 4,
 				Column = 13,
 				RowSpan = 5,
 				ColumnSpan = 14
 			},
-
-			new WidgetData
+			new()
 			{
-				Name = "SearchWidget",
+				Name = SearchWidget.StaticWidgetName,
 				Row = 8,
 				Column = 10,
 				RowSpan = 1,
 				ColumnSpan = 20
-			},
-			
-			new WidgetData
-			{
-				Name = "YoutubeWidget",
-				Row = 10,
-				Column = 6,
-				RowSpan = 3,
-				ColumnSpan = 5
 			}
 		];
 	}
@@ -123,10 +113,10 @@ public partial class HomePage : UserControl
 	{
 		return widgetName switch
 		{
-			"SearchWidget" => new SearchWidget(),
-			"TitleWidget" => new TitleWidget(),
-			"YoutubeWidget" => new YoutubeWidget(),
-			"TimeDateWidget" => new TimeDateWidget(),
+			SearchWidget.StaticWidgetName => new SearchWidget(),
+			TitleWidget.StaticWidgetName => new TitleWidget(),
+			YoutubeWidget.StaticWidgetName => new YoutubeWidget(),
+			TimeWidget.StaticWidgetName => new TimeWidget(),
 			_ => null
 		};
 	}

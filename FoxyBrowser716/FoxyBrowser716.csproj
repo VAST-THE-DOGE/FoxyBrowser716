@@ -56,7 +56,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Page Update="HomeWidgets\TimeDateWidget.xaml">
+      <Page Update="HomeWidgets\TimeWidget.xaml">
         <Generator>MSBuild:Compile</Generator>
         <XamlRuntime>Wpf</XamlRuntime>
         <SubType>Designer</SubType>

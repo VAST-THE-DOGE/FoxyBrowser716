@@ -3,19 +3,15 @@ using System.Timers;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class TimeDateWidget : IWidget
+public partial class TimeWidget : IWidget
 {
-	public TimeDateWidget()
+	public TimeWidget()
 	{
 		InitializeComponent();
 	}
 
-	public override string WidgetName => "TimeDateWidget";
-
-	public override int MinWidgetWidth => 1;
-	public override int MinWidgetHeight => 1;
-	public override int MaxWidgetWidth => 40;
-	public override int MaxWidgetHeight => 20;
+	public const string StaticWidgetName = "TimeWidget";
+	public override string WidgetName => StaticWidgetName;
 
 	public override Task Initialize()
 	{

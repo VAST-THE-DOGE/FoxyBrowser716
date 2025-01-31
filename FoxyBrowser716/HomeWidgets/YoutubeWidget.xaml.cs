@@ -12,12 +12,8 @@ public partial class YoutubeWidget : IWidget
 		InitializeComponent();
 	}
 
-	public override string WidgetName => "YoutubeWidget";
-
-	public override int MinWidgetWidth => 1;
-	public override int MinWidgetHeight => 1;
-	public override int MaxWidgetWidth => 40;
-	public override int MaxWidgetHeight => 20;
+	public const string StaticWidgetName = "YoutubeWidget";
+	public override string WidgetName => StaticWidgetName;
 
 	public override Task Initialize()
 	{

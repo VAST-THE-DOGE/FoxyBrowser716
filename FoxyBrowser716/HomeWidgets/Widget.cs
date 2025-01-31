@@ -5,10 +5,10 @@ namespace FoxyBrowser716.HomeWidgets;
 public abstract class IWidget : UserControl
 {
 	public abstract string WidgetName { get; }
-	public abstract int MinWidgetWidth { get; }
-	public abstract int MinWidgetHeight { get; }
-	public abstract int MaxWidgetWidth { get; }
-	public abstract int MaxWidgetHeight { get; }
+	public virtual int MinWidgetWidth => 1;
+	public virtual int MinWidgetHeight => 1;
+	public virtual int MaxWidgetWidth => 40;
+	public virtual int MaxWidgetHeight => 20;
 
 	/// <summary>
 	/// Initializes the widget with necessary setup operations or loading procedures.

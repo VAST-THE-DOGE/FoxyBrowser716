@@ -16,11 +16,8 @@ public partial class SearchWidget : IWidget
 		InitializeComponent();
 	}
 
-	public override string WidgetName => "SearchWidget";
-
-	public override int MinWidgetWidth => 1;
-	public override int MinWidgetHeight => 1;
-	public override int MaxWidgetWidth => 40;
+	public const string StaticWidgetName = "SearchWidget";
+	public override string WidgetName => StaticWidgetName;
 	public override int MaxWidgetHeight => 10;
 
 	public override Task Initialize()
