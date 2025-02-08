@@ -28,7 +28,7 @@ public record WebsiteTab
 			
 		TabCore = webView;
 		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
-		TabId = _tabCounter++;
+		TabId = Interlocked.Increment(ref _tabCounter); // thread safe version of _tabCounter++
 
 		SetupTask = Initialize(url);
 	}
@@ -36,7 +36,7 @@ public record WebsiteTab
 	public event Action UrlChanged;
 	public event Action ImageChanged;
 	public event Action TitleChanged;
-
+	
 	private async Task Initialize(string url)
 	{
 		await TabCore.EnsureCoreWebView2Async(MainWindow.WebsiteEnvironment);
