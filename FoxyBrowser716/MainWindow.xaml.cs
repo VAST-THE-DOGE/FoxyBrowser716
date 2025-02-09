@@ -24,29 +24,23 @@ namespace FoxyBrowser716;
 /// </summary>
 public partial class MainWindow : Window
 {
-	private int _currentTabId = -1;
-
 	private HomePage _homePage;
 
 	private bool _inFullscreen;
 
 	private Rect _originalRectangle;
-
-	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
-	private int? nextToSwap;
-
-	private bool swaping;
-
-	private static readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];
-	private static int _bookmarkCounter;
 	
-	private static readonly ConcurrentDictionary<int, TabInfo> _pins = [];
-	private static int _pinCounter;
+	private readonly TabManager _tabManager;
 	
 	public MainWindow()
 	{
 		InitializeComponent();
 
+		_tabManager = new TabManager();
+		
+		Task.WhenAll(Initialize());
+		
+		//TODO: find a better way to do all this crazy GUI stuff
 		foreach (var button in _normalButtons)
 		{
 			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
@@ -72,23 +66,22 @@ public partial class MainWindow : Window
 		StateChanged += Window_StateChanged;
 		Window_StateChanged(null, EventArgs.Empty);
 
-		tabsChanged += RefreshTabs;
-
-		Initialize();
+		_tabManager.TabsUpdated += RefreshTabs;
+		
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
-		AddTabStack.MouseEnter += (_, _) => { if(_currentTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
-		AddTabStack.MouseLeave += (_, _) => { if(_currentTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		AddTabStack.MouseEnter += (_, _) => { if(_tabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
+		AddTabStack.MouseLeave += (_, _) => { if(_tabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
 		AddTabStack.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			AddTabLabel.Foreground = new SolidColorBrush(HighlightColor);
 			AddTabButton.Foreground = new SolidColorBrush(HighlightColor);
 		};
-		AddTabStack.PreviewMouseLeftButtonUp += async (_, _) =>
+		AddTabStack.PreviewMouseLeftButtonUp += (_, _) =>
 		{
 			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
-			await SwapActiveTab(-1);
+			_tabManager.SwapActiveTabTo(-1);
 		};
 		
 		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
@@ -98,24 +91,24 @@ public partial class MainWindow : Window
 			LabelPin.Foreground = new SolidColorBrush(HighlightColor);
 			ButtonPin.Foreground = new SolidColorBrush(HighlightColor);
 		};
-		StackPin.PreviewMouseLeftButtonUp += async (_, _) =>
+		StackPin.PreviewMouseLeftButtonUp += (_, _) =>
 		{
 			ChangeColorAnimation(ButtonPin.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelPin.Foreground, HighlightColor, Colors.White);
 			
-			var tab = _tabs.TryGetValue(_currentTabId, out var tabRaw) ? tabRaw : new WebsiteTab("https://www.google.com/");
+			var tab = _tabManager.GetTab(_tabManager.ActiveTabId)?? new WebsiteTab("https://www.google.com/");
 
-			if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
-				await RemovePin(_pins.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
+				_tabManager.RemovePin(_tabManager.GetAllPins().FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
-				await AddPin(tab);
+				_tabManager.AddPin(tab);
 			}
 		};
 		
@@ -183,18 +176,14 @@ public partial class MainWindow : Window
 		BackButton, //TODO: need custom animation logic.
 		ForwardButton
 	];
-
-	private async void AddTab_Click()
-	{
-		var id = AddTab("https://www.google.com/");
-		await SwapActiveTab(id);
-	}
 	
 	private void RefreshPins()
 	{
-		if (_tabs.TryGetValue(_currentTabId, out var tab))
+		var pins = _tabManager.GetAllPins();
+		
+		if (_tabManager.GetTab(_tabManager.ActiveTabId) is { } tab)
 		{
-			if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			if (pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
@@ -206,7 +195,7 @@ public partial class MainWindow : Window
 			}
 		}
 		PinnedTabs.Children.Clear();
-		foreach (var pin in _pins)
+		foreach (var pin in pins)
 		{
 			var stackPanel = new StackPanel
 			{
@@ -249,7 +238,7 @@ public partial class MainWindow : Window
 				VerticalAlignment = VerticalAlignment.Stretch
 			};
 
-			closeButton.PreviewMouseLeftButtonUp += async (_, _) => await RemovePin(pin.Key);
+			closeButton.PreviewMouseLeftButtonUp += (_, _) => _tabManager.RemovePin(pin.Key);
 
 			closeButton.MouseEnter += (_, _) =>
 			{
@@ -269,8 +258,8 @@ public partial class MainWindow : Window
 				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
 			};
 
-			button.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(AddTab(pin.Value.Url)); };
-			titleBox.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(AddTab(pin.Value.Url)); };
+			button.PreviewMouseLeftButtonDown += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
+			titleBox.PreviewMouseLeftButtonDown += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
 			
 			stackPanel.Children.Add(button);
 			stackPanel.Children.Add(titleBox);
@@ -280,48 +269,14 @@ public partial class MainWindow : Window
 		}
 	}
 	
-	private async Task RemovePin(int id)
-	{
-		_pins.TryRemove(id, out _);
-		
-		var saveTask = TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray());
-		
-		RefreshPins();
-		
-		await saveTask;
-	}
-	
-	private async Task AddPin(WebsiteTab tab)
-	{
-		var newInfo = new TabInfo()
-		{
-			Title = tab.Title,
-			Url = tab.TabCore.Source.ToString(),
-			Image = tab.Icon
-		};
-		
-		_pins.TryAdd(_pinCounter++, newInfo);
-		
-		var saveTask = TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray());
-		
-		RefreshPins();
-		
-		await saveTask;
-	}
-
 	private void RefreshTabs()
 	{
 		Tabs.Children.Clear();
 		Tabs.Children.Add(AddTabStack);
-		if (_currentTabId == -1)
-		{
-			AddTabStack.Background = new SolidColorBrush(HighlightColor);
-		}
-		else
-		{
-			AddTabStack.Background = new SolidColorBrush(MainColor);
-		}
-		foreach (var tab in _tabs.Values)
+		AddTabStack.Background = _tabManager.ActiveTabId == -1 
+			? new SolidColorBrush(HighlightColor) 
+			: new SolidColorBrush(MainColor);
+		foreach (var tab in _tabManager.GetAllTabs().Values)
 		{
 			var stackPanel = new StackPanel
 			{
@@ -367,7 +322,7 @@ public partial class MainWindow : Window
 
 			tab.UrlChanged += () =>
 			{
-				if (tab.TabId == _currentTabId)
+				if (tab.TabId == _tabManager.ActiveTabId)
 				{
 					SearchBox.Text = tab.TabCore.Source.ToString();
 					BackButton.Foreground = tab.TabCore.CanGoBack
@@ -378,7 +333,7 @@ public partial class MainWindow : Window
 						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
 				}
 
-				if (_pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+				if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 				{
 					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 					LabelPin.Content = "Unpin Tab";
@@ -397,7 +352,7 @@ public partial class MainWindow : Window
 
 			tab.ImageChanged += () => { button.Content = tab.Icon; };
 
-			closeButton.PreviewMouseLeftButtonUp += (_, _) => { RemoveTab(tab.TabId); };
+			closeButton.PreviewMouseLeftButtonUp += (_, _) => _tabManager.RemoveTab(tab.TabId);
 
 			closeButton.MouseEnter += (_, _) =>
 			{
@@ -410,19 +365,19 @@ public partial class MainWindow : Window
 
 			stackPanel.MouseEnter += (_, _) =>
 			{
-				if (tab.TabId == _currentTabId) return;
+				if (tab.TabId == _tabManager.ActiveTabId) return;
 				ChangeColorAnimation(stackPanel.Background, MainColor, AccentColor);
 			};
 			stackPanel.MouseLeave += (_, _) =>
 			{
-				if (tab.TabId == _currentTabId) return;
+				if (tab.TabId == _tabManager.ActiveTabId) return;
 				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
 			};
 
-			button.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(tab.TabId); };
-			titleBox.PreviewMouseLeftButtonDown += async (_, _) => { await SwapActiveTab(tab.TabId); };
+			button.PreviewMouseLeftButtonDown += async (_, _) => _tabManager.SwapActiveTabTo(tab.TabId);
+			titleBox.PreviewMouseLeftButtonDown += async (_, _) => _tabManager.SwapActiveTabTo(tab.TabId);
 
-			if (tab.TabId == _currentTabId) stackPanel.Background = new SolidColorBrush(HighlightColor);
+			if (tab.TabId == _tabManager.ActiveTabId) stackPanel.Background = new SolidColorBrush(HighlightColor);
 
 			stackPanel.Children.Add(button);
 			stackPanel.Children.Add(titleBox);
@@ -513,168 +468,46 @@ private void OpenExtensions()
 {
 }
 
-private async void Initialize()
+private async Task Initialize()
+{
+	_tabManager.ActiveTabChanged += id =>
 	{
-		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
-		
-		var options = new CoreWebView2EnvironmentOptions();
-		options.AreBrowserExtensionsEnabled = true;
-		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
-		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
+		StackBookmark.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
+		StackPin.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
+		NavigationGrid.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
+		_homePage.Visibility = id == -1 ? Visibility.Visible : Visibility.Collapsed;
+	};
 
-
-		
-		var pins = await loadPinTask;
-
-		tabsChanged += () =>
-		{
-			StackBookmark.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
-			StackPin.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
-			NavigationGrid.Visibility = _currentTabId == -1 ? Visibility.Collapsed : Visibility.Visible;
-		};
-		
-		await SwapActiveTab(-1);
-		TabHolder.Children.Add(_homePage);
-		
-		
-		foreach (var pin in pins)
-		{
-			_pins.TryAdd(_pinCounter++, pin);
-		}
-		RefreshPins();
-	}
-
-	/// <summary>
-	/// This event fires whenever the amount of tabs are changed via the "AddTab," "RemoveTab," and "SwapTab" functions.
-	/// </summary>
-	private event Action tabsChanged;
-
-	/// <summary>
-	///  Creates a new tab and adds it to the _tabs dictionary.
-	/// </summary>
-	/// <param name="url">the requested starting url</param>
-	/// <returns>The id of the tab. This id can be used with the dictionary _tabs as the key.</returns>
-	private int AddTab(string url)
+	_tabManager.TabCreated += tab =>
 	{
-		var tab = new WebsiteTab(url);
-		_tabs.TryAdd(tab.TabId, tab);
 		TabHolder.Children.Add(tab.TabCore);
-		tabsChanged?.Invoke();
-		return tab.TabId;
-	}
-
-	private async void RemoveTab(int id)
-	{
-		//check if the current tab is in use
-		if (_currentTabId == id)
-		{
-			if (_tabs.Count > 1)
-			{
-				var newId = _tabs.First(t => t.Key != id).Key;
-				await SwapActiveTab(newId);
-			}
-			else
-			{
-				await SwapActiveTab(-1);
-			}
-		}
-
-		//remove
-		if (_tabs.TryRemove(id, out var tabToRemove))
-		{
-			tabToRemove.TabCore.Dispose();
-			tabsChanged?.Invoke();
-		}
-	}
-
-	/// <summary>
-	/// Swaps to another tab.
-	/// </summary>
-	/// <param name="id">The id of the tab to swap to. -1 is for home</param>
-	private async Task SwapActiveTab(int id)
-	{
-		if (swaping)
-		{
-			nextToSwap = id;
-			return;
-		}
-
-		swaping = true;
-
-		if (id == -1)
-		{
-			_homePage = new HomePage();
-			_homePage.OnSearch += async s =>
-			{
-				await SwapActiveTab(AddTab(s));
-			};
-			await _homePage.Initialize();
-			_currentTabId = id;
-			foreach (var t in _tabs)
-			{
-				t.Value.TabCore.Visibility = Visibility.Collapsed;
-				if (t.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
-					continue;
-				await t.Value.TabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
-				t.Value.TabCore.CoreWebView2.TrySuspendAsync();
-			}
-			_homePage.Visibility = Visibility.Visible;
-			tabsChanged?.Invoke();
-		}
-		else if (_tabs.TryGetValue(id, out var tab))
-		{
-			_currentTabId = id;
-			await tab.SetupTask;
-			var tabcore = tab.TabCore;
-		
-			if (tabcore.CoreWebView2.IsSuspended) tabcore.CoreWebView2.Resume();
-
-			foreach (var t in _tabs.Where(t => t.Value.TabId != id && !tabcore.CoreWebView2.IsSuspended))
-			{
-				await t.Value.TabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
-				if (t.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
-					continue;
-				t.Value.TabCore.CoreWebView2.TrySuspendAsync();
-			}
-
-			foreach (var t in _tabs)
-				t.Value.TabCore.Visibility = t.Value.TabId == _currentTabId
-					? Visibility.Visible
-					: Visibility.Collapsed;
-		
-			SearchBox.Text = tabcore.CoreWebView2.Source;
-			BackButton.Foreground = tabcore.CanGoBack
-				? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-				: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-			ForwardButton.Foreground = tabcore.CanGoForward
-				? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-				: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-			tabsChanged?.Invoke();
-		}
-
-		swaping = false;
-		if (nextToSwap is { } next)
-		{
-			nextToSwap = null;
-			await SwapActiveTab(next);
-		}
-	}
-
+	};
+	
+	await _tabManager.InitializeData();
+	
+	_homePage = new HomePage();
+	await _homePage.Initialize();
+	_homePage.OnSearch += url => _tabManager.AddTab(url);
+	TabHolder.Children.Add(_homePage);
+	_tabManager.SwapActiveTabTo(-1);
+	
+	RefreshPins();
+}
+	
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		if (_tabs.TryGetValue(_currentTabId, out var tab))
-		{
-			var tabCore = tab.TabCore;
-			await tabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
+		if (_tabManager.GetTab(_tabManager.ActiveTabId) is not { } tab) return;
+		
+		var tabCore = tab.TabCore;
+		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 
-			try
-			{
-				tabCore.CoreWebView2.Navigate(SearchBox.Text);
-			}
-			catch (Exception exception)
-			{
-				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
-			}
+		try
+		{
+			tabCore.CoreWebView2.Navigate(SearchBox.Text);
+		}
+		catch (Exception exception)
+		{
+			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
 		}
 	}
 
@@ -742,17 +575,17 @@ private async void Initialize()
 
 	private async void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
 	{
-		if (_tabs.TryGetValue(_currentTabId, out var tab)) tab.TabCore.Reload();
+		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.Reload();
 	}
 
 	private async void BackButton_OnClick(object sender, RoutedEventArgs e)
 	{
-		if (_tabs.TryGetValue(_currentTabId, out var tab)) tab.TabCore.GoBack();
+		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoBack();
 	}
 
 	private async void ForwardButton_OnClick(object sender, RoutedEventArgs e)
 	{
-		if (_tabs.TryGetValue(_currentTabId, out var tab)) tab.TabCore.GoForward();
+		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoForward();
 	}
 
 	#region FullscreenStuff
@@ -866,8 +699,6 @@ private async void Initialize()
 	#region ResizeWindows
 
 	private bool ResizeInProcess;
-	public static CoreWebView2Environment? WebsiteEnvironment { get; private set; }
-
 	private void Resize_Init(object sender, MouseButtonEventArgs e)
 	{
 		try

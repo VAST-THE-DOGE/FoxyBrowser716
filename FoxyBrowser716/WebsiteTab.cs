@@ -39,7 +39,7 @@ public record WebsiteTab
 	
 	private async Task Initialize(string url)
 	{
-		await TabCore.EnsureCoreWebView2Async(MainWindow.WebsiteEnvironment);
+		await TabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 			
 		TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
 			
@@ -69,60 +69,60 @@ public record WebsiteTab
 	}
 	
 	private async Task LoadExtensions()
-{
-    try
-    {
-        // Define the extension folder path relative to the application directory
-        var extensionsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "extensions");
-
-        // Check if the directory exists, if not, create it (just in case)
-        if (!Directory.Exists(extensionsFolder))
-        {
-            Directory.CreateDirectory(extensionsFolder);
-        }
-
-        async Task<bool> IsExtension(string path)
-        {
-	        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
-		        .FirstOrDefault();
-
-	        if (manifestFile != null)
+	{
+	    try
+	    {
+	        // Define the extension folder path relative to the application directory
+	        var extensionsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "extensions");
+	
+	        // Check if the directory exists, if not, create it (just in case)
+	        if (!Directory.Exists(extensionsFolder))
 	        {
-		        await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
+	            Directory.CreateDirectory(extensionsFolder);
 	        }
-
-	        return manifestFile != null;
-        }
-        
-        // Find all subfolders within the "extensions" directory
-        foreach (var subfolder in Directory.GetDirectories(extensionsFolder))
-        {
-            try
-            {
-	            // Check if the subfolder contains a manifest.json file
-	            if (await IsExtension(subfolder)) continue;
-	            if (Directory.GetDirectories(subfolder).Length == 1)
-		            await IsExtension(Directory.GetDirectories(subfolder)[0]);
-                else
-	                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
-            }
-            catch (Exception ex)
-            {
-                // If any error occurs loading an extension, show a message box for now
-                MessageBox.Show(
-                    $"Failed to load extension in folder: {subfolder}\nError: {ex.Message}",
-                    "Extension Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        // Catch and display errors in initializing or accessing the extensions folder
-        MessageBox.Show(
-            $"Failed to initialize extensions loader.\nError: {ex.Message}",
-            "Extensions Error", MessageBoxButton.OK, MessageBoxImage.Error);
-    }
-}
+	
+	        async Task<bool> IsExtension(string path)
+	        {
+		        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
+			        .FirstOrDefault();
+	
+		        if (manifestFile != null)
+		        {
+			        await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
+		        }
+	
+		        return manifestFile != null;
+	        }
+	        
+	        // Find all subfolders within the "extensions" directory
+	        foreach (var subfolder in Directory.GetDirectories(extensionsFolder))
+	        {
+	            try
+	            {
+		            // Check if the subfolder contains a manifest.json file
+		            if (await IsExtension(subfolder)) continue;
+		            if (Directory.GetDirectories(subfolder).Length == 1)
+			            await IsExtension(Directory.GetDirectories(subfolder)[0]);
+	                else
+		                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
+	            }
+	            catch (Exception ex)
+	            {
+	                // If any error occurs loading an extension, show a message box for now
+	                MessageBox.Show(
+	                    $"Failed to load extension in folder: {subfolder}\nError: {ex.Message}",
+	                    "Extension Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+	            }
+	        }
+	    }
+	    catch (Exception ex)
+	    {
+	        // Catch and display errors in initializing or accessing the extensions folder
+	        MessageBox.Show(
+	            $"Failed to initialize extensions loader.\nError: {ex.Message}",
+	            "Extensions Error", MessageBoxButton.OK, MessageBoxImage.Error);
+	    }
+	}
 
 	private async Task RefreshImage()
 	{

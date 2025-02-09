@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,7 +10,7 @@ namespace FoxyBrowser716;
 /// <summary>
 /// A work in progress object that will contain most application data relating to websites and tabs.
 /// </summary>
-public class TabManger
+public class TabManager
 {
 	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
 
@@ -23,8 +24,8 @@ public class TabManger
 	public event Action PinsUpdated;
 	public event Action BookmarksUpdated;
 	
-	private event Action<int> ActiveTabChanged;
-	public int ActiveTabId { get; private set; }
+	public event Action<int> ActiveTabChanged;
+	public int ActiveTabId { get; private set; } = -1;
 
 	private bool _performanceMode = false; //TODO: link into settings?
 	
@@ -38,18 +39,30 @@ public class TabManger
 	public async Task InitializeData()
 	{
 		//TODO
+		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
+
+		var options = new CoreWebView2EnvironmentOptions();
+		options.AreBrowserExtensionsEnabled = true;
+		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
+		
+		var pins = await loadPinTask;
+		foreach (var pin in pins)
+		{
+			AddPin(pin);
+		}
 	}
 
 	// getter and setters
-	private WebsiteTab? GetTab(int tabId) => _tabs.GetValueOrDefault(tabId);
-	private WebsiteTab? GetPin(int pinId) => _tabs.GetValueOrDefault(pinId);
-	private WebsiteTab? GetBookmark(int bookmarkId) => _tabs.GetValueOrDefault(bookmarkId);
+	public WebsiteTab? GetTab(int tabId) => _tabs.GetValueOrDefault(tabId);
+	public WebsiteTab? GetPin(int pinId) => _tabs.GetValueOrDefault(pinId);
+	public WebsiteTab? GetBookmark(int bookmarkId) => _tabs.GetValueOrDefault(bookmarkId);
 	
-	private IEnumerable<WebsiteTab> GetAllTabs() => _tabs.Values;
-	private IEnumerable<TabInfo> GetAllPins() => _pins.Values;
-	private IEnumerable<TabInfo> GetAllBookmarks() => _bookmarks.Values;
+	public Dictionary<int,WebsiteTab> GetAllTabs() => _tabs.ToDictionary();
+	public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
+	public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
 	
-	private void RemoveTab(int tabId) {
+	public void RemoveTab(int tabId) {
 		if(_tabs.TryRemove(tabId, out var tab))
 		{
 			if (_tabs.Count > 1)
@@ -62,20 +75,20 @@ public class TabManger
 				SwapActiveTabTo(-1);
 			}
 			
-			tab.TabCore.Dispose(); //TODO: need to test, could cause errors
+			tab.TabCore.Dispose(); //TODO: need to test, could cause errors?
 			TabsUpdated?.Invoke();
 		}
 	}
-	private void RemovePin(int tabId) {
+	public void RemovePin(int tabId) {
 		if(_pins.TryRemove(tabId, out _))
 			PinsUpdated?.Invoke();
 	}
-	private void RemoveBookmark(int tabId) {
+	public void RemoveBookmark(int tabId) {
 		if(_bookmarks.TryRemove(tabId, out _))
 			BookmarksUpdated?.Invoke();
 	}
 	
-	private int AddTab(string url)
+	public int AddTab(string url)
 	{
 		var tab = new WebsiteTab(url);
 		_tabs.TryAdd(tab.TabId, tab);
@@ -84,8 +97,8 @@ public class TabManger
 		return tab.TabId;
 	}
 
-	private int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
-	private int AddPin(TabInfo tab)
+	public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
+	public int AddPin(TabInfo tab)
 	{
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_pins.TryAdd(key, tab);
@@ -93,8 +106,8 @@ public class TabManger
 		return key;
 	}
 	
-	private int AddBookmark(WebsiteTab tab) => AddBookmark(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
-	private int AddBookmark(TabInfo tab)
+	public int AddBookmark(WebsiteTab tab) => AddBookmark(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
+	public int AddBookmark(TabInfo tab)
 	{
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_bookmarks.TryAdd(key, tab);
@@ -105,7 +118,7 @@ public class TabManger
 	// tab management
 	private int? nextToSwap;
 	private bool swaping;
-	private void SwapActiveTabTo(int tabId)
+	public void SwapActiveTabTo(int tabId)
 	{
 		if (swaping)
 		{
@@ -117,7 +130,6 @@ public class TabManger
 		
 		if (tabId != -1 && _tabs.TryGetValue(tabId, out var tab))
 		{
-			ActiveTabId = tabId;
 			tab.SetupTask.ContinueWith(_ =>
 			{
 				if (tab.TabCore.CoreWebView2.IsSuspended)
@@ -130,16 +142,19 @@ public class TabManger
 			return;
 		}
 		
+		ActiveTabId = tabId;
+		
 		if (_performanceMode)
 		{
 			List<Task> initTasks = [];
 
 			async Task Suspend(KeyValuePair<int, WebsiteTab> idTabPair)
 			{
+				await idTabPair.Value.SetupTask;
 				await idTabPair.Value.TabCore.EnsureCoreWebView2Async(WebsiteEnvironment);
 				if (idTabPair.Value.TabCore.CoreWebView2.IsDocumentPlayingAudio)
 					return;
-				idTabPair.Value.TabCore.CoreWebView2.TrySuspendAsync();
+				await idTabPair.Value.TabCore.CoreWebView2.TrySuspendAsync();
 			}
 
 			// call the above function with every tab that is not the active tab and add the task to a list.
