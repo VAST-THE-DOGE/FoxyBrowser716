@@ -6,7 +6,6 @@ namespace FoxyBrowser716.HomeWidgets;
 
 public partial class YoutubeWidget : IWidget
 {
-	public event Action<string> GoToYoutube;
 	public YoutubeWidget()
 	{
 		InitializeComponent();
@@ -15,13 +14,17 @@ public partial class YoutubeWidget : IWidget
 	public const string StaticWidgetName = "YoutubeWidget";
 	public override string WidgetName => StaticWidgetName;
 
-	public override Task Initialize()
+	private TabManager _tabManager;
+	
+	public override Task Initialize(TabManager manager)
 	{
+		_tabManager = manager;
+		
 		return Task.CompletedTask;
 	}
 
 	private void YoutubeWidgetClick(object sender, RoutedEventArgs routedEventArgs)
 	{
-		GoToYoutube?.Invoke("https://www.youtube.com");
+		_tabManager.SwapActiveTabTo(_tabManager.AddTab("https://www.youtube.com"));
 	}
 }

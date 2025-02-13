@@ -9,17 +9,17 @@
              Background="Transparent">
     <Grid Background="Transparent">
         <Viewbox Stretch="Uniform">
-            <Button Name="YoutubeButton" Content="Youtube"
+            <Button Name="YoutubeButton" 
+                    Click="YoutubeWidgetClick"
+                    Content="Youtube"
                     Background="#DE3B37"
                     BorderThickness="1"
                     BorderBrush="Black"
                     Height="24"
-                    
-                       
-                       FontWeight="Bold" 
-                       Foreground="white"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
+                    FontWeight="Bold" 
+                    Foreground="white"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
         </Viewbox>
     </Grid>
 </homeWidgets:IWidget>

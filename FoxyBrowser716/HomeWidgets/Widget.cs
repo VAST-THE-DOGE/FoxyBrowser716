@@ -13,5 +13,5 @@ public abstract class IWidget : UserControl
 	/// <summary>
 	/// Initializes the widget with necessary setup operations or loading procedures.
 	/// </summary>
-	public abstract Task Initialize();
+	public abstract Task Initialize(TabManager manager);
 }

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using static FoxyBrowser716.MainWindow;
 using static FoxyBrowser716.ColorPalette;
@@ -8,9 +9,6 @@ namespace FoxyBrowser716.HomeWidgets;
 
 public partial class SearchWidget : IWidget
 {
-	// custom event, more advanced logic needed in HomePage.xaml.cs.
-	public event Action<string> OnSearch;
-	
 	public SearchWidget()
 	{
 		InitializeComponent();
@@ -20,8 +18,12 @@ public partial class SearchWidget : IWidget
 	public override string WidgetName => StaticWidgetName;
 	public override int MaxWidgetHeight => 10;
 
-	public override Task Initialize()
+	private TabManager _tabManager;
+
+	public override Task Initialize(TabManager manager)
 	{
+		_tabManager = manager;
+		
 		SearchBox.GotKeyboardFocus += (_, _) =>
 		{
 			ChangeColorAnimation(SearchBackground.BorderBrush, Colors.White, HighlightColor);
@@ -30,20 +32,18 @@ public partial class SearchWidget : IWidget
 		{
 			ChangeColorAnimation(SearchBackground.BorderBrush, HighlightColor, Colors.White);
 		};
+		SearchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SearchClick(this, EventArgs.Empty); };
 		
 		SearchButton.MouseEnter += (_, _) => { ChangeColorAnimation(SearchButton.Background, MainColor, AccentColor); };
 		SearchButton.MouseLeave += (_, _) => { ChangeColorAnimation(SearchButton.Background, AccentColor, MainColor); };
+		SearchButton.PreviewMouseLeftButtonUp += (_, _) => { ChangeColorAnimation(SearchButton.Foreground, HighlightColor, Colors.White); };
 		SearchButton.PreviewMouseLeftButtonDown += (_, _) => { SearchButton.Foreground = new SolidColorBrush(HighlightColor); };
-		SearchButton.PreviewMouseLeftButtonUp += (_, _) =>
-		{
-			ChangeColorAnimation(SearchButton.Foreground, HighlightColor, Colors.White);
-		};
 		
 		return Task.CompletedTask;
 	}
 
-	private void SearchClick(object sender, RoutedEventArgs routedEventArgs)
+	private void SearchClick(object sender, EventArgs routedEventArgs)
 	{
-		OnSearch?.Invoke(SearchBox.Text);
+		_tabManager.SwapActiveTabTo(_tabManager.AddTab(SearchBox.Text));
 	}
 }

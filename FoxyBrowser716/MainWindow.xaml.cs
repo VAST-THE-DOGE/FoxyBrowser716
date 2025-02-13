@@ -96,9 +96,11 @@ public partial class MainWindow : Window
 			ChangeColorAnimation(ButtonPin.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelPin.Foreground, HighlightColor, Colors.White);
 			
-			var tab = _tabManager.GetTab(_tabManager.ActiveTabId)?? new WebsiteTab("https://www.google.com/");
+			var tab = _tabManager.GetTab(_tabManager.ActiveTabId);
+			
+			if (tab is null) return;
 
-			if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			if (_tabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
@@ -130,7 +132,7 @@ public partial class MainWindow : Window
 		{
 			var animation = new DoubleAnimation
 			{
-				Duration = TimeSpan.FromSeconds(0.25),
+				Duration = TimeSpan.FromSeconds(0.5),
 				To = 230,
 				EasingFunction = new CubicEase
 				{
@@ -145,7 +147,7 @@ public partial class MainWindow : Window
 		{
 			var animation = new DoubleAnimation
 			{
-				Duration = TimeSpan.FromSeconds(0.25),
+				Duration = TimeSpan.FromSeconds(0.5),
 				To = 30,
 				EasingFunction = new CubicEase
 				{
@@ -258,8 +260,8 @@ public partial class MainWindow : Window
 				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
 			};
 
-			button.PreviewMouseLeftButtonDown += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
-			titleBox.PreviewMouseLeftButtonDown += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
+			button.PreviewMouseLeftButtonUp += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
+			titleBox.PreviewMouseLeftButtonUp += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
 			
 			stackPanel.Children.Add(button);
 			stackPanel.Children.Add(titleBox);
@@ -318,7 +320,14 @@ public partial class MainWindow : Window
 				HorizontalAlignment = HorizontalAlignment.Right,
 				VerticalAlignment = VerticalAlignment.Stretch
 			};
-			
+
+			_tabManager.ActiveTabChanged += (newActive) =>
+			{
+				stackPanel.Background = newActive == tab.TabId 
+					? new SolidColorBrush(HighlightColor) 
+					: new SolidColorBrush(MainColor);
+					
+			};
 
 			tab.UrlChanged += () =>
 			{
@@ -411,11 +420,11 @@ public partial class MainWindow : Window
 
 		var menuItems = new Dictionary<string, Action>
 		{
-			{ "⚙️ Settings", OpenSettings },
-			{ "📑 Bookmarks", OpenBookmarks },
-			{ "🕒 History", OpenHistory },
-			{ "⬇️ Downloads", OpenDownloads },
-			{ "🛠️ Extensions", OpenExtensions }
+			{ "Settings", OpenSettings },
+			{ "Bookmarks", OpenBookmarks },
+			{ "History", OpenHistory },
+			{ "Downloads", OpenDownloads },
+			{ "Extensions", OpenExtensions }
 		};
 
 		foreach (var menuItem in menuItems)
@@ -486,10 +495,21 @@ private async Task Initialize()
 	await _tabManager.InitializeData();
 	
 	_homePage = new HomePage();
-	await _homePage.Initialize();
-	_homePage.OnSearch += url => _tabManager.AddTab(url);
+	await _homePage.Initialize(_tabManager);
 	TabHolder.Children.Add(_homePage);
 	_tabManager.SwapActiveTabTo(-1);
+
+	_tabManager.ActiveTabChanged += (newActive) =>
+	{
+		AddTabStack.Background = _tabManager.ActiveTabId == -1
+			? new SolidColorBrush(HighlightColor)
+			: new SolidColorBrush(MainColor);
+		_homePage.Visibility = _tabManager.ActiveTabId == -1
+			? Visibility.Visible
+			: Visibility.Collapsed;
+	};
+
+	_tabManager.PinsUpdated += RefreshPins;
 	
 	RefreshPins();
 }

@@ -11,8 +11,6 @@ namespace FoxyBrowser716;
 
 public partial class HomePage : UserControl
 {
-	public event Action<string> OnSearch;
-
 	private const string WidgetsFileName = "widgets.json";
 	private List<WidgetData> _savedWidgets;
 	
@@ -75,7 +73,7 @@ public partial class HomePage : UserControl
 		}
 	}
 
-	private async Task AddWidgetsToGrid()
+	private async Task AddWidgetsToGrid(TabManager manager)
 	{
 		List<Task> initTasks = [];
 		foreach (var widgetData in _savedWidgets)
@@ -87,16 +85,9 @@ public partial class HomePage : UserControl
 				continue;
 			}
 			
-			// custom logic for advanced widgets:
-			if (widget is SearchWidget searchWidget)
-				searchWidget.OnSearch += s => OnSearch?.Invoke(s);
-			
-			else if (widget is YoutubeWidget youtubeWidget)
-				youtubeWidget.GoToYoutube += s => OnSearch?.Invoke(s);
-			
 			// do not await each task at one time,
 			// just add the task to a list and await all of them at one time
-			initTasks.Add(widget.Initialize());
+			initTasks.Add(widget.Initialize(manager));
 			
 			Grid.SetRow(widget, widgetData.Row);
 			Grid.SetColumn(widget, widgetData.Column);
@@ -121,10 +112,10 @@ public partial class HomePage : UserControl
 		};
 	}
 
-	public async Task Initialize()
+	public async Task Initialize(TabManager manager)
 	{
 		await TryLoadWidgets();
-		await AddWidgetsToGrid();
+		await AddWidgetsToGrid(manager);
 	}
 }
 

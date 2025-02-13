@@ -13,9 +13,9 @@ public partial class TimeWidget : IWidget
 	public const string StaticWidgetName = "TimeWidget";
 	public override string WidgetName => StaticWidgetName;
 
-	public override Task Initialize()
+	public override Task Initialize(TabManager manager)
 	{
-		var timer = new System.Timers.Timer(250);
+		var timer = new System.Timers.Timer(50);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
 		timer.Enabled = true;
