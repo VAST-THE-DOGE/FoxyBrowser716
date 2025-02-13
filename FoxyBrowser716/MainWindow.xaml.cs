@@ -531,15 +531,6 @@ private async Task Initialize()
 		}
 	}
 
-	private void Window_StateChanged(object? sender, EventArgs e)
-	{
-		if (WindowState == WindowState.Maximized)
-		{
-			WindowState = WindowState.Normal;
-			EnterFullscreen();
-		}
-	}
-
 	/// <summary>
 	/// Changes the color of a brush to do cool animations!
 	/// </summary>
@@ -559,6 +550,15 @@ private async Task Initialize()
 		brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
 	}
 
+	private void Window_StateChanged(object? sender, EventArgs e)
+	{
+		if (WindowState == WindowState.Maximized)
+		{
+			WindowState = WindowState.Normal;
+			EnterFullscreen();
+		}
+	}
+	
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
 		if (e.ClickCount == 2)
@@ -688,8 +688,24 @@ private async Task Initialize()
 
 			// Get the monitor information
 			if (GetMonitorInfo(hMonitor, ref monitorInfo))
-				return new Rect(monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Top, monitorInfo.rcMonitor.Width,
+			{
+				// Raw monitor bounds in device pixels
+				Rect rawRect = new Rect(
+					monitorInfo.rcMonitor.Left,
+					monitorInfo.rcMonitor.Top,
+					monitorInfo.rcMonitor.Width,
 					monitorInfo.rcMonitor.Height);
+
+				// Convert rawRect from device pixels to WPF units (DIPs)
+				var source = PresentationSource.FromVisual(this);
+				if (source?.CompositionTarget != null)
+				{
+					var matrix = source.CompositionTarget.TransformFromDevice;
+					var transform = new MatrixTransform(matrix); // Wrap the matrix in a transform
+					return transform.TransformBounds(rawRect);
+				}
+				return rawRect;
+			}
 
 			// Return default screen if monitor info fails
 			return SystemParameters.WorkArea with { X = 0, Y = 0 };
@@ -700,6 +716,7 @@ private async Task Initialize()
 			return new Rect(0, 0, 200, 100);
 		}
 	}
+
 
 	#region Windows API Methods
 
