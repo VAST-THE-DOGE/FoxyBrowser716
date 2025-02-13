@@ -568,7 +568,7 @@ private async Task Initialize()
 		else
 		{
 			if (_inFullscreen)
-				return;
+				ExitFullscreen(true);
 
 			_originalRectangle = new Rect(Left, Top, Width, Height);
 			DragMove();
@@ -593,17 +593,17 @@ private async Task Initialize()
 		Close();
 	}
 
-	private async void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
+	private void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
 	{
 		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.Reload();
 	}
 
-	private async void BackButton_OnClick(object sender, RoutedEventArgs e)
+	private void BackButton_OnClick(object sender, RoutedEventArgs e)
 	{
 		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoBack();
 	}
 
-	private async void ForwardButton_OnClick(object sender, RoutedEventArgs e)
+	private void ForwardButton_OnClick(object sender, RoutedEventArgs e)
 	{
 		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoForward();
 	}
@@ -631,22 +631,47 @@ private async Task Initialize()
 		}
 	}
 
-	private void ExitFullscreen()
+	private void ExitFullscreen(bool moveToMouse = false)
 	{
 		try
 		{
 			_inFullscreen = false;
-			Left = _originalRectangle.Left;
-			Top = _originalRectangle.Top;
-			Width = _originalRectangle.Width;
-			Height = _originalRectangle.Height;
+
+			if (moveToMouse)
+			{
+				// Get the mouse position relative to the screen
+				System.Windows.Point mousePos = System.Windows.Input.Mouse.GetPosition(this);
+				mousePos = PointToScreen(mousePos); // Convert to absolute screen coordinates
+
+				// Calculate the mouse's relative position within the fullscreen window
+				double relX = (mousePos.X - this.Left) / this.Width;
+				double relY = (mousePos.Y - this.Top) / this.Height;
+
+				// Restore the window's original size
+				this.Width = _originalRectangle.Width;
+				this.Height = _originalRectangle.Height;
+
+				// Reposition the window so the mouse stays at the same relative spot
+				this.Left = mousePos.X - (relX * this.Width);
+				this.Top = mousePos.Y - (relY * this.Height);
+			}
+			else
+			{
+				// Simply restore the window's original rectangle without any extra magic
+				this.Left = _originalRectangle.Left;
+				this.Top = _originalRectangle.Top;
+				this.Width = _originalRectangle.Width;
+				this.Height = _originalRectangle.Height;
+			}
+
 			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			MessageBox.Show(ex.Message, "Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
+
 
 	private Rect GetCurrentScreen()
 	{
