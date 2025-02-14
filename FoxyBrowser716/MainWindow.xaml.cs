@@ -639,29 +639,33 @@ private async Task Initialize()
 
 			if (moveToMouse)
 			{
-				// Get the mouse position relative to the screen
-				System.Windows.Point mousePos = System.Windows.Input.Mouse.GetPosition(this);
-				mousePos = PointToScreen(mousePos); // Convert to absolute screen coordinates
+				// Get mouse position relative to this window, then convert to screen coordinates
+				var mousePos = Mouse.GetPosition(this);
+				mousePos = PointToScreen(mousePos);
 
-				// Calculate the mouse's relative position within the fullscreen window
-				double relX = (mousePos.X - this.Left) / this.Width;
-				double relY = (mousePos.Y - this.Top) / this.Height;
+				// Convert from device pixels to DIPs using our presentation source magic
+				var source = PresentationSource.FromVisual(this);
+				mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos)?? mousePos;
 
-				// Restore the window's original size
-				this.Width = _originalRectangle.Width;
-				this.Height = _originalRectangle.Height;
+				// Calculate the mouse's relative position within the current window
+				var relX = (mousePos.X - this.Left) / this.Width;
+				var relY = (mousePos.Y - this.Top) / this.Height;
 
-				// Reposition the window so the mouse stays at the same relative spot
-				this.Left = mousePos.X - (relX * this.Width);
-				this.Top = mousePos.Y - (relY * this.Height);
+				// Restore original window size
+				Width = _originalRectangle.Width;
+				Height = _originalRectangle.Height;
+
+				// Reposition so the mouse is at the same spot on the window
+				Left = mousePos.X - (relX * this.Width);
+				Top = mousePos.Y - (relY * this.Height);
 			}
 			else
 			{
-				// Simply restore the window's original rectangle without any extra magic
-				this.Left = _originalRectangle.Left;
-				this.Top = _originalRectangle.Top;
-				this.Width = _originalRectangle.Width;
-				this.Height = _originalRectangle.Height;
+				// Normal restore without the flirty mouse magic
+				Left = _originalRectangle.Left;
+				Top = _originalRectangle.Top;
+				Width = _originalRectangle.Width;
+				Height = _originalRectangle.Height;
 			}
 
 			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
@@ -672,52 +676,49 @@ private async Task Initialize()
 		}
 	}
 
-
 	private Rect GetCurrentScreen()
 	{
 		try
 		{
 			var hWnd = new WindowInteropHelper(this).Handle;
-
-			// Get the monitor associated with the window handle
 			var hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
-			// Initialize the MONITORINFO structure
-			var monitorInfo = new MONITORINFO();
-			monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+			var monitorInfo = new MONITORINFO
+			{
+				cbSize = Marshal.SizeOf<MONITORINFO>()
+            };
 
-			// Get the monitor information
 			if (GetMonitorInfo(hMonitor, ref monitorInfo))
 			{
-				// Raw monitor bounds in device pixels
-				Rect rawRect = new Rect(
+				// Get raw bounds in device pixels
+				var rawRect = new Rect(
 					monitorInfo.rcMonitor.Left,
 					monitorInfo.rcMonitor.Top,
 					monitorInfo.rcMonitor.Width,
 					monitorInfo.rcMonitor.Height);
 
-				// Convert rawRect from device pixels to WPF units (DIPs)
+				// Convert to DIPs so everything stays in sync
 				var source = PresentationSource.FromVisual(this);
 				if (source?.CompositionTarget != null)
 				{
-					var matrix = source.CompositionTarget.TransformFromDevice;
-					var transform = new MatrixTransform(matrix); // Wrap the matrix in a transform
-					return transform.TransformBounds(rawRect);
+					var transform = new MatrixTransform(source.CompositionTarget.TransformFromDevice);
+					var dipRect = transform.TransformBounds(rawRect);
+					return dipRect;
 				}
 				return rawRect;
 			}
 
-			// Return default screen if monitor info fails
+			// Fallback: if monitor info fails, use the primary monitor's work area
 			return SystemParameters.WorkArea with { X = 0, Y = 0 };
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			MessageBox.Show(ex.Message, "Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
 			return new Rect(0, 0, 200, 100);
 		}
 	}
 
-
+	
 	#region Windows API Methods
 
 	// Get the monitor's handle from a window handle
@@ -797,53 +798,117 @@ private async Task Initialize()
 
 	private void Resizeing_Form(object sender, MouseEventArgs e)
 	{
-		try
+	    try
+	    {
+	        if (ResizeInProcess)
+	        {
+	            var senderRect = sender as Rectangle;
+	            var mainWindow = senderRect?.Tag as Window;
+	            if (senderRect != null && mainWindow != null)
+	            {
+	                // Get the current mouse position relative to the main window
+	                Point pos = e.GetPosition(mainWindow);
+	
+	                // Start with current window values
+	                double newLeft = mainWindow.Left;
+	                double newTop = mainWindow.Top;
+	                double newWidth = mainWindow.Width;
+	                double newHeight = mainWindow.Height;
+	
+	                // Check which sides are being resized
+	                bool resizeLeft = senderRect.Name.ToLower().Contains("left");
+	                bool resizeRight = senderRect.Name.ToLower().Contains("right");
+	                bool resizeTop = senderRect.Name.ToLower().Contains("top");
+	                bool resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+	
+	                // Process left resizing: adjust newLeft and newWidth
+	                if (resizeLeft)
+	                {
+	                    // pos.X is the new distance from the left edge
+	                    double deltaX = pos.X;
+	                    double proposedWidth = mainWindow.Width - deltaX;
+	                    if (proposedWidth >= mainWindow.MinWidth)
+	                    {
+	                        newLeft += deltaX;
+	                        newWidth = proposedWidth;
+	                    }
+	                }
+	
+	                // Process right resizing: new width based on mouse position
+	                if (resizeRight)
+	                {
+	                    // pos.X gives the new width from the left edge
+	                    double proposedWidth = pos.X + 1; // adding a little offset
+	                    if (proposedWidth >= mainWindow.MinWidth)
+	                    {
+	                        newWidth = proposedWidth;
+	                    }
+	                }
+	
+	                // Process top resizing: adjust newTop and newHeight
+	                if (resizeTop)
+	                {
+	                    double deltaY = pos.Y;
+	                    double proposedHeight = mainWindow.Height - deltaY;
+	                    if (proposedHeight >= mainWindow.MinHeight)
+	                    {
+	                        newTop += deltaY;
+	                        newHeight = proposedHeight;
+	                    }
+	                }
+	
+	                // Process bottom resizing: new height based on mouse position
+	                if (resizeBottom)
+	                {
+	                    double proposedHeight = pos.Y + 1; // little offset
+	                    if (proposedHeight >= mainWindow.MinHeight)
+	                    {
+	                        newHeight = proposedHeight;
+	                    }
+	                }
+	
+	                // Apply the computed values
+	                mainWindow.Left = newLeft;
+	                mainWindow.Top = newTop;
+	                mainWindow.Width = newWidth;
+	                mainWindow.Height = newHeight;
+	            }
+	        }
+	    }
+	    catch (Exception ex)
+	    {
+	        MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+	    }
+	}
+
+	private void ResizeHandle_MouseEnter(object sender, MouseEventArgs e)
+	{
+		if (sender is Rectangle handle)
 		{
-			if (ResizeInProcess)
+			// If we're in fullscreen, override the cursor to the default arrow
+			if (_inFullscreen)
 			{
-				var senderRect = sender as Rectangle;
-				var mainWindow = senderRect.Tag as Window;
-				if (senderRect != null)
-				{
-					var width = e.GetPosition(mainWindow).X;
-					var height = e.GetPosition(mainWindow).Y;
-					senderRect.CaptureMouse();
-					if (senderRect.Name.ToLower().Contains("right"))
-					{
-						width += 1;
-						if (width > 0)
-							mainWindow.Width = width;
-					}
-
-					if (senderRect.Name.ToLower().Contains("left"))
-					{
-						width -= 1;
-						mainWindow.Left += width;
-						width = mainWindow.Width - width;
-						if (width > 0) mainWindow.Width = width;
-					}
-
-					if (senderRect.Name.ToLower().Contains("bottom"))
-					{
-						height += 1;
-						if (height > 0)
-							mainWindow.Height = height;
-					}
-
-					if (senderRect.Name.ToLower().Contains("top"))
-					{
-						height -= 1;
-						mainWindow.Top += height;
-						height = mainWindow.Height - height;
-						if (height > 0) mainWindow.Height = height;
-					}
-				}
+				handle.Cursor = Cursors.Arrow;
 			}
+			// Otherwise, you can optionally re-set the cursor based on the handle's original intent.
 		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
-		}
+	}
+
+	private void ResizeHandle_MouseLeave(object sender, MouseEventArgs e)
+	{
+		if (sender is not Rectangle handle) return;
+		// Reset the cursor to its original value based on the handle's name
+		var name = handle.Name.ToLower();
+		if (name.Contains("left") || name.Contains("right"))
+			handle.Cursor = Cursors.SizeWE;
+		else if (name.Contains("top") || name.Contains("bottom"))
+			handle.Cursor = Cursors.SizeNS;
+		else if (name.Contains("topleft") || name.Contains("bottomright"))
+			handle.Cursor = Cursors.SizeNWSE;
+		else if (name.Contains("topright") || name.Contains("bottomleft"))
+			handle.Cursor = Cursors.SizeNESW;
+		else
+			handle.Cursor = Cursors.Arrow;
 	}
 
 	#endregion

@@ -81,26 +81,35 @@
             </Setter>
         </Style>
     </Window.Resources>
+    
     <Grid>
         <Rectangle x:Name="leftSizeGrip"
                    Width="2"
                    HorizontalAlignment="Left"
                    Cursor="SizeWE"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle x:Name="rightSizeGrip"
                    Width="2"
                    HorizontalAlignment="Right"
                    Cursor="SizeWE"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle x:Name="topSizeGrip"
                    Height="2"
                    VerticalAlignment="Top"
                    Cursor="SizeNS"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle x:Name="bottomSizeGrip"
                    Height="2"
                    VerticalAlignment="Bottom"
                    Cursor="SizeNS"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <!--  Corners  -->
         <Rectangle Name="topLeftSizeGrip"
@@ -109,6 +118,8 @@
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
                    Cursor="SizeNWSE"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle Name="bottomRightSizeGrip"
                    Width="2"
@@ -116,6 +127,8 @@
                    HorizontalAlignment="Right"
                    VerticalAlignment="Bottom"
                    Cursor="SizeNWSE"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle Name="topRightSizeGrip"
                    Width="2"
@@ -123,6 +136,8 @@
                    HorizontalAlignment="Right"
                    VerticalAlignment="Top"
                    Cursor="SizeNESW"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <Rectangle Name="bottomLeftSizeGrip"
                    Width="2"
@@ -130,6 +145,8 @@
                    HorizontalAlignment="Left"
                    VerticalAlignment="Bottom"
                    Cursor="SizeNESW"
+                   MouseEnter="ResizeHandle_MouseEnter"
+                   MouseLeave="ResizeHandle_MouseLeave"
                    Style="{StaticResource RectBorderStyle}" />
         <DockPanel Background="White" Margin="2">
             <Grid DockPanel.Dock="Top" Background="#1E2332" Height="30" VerticalAlignment="Top"
