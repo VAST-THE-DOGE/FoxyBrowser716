@@ -9,10 +9,10 @@ using Microsoft.Web.WebView2.Wpf;
 
 namespace FoxyBrowser716;
 
-public record WebsiteTab
+public class WebsiteTab
 {
-	public Image Icon;
-
+	public Image Icon { get; private set; }
+	
 	public readonly WebView2 TabCore;
 	public readonly int TabId;
 	public string Title { get; private set; }
@@ -45,7 +45,7 @@ public record WebsiteTab
 			
 		await LoadExtensions();
 		
-		TabCore.SourceChanged += async (_, _) =>
+		TabCore.SourceChanged += (_, _) =>
 		{
 			UrlChanged?.Invoke();
 		};
@@ -155,13 +155,13 @@ public record WebsiteTab
 	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
 	{
 		var bitmap = new BitmapImage();
-		bitmap.BeginInit();
-		bitmap.StreamSource = stream;
-		bitmap.CacheOption = BitmapCacheOption.OnLoad;
-		bitmap.EndInit();
-
-		stream.Close();
-
+		await using (stream)
+		{
+			bitmap.BeginInit();
+			bitmap.StreamSource = stream;
+			bitmap.CacheOption = BitmapCacheOption.OnLoad;
+			bitmap.EndInit();
+		}
 		return bitmap;
 	}
 

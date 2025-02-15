@@ -132,7 +132,7 @@ public partial class MainWindow : Window
 		{
 			var animation = new DoubleAnimation
 			{
-				Duration = TimeSpan.FromSeconds(0.5),
+				Duration = TimeSpan.FromSeconds(0.25),
 				To = 230,
 				EasingFunction = new CubicEase
 				{
@@ -147,7 +147,7 @@ public partial class MainWindow : Window
 		{
 			var animation = new DoubleAnimation
 			{
-				Duration = TimeSpan.FromSeconds(0.5),
+				Duration = TimeSpan.FromSeconds(0.25),
 				To = 30,
 				EasingFunction = new CubicEase
 				{

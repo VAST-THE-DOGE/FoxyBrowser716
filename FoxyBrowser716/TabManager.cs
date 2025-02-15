@@ -20,6 +20,8 @@ public class TabManager
 
 	private int _pinBookmarkCounter;
 
+	private bool _initialized;
+	
 	public event Action TabsUpdated;
 	public event Action PinsUpdated;
 	public event Action BookmarksUpdated;
@@ -51,33 +53,34 @@ public class TabManager
 		{
 			AddPin(pin);
 		}
+
+		_initialized = true; // allow saving pis and bookmarks
 	}
 
 	// getter and setters
 	public WebsiteTab? GetTab(int tabId) => _tabs.GetValueOrDefault(tabId);
-	public WebsiteTab? GetPin(int pinId) => _tabs.GetValueOrDefault(pinId);
-	public WebsiteTab? GetBookmark(int bookmarkId) => _tabs.GetValueOrDefault(bookmarkId);
+	public TabInfo? GetPin(int pinId) => _pins.GetValueOrDefault(pinId);
+	public TabInfo? GetBookmark(int bookmarkId) => _bookmarks.GetValueOrDefault(bookmarkId);
 	
 	public Dictionary<int,WebsiteTab> GetAllTabs() => _tabs.ToDictionary();
 	public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
 	public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
 	
 	public void RemoveTab(int tabId) {
-		if(_tabs.TryRemove(tabId, out var tab))
-		{
 			if (_tabs.Count > 1)
 			{
-				var newId = _tabs.First(t => t.Key != tabId).Key;
+				var newId = ActiveTabId == tabId ? _tabs.First(t => t.Key != tabId).Key : ActiveTabId;
 				SwapActiveTabTo(newId);
+				if (_tabs.TryRemove(tabId, out var tab))
+					tab.TabCore.Dispose(); //TODO: need to test, could cause errors???
 			}
 			else
 			{
 				SwapActiveTabTo(-1);
+				if (_tabs.TryRemove(tabId, out var tab))
+					tab.TabCore.Dispose(); //TODO: need to test, could cause errors???
 			}
-			
-			tab.TabCore.Dispose(); //TODO: need to test, could cause errors?
 			TabsUpdated?.Invoke();
-		}
 	}
 	public void RemovePin(int tabId) {
 		if(_pins.TryRemove(tabId, out _))
@@ -103,6 +106,8 @@ public class TabManager
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_pins.TryAdd(key, tab);
 		PinsUpdated?.Invoke();
+		if (_initialized)
+			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray()));
 		return key;
 	}
 	
@@ -112,6 +117,8 @@ public class TabManager
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_bookmarks.TryAdd(key, tab);
 		BookmarksUpdated?.Invoke();
+		if (_initialized)
+			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bookmarks.json"), _bookmarks.Values.ToArray()));
 		return key;
 	}
 
@@ -120,12 +127,14 @@ public class TabManager
 	private bool swaping;
 	public void SwapActiveTabTo(int tabId)
 	{
+		if (ActiveTabId == tabId)
+			return;
+		
 		if (swaping)
 		{
 			nextToSwap = tabId;
 			return;
 		}
-
 		swaping = true;
 		
 		if (tabId != -1 && _tabs.TryGetValue(tabId, out var tab))
