@@ -44,6 +44,7 @@ public class WebsiteTab
 	public event Action UrlChanged;
 	public event Action ImageChanged;
 	public event Action TitleChanged;
+	public event Action<string> NewTabRequested;
 	
 	private async Task Initialize(string url)
 	{
@@ -65,7 +66,13 @@ public class WebsiteTab
 		};
 		
 		TabCore.CoreWebView2.FaviconChanged += async (_, _) => await RefreshImage();
-			
+
+		TabCore.CoreWebView2.NewWindowRequested += (_,e) =>
+		{
+			e.Handled = true;
+			NewTabRequested?.Invoke(e.Uri);
+		};
+		
 		try
 		{
 			TabCore.Source = new Uri(url);

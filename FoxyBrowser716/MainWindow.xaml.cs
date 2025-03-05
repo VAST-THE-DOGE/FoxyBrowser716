@@ -334,6 +334,11 @@ private async Task Initialize()
 	        tabCard.TabIcon.Child = tab.Icon;
 	    };
 
+	    tab.NewTabRequested += (uri) =>
+	    {
+		    _tabManager.SwapActiveTabTo(_tabManager.AddTab(uri));
+	    };
+
 	    tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(tab.TabId);
 	    tabCard.RemoveRequested += () => _tabManager.RemoveTab(tab.TabId);
 	    tabCard.DuplicateRequested += () =>
