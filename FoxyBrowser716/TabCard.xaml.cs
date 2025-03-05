@@ -36,7 +36,7 @@ namespace FoxyBrowser716
             InitializeComponent();
             Key = key;
 
-            DuplicateButton.Visibility = Visibility.Hidden;
+            DuplicateButton.Visibility = Visibility.Collapsed;
             TitleLabel.Content = tab.Title;
 
             TabIcon.Child = tab.Image;

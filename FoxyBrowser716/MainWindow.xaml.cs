@@ -338,7 +338,7 @@ private async Task Initialize()
 	    tabCard.RemoveRequested += () => _tabManager.RemoveTab(tab.TabId);
 	    tabCard.DuplicateRequested += () =>
 	    {
-		    _tabManager.AddTab(tab.TabCore.Source.ToString());
+		    _tabManager.SwapActiveTabTo(_tabManager.AddTab(tab.TabCore.Source.ToString()));
 	    };
 
 	    Tabs.Children.Add(tabCard);
@@ -364,8 +364,22 @@ private async Task Initialize()
 	_tabManager.PinRemoved += id =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+		
 		if (card != null)
 			PinnedTabs.Children.Remove(card);
+		
+		var tab = _tabManager.GetTab(_tabManager.ActiveTabId);
+		
+		if (_tabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+		{
+			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+			LabelPin.Content = "Unpin Tab";
+		}
+		else
+		{
+			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+			LabelPin.Content = "Pin Tab";
+		}
 	};
 
 	foreach (var pinKeyValue in _tabManager.GetAllPins())
@@ -373,8 +387,8 @@ private async Task Initialize()
 		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
 		tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => _tabManager.RemoveTab(pinKeyValue.Key);
-
+		tabCard.RemoveRequested += () => _tabManager.RemovePin(pinKeyValue.Key);
+		
 		PinnedTabs.Children.Add(tabCard);
 	}
 
