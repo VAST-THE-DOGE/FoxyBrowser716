@@ -30,6 +30,7 @@
         <PackageReference Include="Material.Icons" Version="2.1.10"/>
         <PackageReference Include="Material.Icons.WPF" Version="2.1.10"/>
         <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2950-prerelease"/>
+        <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -41,6 +42,12 @@
       <Resource Include="Foxybrowser716.ico">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Resource>
+      <None Remove="Resources\NoiceLoadingIconBlack.svg" />
+      <None Remove="Resources\NoiceLoadingIconWhite.svg" />
+      <None Remove="Resources\NoiceLoadingIconBlack.gif" />
+      <Resource Include="Resources\NoiceLoadingIconBlack.gif" />
+      <None Remove="Resources\NoiceLoadingIconWhite.gif" />
+      <Resource Include="Resources\NoiceLoadingIconWhite.gif" />
     </ItemGroup>
 
     <ItemGroup>

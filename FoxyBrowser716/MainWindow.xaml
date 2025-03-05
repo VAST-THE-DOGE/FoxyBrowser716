@@ -210,19 +210,18 @@
             <Grid Name="LeftBar" DockPanel.Dock="Left" Background="#1E2332" Width="30" HorizontalAlignment="Left">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" MinHeight="150" />
-                    <RowDefinition Height="180" MinHeight="180" />
+                    <RowDefinition Height="Auto" MinHeight="180" />
                 </Grid.RowDefinitions>
 
-                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Hidden"
-                              HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Name="Tabs" Orientation="Vertical">
                         <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="AddTabStack"
-                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="230">
+                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="290">
                             <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="AddTabButton"
                                     Width="30" Height="30" BorderThickness="0" Background="#002D2D30"
-                                    Foreground="#FFFFFFFF" Content="{wpf:MaterialIconExt Kind=House}" />
+                                    Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=House}" />
                             <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="AddTabLabel"
-                                   Width="200" Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
+                                   Width="260" Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
                                 Home Tab
                             </Label>
                         </StackPanel>
@@ -243,21 +242,21 @@
     
                     <StackPanel Grid.Row="1" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
                         <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="StackPin"
-                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="230">
+                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="260">
                             <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin" Width="30"
                                     Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
                                     Content="{wpf:MaterialIconExt Kind=PinOutline}" />
-                            <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelPin" Width="200"
+                            <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelPin" Width="230"
                                    Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
                                 Pin Tab
                             </Label>
                         </StackPanel>
                         <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="StackBookmark"
-                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="230">
+                                    VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="260">
                             <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark" Width="30"
                                     Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
                                     Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" />
-                            <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelBookmark" Width="200"
+                            <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelBookmark" Width="230"
                                    Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
                                 Bookmark Tab
                             </Label>

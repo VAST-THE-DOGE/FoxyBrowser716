@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using static FoxyBrowser716.MainWindow;
+using static FoxyBrowser716.Animator;
 using static FoxyBrowser716.ColorPalette;
 
 namespace FoxyBrowser716.HomeWidgets;

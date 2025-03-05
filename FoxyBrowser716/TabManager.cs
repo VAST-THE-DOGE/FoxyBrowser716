@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716;
@@ -26,7 +25,11 @@ public class TabManager
 	public event Action PinsUpdated;
 	public event Action BookmarksUpdated;
 	
-	public event Action<int> ActiveTabChanged;
+	/// <summary>
+	/// data is formated like this:
+	/// <code>(old id, new id)</code>
+	/// </summary>
+	public event Action<int, int> ActiveTabChanged;
 	public int ActiveTabId { get; private set; } = -1;
 
 	private bool _performanceMode = false; //TODO: link into settings?
@@ -34,13 +37,19 @@ public class TabManager
 	public static CoreWebView2Environment? WebsiteEnvironment { get; private set; }
 	
 	public event Action<WebsiteTab> TabCreated;
+	public event Action<int> TabRemoved;
+	
+	public event Action<int, TabInfo> PinCreated;
+	public event Action<int> PinRemoved;
+	
+	public event Action<int, TabInfo> BookmarkCreated;
+	public event Action<int> BookmarkRemoved;
 	
 	/// <summary>
 	/// Loads json data for pins and bookmarks.
 	/// </summary>
 	public async Task InitializeData()
 	{
-		//TODO
 		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
 
 		var options = new CoreWebView2EnvironmentOptions();
@@ -55,6 +64,7 @@ public class TabManager
 		}
 
 		_initialized = true; // allow saving pis and bookmarks
+		
 	}
 
 	// getter and setters
@@ -72,23 +82,37 @@ public class TabManager
 				var newId = ActiveTabId == tabId ? _tabs.First(t => t.Key != tabId).Key : ActiveTabId;
 				SwapActiveTabTo(newId);
 				if (_tabs.TryRemove(tabId, out var tab))
-					tab.TabCore.Dispose(); //TODO: need to test, could cause errors???
+					tab.TabCore.Dispose();
 			}
 			else
 			{
 				SwapActiveTabTo(-1);
 				if (_tabs.TryRemove(tabId, out var tab))
-					tab.TabCore.Dispose(); //TODO: need to test, could cause errors???
+					tab.TabCore.Dispose();
 			}
 			TabsUpdated?.Invoke();
+			TabRemoved?.Invoke(tabId);
 	}
-	public void RemovePin(int tabId) {
-		if(_pins.TryRemove(tabId, out _))
-			PinsUpdated?.Invoke();
+	public void RemovePin(int tabId)
+	{
+		if (!_pins.TryRemove(tabId, out _)) return;
+		
+		PinsUpdated?.Invoke();
+		PinRemoved?.Invoke(tabId);
+		
+		if (!_initialized) return;
+		Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray()));
 	}
-	public void RemoveBookmark(int tabId) {
-		if(_bookmarks.TryRemove(tabId, out _))
-			BookmarksUpdated?.Invoke();
+	public void RemoveBookmark(int tabId)
+	{
+		if (!_bookmarks.TryRemove(tabId, out _)) return;
+		
+		BookmarksUpdated?.Invoke();
+		BookmarkRemoved?.Invoke(tabId);
+		
+		if (!_initialized) return;
+		Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _bookmarks.Values.ToArray()));
+
 	}
 	
 	public int AddTab(string url)
@@ -100,12 +124,13 @@ public class TabManager
 		return tab.TabId;
 	}
 
-	public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
+	public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = new Image { Source = tab.Icon.Source } });
 	public int AddPin(TabInfo tab)
 	{
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_pins.TryAdd(key, tab);
 		PinsUpdated?.Invoke();
+		PinCreated?.Invoke(key, tab);
 		if (_initialized)
 			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray()));
 		return key;
@@ -117,6 +142,7 @@ public class TabManager
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
 		_bookmarks.TryAdd(key, tab);
 		BookmarksUpdated?.Invoke();
+		BookmarkCreated?.Invoke(key, tab);
 		if (_initialized)
 			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bookmarks.json"), _bookmarks.Values.ToArray()));
 		return key;
@@ -151,6 +177,7 @@ public class TabManager
 			return;
 		}
 		
+		var oldId = ActiveTabId;
 		ActiveTabId = tabId;
 		
 		if (_performanceMode)
@@ -176,7 +203,7 @@ public class TabManager
 				? Visibility.Visible
 				: Visibility.Collapsed;
 		
-		ActiveTabChanged?.Invoke(ActiveTabId);
+		ActiveTabChanged?.Invoke(oldId, ActiveTabId);
 
 		swaping = false;
 		if (nextToSwap is { } next)

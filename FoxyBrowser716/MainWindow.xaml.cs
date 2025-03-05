@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Globalization;
-using System.IO;
+﻿
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,14 +6,12 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
 using static FoxyBrowser716.ColorPalette;
-using Path = System.IO.Path;
+using static FoxyBrowser716.Animator;
+
 
 namespace FoxyBrowser716;
 
@@ -65,8 +61,6 @@ public partial class MainWindow : Window
 		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor); };
 		StateChanged += Window_StateChanged;
 		Window_StateChanged(null, EventArgs.Empty);
-
-		_tabManager.TabsUpdated += RefreshTabs;
 		
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
@@ -133,7 +127,7 @@ public partial class MainWindow : Window
 			var animation = new DoubleAnimation
 			{
 				Duration = TimeSpan.FromSeconds(0.25),
-				To = 230,
+				To = 260,
 				EasingFunction = new CubicEase
 				{
 					EasingMode = EasingMode.EaseOut
@@ -178,223 +172,6 @@ public partial class MainWindow : Window
 		BackButton, //TODO: need custom animation logic.
 		ForwardButton
 	];
-	
-	private void RefreshPins()
-	{
-		var pins = _tabManager.GetAllPins();
-		
-		if (_tabManager.GetTab(_tabManager.ActiveTabId) is { } tab)
-		{
-			if (pins.Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
-			{
-				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
-				LabelPin.Content = "Unpin Tab";
-			}
-			else
-			{
-				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
-				LabelPin.Content = "Pin Tab";
-			}
-		}
-		PinnedTabs.Children.Clear();
-		foreach (var pin in pins)
-		{
-			var stackPanel = new StackPanel
-			{
-				Orientation = Orientation.Horizontal,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent)
-			};
-
-			var button = new Button
-			{
-				Content = pin.Value.Image,
-				Width = 30,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent),
-				BorderBrush = new SolidColorBrush(Colors.Transparent),
-				HorizontalAlignment = HorizontalAlignment.Left,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			var titleBox = new Label
-			{
-				Height = 30,
-				Content = pin.Value.Title,
-				Foreground = Brushes.White,
-				Width = 170,
-				Background = new SolidColorBrush(Colors.Transparent),
-				HorizontalAlignment = HorizontalAlignment.Center,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			var closeButton = new Button
-			{
-				Content = new MaterialIcon { Kind = MaterialIconKind.Close },
-				Width = 30,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent),
-				BorderBrush = new SolidColorBrush(Colors.Transparent),
-				Foreground = new SolidColorBrush(Colors.White),
-				HorizontalAlignment = HorizontalAlignment.Right,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			closeButton.PreviewMouseLeftButtonUp += (_, _) => _tabManager.RemovePin(pin.Key);
-
-			closeButton.MouseEnter += (_, _) =>
-			{
-				ChangeColorAnimation(closeButton.Foreground, Colors.White, Colors.Red);
-			};
-			closeButton.MouseLeave += (_, _) =>
-			{
-				ChangeColorAnimation(closeButton.Foreground, Colors.Red, Colors.White);
-			};
-
-			stackPanel.MouseEnter += (_, _) =>
-			{
-				ChangeColorAnimation(stackPanel.Background, MainColor, AccentColor);
-			};
-			stackPanel.MouseLeave += (_, _) =>
-			{
-				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
-			};
-
-			button.PreviewMouseLeftButtonUp += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
-			titleBox.PreviewMouseLeftButtonUp += (_, _) => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Value.Url));
-			
-			stackPanel.Children.Add(button);
-			stackPanel.Children.Add(titleBox);
-			stackPanel.Children.Add(closeButton);
-
-			PinnedTabs.Children.Add(stackPanel);
-		}
-	}
-	
-	private void RefreshTabs()
-	{
-		Tabs.Children.Clear();
-		Tabs.Children.Add(AddTabStack);
-		AddTabStack.Background = _tabManager.ActiveTabId == -1 
-			? new SolidColorBrush(HighlightColor) 
-			: new SolidColorBrush(MainColor);
-		foreach (var tab in _tabManager.GetAllTabs().Values)
-		{
-			var stackPanel = new StackPanel
-			{
-				Orientation = Orientation.Horizontal,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent)
-			};
-
-			var button = new Button
-			{
-				Content = tab.Icon,
-				Width = 30,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent),
-				BorderBrush = new SolidColorBrush(Colors.Transparent),
-				HorizontalAlignment = HorizontalAlignment.Left,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			var titleBox = new Label
-			{
-				Height = 30,
-				Content = tab.Title,
-				Foreground = Brushes.White,
-				Width = 170,
-				Background = new SolidColorBrush(Colors.Transparent),
-				HorizontalAlignment = HorizontalAlignment.Center,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			var closeButton = new Button
-			{
-				Content = new MaterialIcon { Kind = MaterialIconKind.Close },
-				Width = 30,
-				Height = 30,
-				Background = new SolidColorBrush(Colors.Transparent),
-				BorderBrush = new SolidColorBrush(Colors.Transparent),
-				Foreground = new SolidColorBrush(Colors.White),
-				HorizontalAlignment = HorizontalAlignment.Right,
-				VerticalAlignment = VerticalAlignment.Stretch
-			};
-
-			_tabManager.ActiveTabChanged += (newActive) =>
-			{
-				stackPanel.Background = newActive == tab.TabId 
-					? new SolidColorBrush(HighlightColor) 
-					: new SolidColorBrush(MainColor);
-					
-			};
-
-			tab.UrlChanged += () =>
-			{
-				if (tab.TabId == _tabManager.ActiveTabId)
-				{
-					SearchBox.Text = tab.TabCore.Source.ToString();
-					BackButton.Foreground = tab.TabCore.CanGoBack
-						? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-					ForwardButton.Foreground = tab.TabCore.CanGoForward
-						? new SolidColorBrush(Color.FromRgb(255, 255, 255))
-						: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-				}
-
-				if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
-				{
-					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
-					LabelPin.Content = "Unpin Tab";
-				}
-				else
-				{
-					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
-					LabelPin.Content = "Pin Tab";
-				}
-			};
-
-			tab.TitleChanged += () =>
-			{
-				titleBox.Content = tab.Title;
-			};
-
-			tab.ImageChanged += () => { button.Content = tab.Icon; };
-
-			closeButton.PreviewMouseLeftButtonUp += (_, _) => _tabManager.RemoveTab(tab.TabId);
-
-			closeButton.MouseEnter += (_, _) =>
-			{
-				ChangeColorAnimation(closeButton.Foreground, Colors.White, Colors.Red);
-			};
-			closeButton.MouseLeave += (_, _) =>
-			{
-				ChangeColorAnimation(closeButton.Foreground, Colors.Red, Colors.White);
-			};
-
-			stackPanel.MouseEnter += (_, _) =>
-			{
-				if (tab.TabId == _tabManager.ActiveTabId) return;
-				ChangeColorAnimation(stackPanel.Background, MainColor, AccentColor);
-			};
-			stackPanel.MouseLeave += (_, _) =>
-			{
-				if (tab.TabId == _tabManager.ActiveTabId) return;
-				ChangeColorAnimation(stackPanel.Background, AccentColor, MainColor);
-			};
-
-			button.PreviewMouseLeftButtonDown += async (_, _) => _tabManager.SwapActiveTabTo(tab.TabId);
-			titleBox.PreviewMouseLeftButtonDown += async (_, _) => _tabManager.SwapActiveTabTo(tab.TabId);
-
-			if (tab.TabId == _tabManager.ActiveTabId) stackPanel.Background = new SolidColorBrush(HighlightColor);
-
-			stackPanel.Children.Add(button);
-			stackPanel.Children.Add(titleBox);
-			stackPanel.Children.Add(closeButton);
-
-			Tabs.Children.Add(stackPanel);
-		}
-	}
 	
 	private ContextMenu _menu;
 
@@ -479,12 +256,31 @@ private void OpenExtensions()
 
 private async Task Initialize()
 {
-	_tabManager.ActiveTabChanged += id =>
+	StackBookmark.Visibility = Visibility.Collapsed;
+	StackPin.Visibility = Visibility.Collapsed;
+	NavigationGrid.Visibility = Visibility.Collapsed;
+	
+	_tabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
 	{
-		StackBookmark.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
-		StackPin.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
-		NavigationGrid.Visibility = id == -1 ? Visibility.Collapsed : Visibility.Visible;
-		_homePage.Visibility = id == -1 ? Visibility.Visible : Visibility.Collapsed;
+		StackBookmark.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
+		StackPin.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
+		NavigationGrid.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
+		_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
+		
+		AddTabStack.Background = newActiveTab == -1
+			? new SolidColorBrush(HighlightColor)
+			: new SolidColorBrush(MainColor);
+		_homePage.Visibility = newActiveTab == -1
+			? Visibility.Visible
+			: Visibility.Collapsed;
+		
+		foreach (var card in Tabs.Children.OfType<TabCard>())
+		{
+			if (card.Key == oldActiveTab)
+				card.ToggleActiveTo(false);
+			else if (card.Key == newActiveTab)
+				card.ToggleActiveTo(true);
+		}
 	};
 
 	_tabManager.TabCreated += tab =>
@@ -499,21 +295,91 @@ private async Task Initialize()
 	TabHolder.Children.Add(_homePage);
 	_tabManager.SwapActiveTabTo(-1);
 
-	_tabManager.ActiveTabChanged += (newActive) =>
+	_tabManager.TabCreated += tab =>
 	{
-		AddTabStack.Background = _tabManager.ActiveTabId == -1
-			? new SolidColorBrush(HighlightColor)
-			: new SolidColorBrush(MainColor);
-		_homePage.Visibility = _tabManager.ActiveTabId == -1
-			? Visibility.Visible
-			: Visibility.Collapsed;
+	    var tabCard = new TabCard(tab);
+	    
+	    tab.UrlChanged += () =>
+	    {
+	        if (tab.TabId == _tabManager.ActiveTabId)
+	        {
+	            SearchBox.Text = tab.TabCore.Source.ToString();
+	            BackButton.Foreground = tab.TabCore.CanGoBack
+	                ? new SolidColorBrush(Colors.White)
+	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
+	            ForwardButton.Foreground = tab.TabCore.CanGoForward
+	                ? new SolidColorBrush(Colors.White)
+	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
+	        }
+
+	        if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        {
+	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+	            LabelPin.Content = "Unpin Tab";
+	        }
+	        else
+	        {
+	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+	            LabelPin.Content = "Pin Tab";
+	        }
+	    };
+
+	    tab.TitleChanged += () =>
+	    {
+	        tabCard.TitleLabel.Content = tab.Title;
+	    };
+
+	    tab.ImageChanged += () =>
+	    {
+	        tabCard.TabIcon.Child = tab.Icon;
+	    };
+
+	    tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(tab.TabId);
+	    tabCard.RemoveRequested += () => _tabManager.RemoveTab(tab.TabId);
+	    tabCard.DuplicateRequested += () =>
+	    {
+		    _tabManager.AddTab(tab.TabCore.Source.ToString());
+	    };
+
+	    Tabs.Children.Add(tabCard);
 	};
 
-	_tabManager.PinsUpdated += RefreshPins;
-	
-	RefreshPins();
+	_tabManager.TabRemoved += id =>
+	{
+	    var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+	    if (card != null)
+	        Tabs.Children.Remove(card);
+	};
+
+	_tabManager.PinCreated += (key, pin) =>
+	{
+		var tabCard = new TabCard(key, pin);
+
+		tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Url));
+		tabCard.RemoveRequested += () => _tabManager.RemovePin(key);
+
+		PinnedTabs.Children.Add(tabCard);
+	};
+
+	_tabManager.PinRemoved += id =>
+	{
+		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+		if (card != null)
+			PinnedTabs.Children.Remove(card);
+	};
+
+	foreach (var pinKeyValue in _tabManager.GetAllPins())
+	{
+		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
+
+		tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pinKeyValue.Value.Url));
+		tabCard.RemoveRequested += () => _tabManager.RemoveTab(pinKeyValue.Key);
+
+		PinnedTabs.Children.Add(tabCard);
+	}
+
 }
-	
+
 	private async void Search_Click(object? s, EventArgs e)
 	{
 		if (_tabManager.GetTab(_tabManager.ActiveTabId) is not { } tab) return;
@@ -530,26 +396,7 @@ private async Task Initialize()
 			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
 		}
 	}
-
-	/// <summary>
-	/// Changes the color of a brush to do cool animations!
-	/// </summary>
-	/// <param name="brush">The brush that is animated such as "Control.Background." NOTE: The brush has to be custom (i.e. using new brush or specifying the color as hex '#000000' in xml)</param>
-	/// <param name="from">The color that the animation start from</param>
-	/// <param name="to">The color that the animation ends on (final color)</param>
-	/// <param name="time"></param>
-	public static void ChangeColorAnimation(Brush brush, Color from, Color to, double time = 0.2)
-	{
-		var colorAnimation = new ColorAnimation
-		{
-			From = from,
-			To = to,
-			Duration = new Duration(TimeSpan.FromSeconds(time)),
-			EasingFunction = new QuadraticEase()
-		};
-		brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
-	}
-
+	
 	private void Window_StateChanged(object? sender, EventArgs e)
 	{
 		if (WindowState == WindowState.Maximized)
@@ -558,7 +405,6 @@ private async Task Initialize()
 			EnterFullscreen();
 		}
 	}
-	
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
 		if (e.ClickCount == 2)

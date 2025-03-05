@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using WpfAnimatedGif;
 
 namespace FoxyBrowser716;
 
@@ -30,6 +31,13 @@ public class WebsiteTab
 		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
 		TabId = Interlocked.Increment(ref _tabCounter); // thread safe version of _tabCounter++
 
+		// Display a loading animation while fetching the favicon
+		var image = new Image();
+		var gifSource = new BitmapImage(new Uri("pack://application:,,,/Resources/NoiceLoadingIconBlack.gif"));
+		ImageBehavior.SetAnimatedSource(image, gifSource);
+		Icon = image;
+		Title = "Loading...";
+		
 		SetupTask = Initialize(url);
 	}
 
@@ -126,31 +134,33 @@ public class WebsiteTab
 
 	private async Task RefreshImage()
 	{
+		ImageChanged?.Invoke();
+
 		try
 		{
-			Icon = new Image
+			await using var stream = await TabCore.CoreWebView2.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
+			if (stream != null && stream.Length > 0)
 			{
-				Source = await GetImageSourceFromStreamAsync(await TabCore.CoreWebView2.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png)),
-				Width = 24,
-				Height = 24,
-				Margin = new Thickness(1),
-				Stretch = Stretch.Uniform
-			};
+				var bitmap = new BitmapImage();
+				bitmap.BeginInit();
+				bitmap.StreamSource = stream;
+				bitmap.CacheOption = BitmapCacheOption.OnLoad;
+				bitmap.EndInit();
+				stream.Close();
+
+				
+				
+				Icon = new Image { Source = bitmap };
+			}
 		}
 		catch
 		{
-			Icon = new Image
-			{
-				Source = CreateCircleWithLetter(64, 64, Title.Length > 0 ? Title[0].ToString() : "",
-					Brushes.DimGray, Brushes.White),
-				Width = 24,
-				Height = 24,
-				Margin = new Thickness(1)
-			};
+			// ignored
 		}
 
 		ImageChanged?.Invoke();
 	}
+
 	
 	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
 	{
