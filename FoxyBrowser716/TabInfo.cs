@@ -97,7 +97,8 @@ public record TabInfo
                         Base64Image = tab.Base64Image,
                         Image = tab.Base64Image != null ? new Image
                         {
-                            Source = Base64ToImageSource(tab.Base64Image),                            Width = 24,
+                            Source = Base64ToImageSource(tab.Base64Image),                            
+                            Width = 24,
                             Height = 24,
                             Margin = new Thickness(1),
                             Stretch = Stretch.Uniform

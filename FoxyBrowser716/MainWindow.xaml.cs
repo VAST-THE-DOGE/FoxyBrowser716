@@ -27,14 +27,15 @@ public partial class MainWindow : Window
 	private Rect _originalRectangle;
 	
 	private readonly TabManager _tabManager;
+
+	private Task _initTask;
 	
 	public MainWindow()
 	{
 		InitializeComponent();
 
 		_tabManager = new TabManager();
-		
-		Task.WhenAll(Initialize());
+		_initTask = Initialize();
 		
 		//TODO: find a better way to do all this crazy GUI stuff
 		foreach (var button in _normalButtons)
@@ -177,7 +178,7 @@ public partial class MainWindow : Window
 
 	private void ButtonMenu_Click(object sender, RoutedEventArgs e)
 	{
-		if (_menu != null && _menu.IsOpen)
+		if (_menu is { IsOpen: true })
 		{
 			_menu.IsOpen = false;
 			return;
@@ -254,6 +255,88 @@ private void OpenExtensions()
 {
 }
 
+private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
+{
+	if (relativeMove == null)
+	{
+		await BuildNewWindow(sender);
+	}
+	else
+	{
+		await UpdateTabOrder(sender, relativeMove.Value);
+	}
+}
+
+private int _alreadyMoved;
+private int _prevKey;
+private bool _moving;
+private async Task UpdateTabOrder(TabCard tabCard, int moveBy)
+{
+	if (_moving) return;
+	_moving = true;
+
+	if (_prevKey != tabCard.Key)
+	{
+		_prevKey = tabCard.Key;
+		_alreadyMoved = 0;
+	}
+	
+	var currentIndex = Tabs.Children.IndexOf(tabCard);
+	if (currentIndex < 0)
+	{
+		// should not happen
+		_moving = false;
+		return;
+	}
+
+	var newIndex = currentIndex + moveBy - _alreadyMoved;
+	
+	if (newIndex < 1 || newIndex >= Tabs.Children.Count)
+	{
+		if (newIndex > Tabs.Children.Count + 5)
+			await BuildNewWindow(tabCard);
+		
+		_moving = false;
+		return;
+	}
+
+	Tabs.Children.Remove(tabCard);
+	Tabs.Children.Insert(newIndex, tabCard);
+	_alreadyMoved = moveBy;
+	_moving = false;
+}
+
+private bool _buildingWindow;
+private int _createdFor = -1;
+private async Task BuildNewWindow(TabCard tabCard)
+{
+	if (_buildingWindow || _createdFor == tabCard.Key) return;
+	
+	_buildingWindow = true;
+	
+	var relativePosition = Mouse.GetPosition(Application.Current.MainWindow);
+	var newWindow = new MainWindow
+	{
+		Width = Width,
+		Height = Height,
+		Left = relativePosition.X + Left,
+		Top = relativePosition.Y + Top,
+	};
+	
+	tabCard.STOP();
+	
+	await newWindow._initTask;
+	
+	if (_tabManager.GetTab(tabCard.Key) is { } tab)
+		await _tabManager.TransferTab(newWindow._tabManager, tab);
+
+	
+	newWindow.Show();
+	
+	_createdFor = tabCard.Key;
+	_buildingWindow = false;
+}
+
 private async Task Initialize()
 {
 	StackBookmark.Visibility = Visibility.Collapsed;
@@ -282,11 +365,6 @@ private async Task Initialize()
 				card.ToggleActiveTo(true);
 		}
 	};
-
-	_tabManager.TabCreated += tab =>
-	{
-		TabHolder.Children.Add(tab.TabCore);
-	};
 	
 	await _tabManager.InitializeData();
 	
@@ -298,6 +376,10 @@ private async Task Initialize()
 	_tabManager.TabCreated += tab =>
 	{
 	    var tabCard = new TabCard(tab);
+	    
+	    TabHolder.Children.Add(tab.TabCore);
+
+	    tabCard.DragPositionChanged += OnTabCardDragChanged;
 	    
 	    tab.UrlChanged += () =>
 	    {
@@ -396,7 +478,6 @@ private async Task Initialize()
 		
 		PinnedTabs.Children.Add(tabCard);
 	}
-
 }
 
 	private async void Search_Click(object? s, EventArgs e)

@@ -76,22 +76,25 @@ public class TabManager
 	public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
 	public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
 	
-	public void RemoveTab(int tabId) {
-			if (_tabs.Count > 1)
-			{
-				var newId = ActiveTabId == tabId ? _tabs.First(t => t.Key != tabId).Key : ActiveTabId;
-				SwapActiveTabTo(newId);
-				if (_tabs.TryRemove(tabId, out var tab))
-					tab.TabCore.Dispose();
-			}
-			else
-			{
-				SwapActiveTabTo(-1);
-				if (_tabs.TryRemove(tabId, out var tab))
-					tab.TabCore.Dispose();
-			}
-			TabsUpdated?.Invoke();
-			TabRemoved?.Invoke(tabId);
+	public void RemoveTab(int tabId, bool keepCore = false) {
+		if (_tabs.Count > 1)
+		{
+			var newId = ActiveTabId == tabId ? _tabs.First(t => t.Key != tabId).Key : ActiveTabId;
+			SwapActiveTabTo(newId);
+		}
+		else
+		{
+			SwapActiveTabTo(-1);
+		}
+		
+		if (_tabs.TryRemove(tabId, out var tab))
+			if(!keepCore)
+				tab.TabCore.Dispose();
+			else if (tab.TabCore.Parent is Grid g)
+				g.Children.Remove(tab.TabCore);
+				
+		TabsUpdated?.Invoke();
+		TabRemoved?.Invoke(tabId);
 	}
 	public void RemovePin(int tabId)
 	{
@@ -211,5 +214,29 @@ public class TabManager
 			nextToSwap = null;
 			SwapActiveTabTo(next);
 		}
+	}
+
+	/// <summary>
+	/// to be called with the other tab manager as a parameter to move a tab
+	/// </summary>
+	/// <param name="otherManager">manager to send the Tab to</param>
+	/// <param name="tab">tab to move</param>
+	public async Task TransferTab(TabManager otherManager, WebsiteTab tab)
+	{
+		if (otherManager == this) throw new ArgumentException("can't move tab to the same manager");
+		
+		RemoveTab(tab.TabId, true);
+		await otherManager.TransferTab(tab);
+	}
+	
+	/// <summary>
+	/// to be called by another tab manager
+	/// </summary>
+	/// <param name="tab">tab to add</param>
+	private async Task TransferTab(WebsiteTab tab)
+	{
+		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue? might be later on, not now.
+		TabCreated?.Invoke(tab);
+		TabsUpdated?.Invoke();
 	}
 }
