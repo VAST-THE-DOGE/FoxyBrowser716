@@ -26,15 +26,15 @@ public partial class MainWindow : Window
 
 	private Rect _originalRectangle;
 	
-	private readonly TabManager _tabManager;
+	internal readonly TabManager TabManager;
 
-	private Task _initTask;
+	internal Task _initTask;
 	
 	public MainWindow()
 	{
 		InitializeComponent();
 
-		_tabManager = new TabManager();
+		TabManager = new TabManager();
 		_initTask = Initialize();
 		
 		//TODO: find a better way to do all this crazy GUI stuff
@@ -65,8 +65,8 @@ public partial class MainWindow : Window
 		
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
-		AddTabStack.MouseEnter += (_, _) => { if(_tabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
-		AddTabStack.MouseLeave += (_, _) => { if(_tabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		AddTabStack.MouseEnter += (_, _) => { if(TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
+		AddTabStack.MouseLeave += (_, _) => { if(TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
 		AddTabStack.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			AddTabLabel.Foreground = new SolidColorBrush(HighlightColor);
@@ -76,7 +76,7 @@ public partial class MainWindow : Window
 		{
 			ChangeColorAnimation(AddTabButton.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
-			_tabManager.SwapActiveTabTo(-1);
+			TabManager.SwapActiveTabTo(-1);
 		};
 		
 		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
@@ -91,21 +91,21 @@ public partial class MainWindow : Window
 			ChangeColorAnimation(ButtonPin.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelPin.Foreground, HighlightColor, Colors.White);
 			
-			var tab = _tabManager.GetTab(_tabManager.ActiveTabId);
+			var tab = TabManager.GetTab(TabManager.ActiveTabId);
 			
 			if (tab is null) return;
 
-			if (_tabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (TabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
-				_tabManager.RemovePin(_tabManager.GetAllPins().FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
+				TabManager.RemovePin(TabManager.GetAllPins().FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
-				_tabManager.AddPin(tab);
+				TabManager.AddPin(tab);
 			}
 		};
 		
@@ -327,8 +327,8 @@ private async Task BuildNewWindow(TabCard tabCard)
 	
 	await newWindow._initTask;
 	
-	if (_tabManager.GetTab(tabCard.Key) is { } tab)
-		await _tabManager.TransferTab(newWindow._tabManager, tab);
+	if (TabManager.GetTab(tabCard.Key) is { } tab)
+		await TabManager.TransferTab(newWindow.TabManager, tab);
 
 	
 	newWindow.Show();
@@ -343,7 +343,7 @@ private async Task Initialize()
 	StackPin.Visibility = Visibility.Collapsed;
 	NavigationGrid.Visibility = Visibility.Collapsed;
 	
-	_tabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
+	TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
 	{
 		StackBookmark.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
 		StackPin.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
@@ -366,14 +366,14 @@ private async Task Initialize()
 		}
 	};
 	
-	await _tabManager.InitializeData();
+	await TabManager.InitializeData();
 	
 	_homePage = new HomePage();
-	await _homePage.Initialize(_tabManager);
+	await _homePage.Initialize(TabManager);
 	TabHolder.Children.Add(_homePage);
-	_tabManager.SwapActiveTabTo(-1);
+	TabManager.SwapActiveTabTo(-1);
 
-	_tabManager.TabCreated += tab =>
+	TabManager.TabCreated += tab =>
 	{
 	    var tabCard = new TabCard(tab);
 	    
@@ -383,7 +383,7 @@ private async Task Initialize()
 	    
 	    tab.UrlChanged += () =>
 	    {
-	        if (tab.TabId == _tabManager.ActiveTabId)
+	        if (tab.TabId == TabManager.ActiveTabId)
 	        {
 	            SearchBox.Text = tab.TabCore.Source.ToString();
 	            BackButton.Foreground = tab.TabCore.CanGoBack
@@ -394,7 +394,7 @@ private async Task Initialize()
 	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
 	        }
 
-	        if (_tabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        if (TabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 	        {
 	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 	            LabelPin.Content = "Unpin Tab";
@@ -418,46 +418,46 @@ private async Task Initialize()
 
 	    tab.NewTabRequested += (uri) =>
 	    {
-		    _tabManager.SwapActiveTabTo(_tabManager.AddTab(uri));
+		    TabManager.SwapActiveTabTo(TabManager.AddTab(uri));
 	    };
 
-	    tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(tab.TabId);
-	    tabCard.RemoveRequested += () => _tabManager.RemoveTab(tab.TabId);
+	    tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);
+	    tabCard.RemoveRequested += () => TabManager.RemoveTab(tab.TabId);
 	    tabCard.DuplicateRequested += () =>
 	    {
-		    _tabManager.SwapActiveTabTo(_tabManager.AddTab(tab.TabCore.Source.ToString()));
+		    TabManager.SwapActiveTabTo(TabManager.AddTab(tab.TabCore.Source.ToString()));
 	    };
 
 	    Tabs.Children.Add(tabCard);
 	};
 
-	_tabManager.TabRemoved += id =>
+	TabManager.TabRemoved += id =>
 	{
 	    var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
 	    if (card != null)
 	        Tabs.Children.Remove(card);
 	};
 
-	_tabManager.PinCreated += (key, pin) =>
+	TabManager.PinCreated += (key, pin) =>
 	{
 		var tabCard = new TabCard(key, pin);
 
-		tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pin.Url));
-		tabCard.RemoveRequested += () => _tabManager.RemovePin(key);
+		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
+		tabCard.RemoveRequested += () => TabManager.RemovePin(key);
 
 		PinnedTabs.Children.Add(tabCard);
 	};
 
-	_tabManager.PinRemoved += id =>
+	TabManager.PinRemoved += id =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
 		
 		if (card != null)
 			PinnedTabs.Children.Remove(card);
 		
-		var tab = _tabManager.GetTab(_tabManager.ActiveTabId);
+		var tab = TabManager.GetTab(TabManager.ActiveTabId);
 		
-		if (_tabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+		if (TabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
 		{
 			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 			LabelPin.Content = "Unpin Tab";
@@ -469,12 +469,12 @@ private async Task Initialize()
 		}
 	};
 
-	foreach (var pinKeyValue in _tabManager.GetAllPins())
+	foreach (var pinKeyValue in TabManager.GetAllPins())
 	{
 		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
-		tabCard.CardClicked += () => _tabManager.SwapActiveTabTo(_tabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => _tabManager.RemovePin(pinKeyValue.Key);
+		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
+		tabCard.RemoveRequested += () => TabManager.RemovePin(pinKeyValue.Key);
 		
 		PinnedTabs.Children.Add(tabCard);
 	}
@@ -482,7 +482,7 @@ private async Task Initialize()
 
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		if (_tabManager.GetTab(_tabManager.ActiveTabId) is not { } tab) return;
+		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
 		
 		var tabCore = tab.TabCore;
 		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
@@ -541,17 +541,17 @@ private async Task Initialize()
 
 	private void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
 	{
-		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.Reload();
+		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.Reload();
 	}
 
 	private void BackButton_OnClick(object sender, RoutedEventArgs e)
 	{
-		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoBack();
+		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.GoBack();
 	}
 
 	private void ForwardButton_OnClick(object sender, RoutedEventArgs e)
 	{
-		_tabManager.GetTab(_tabManager.ActiveTabId)?.TabCore.GoForward();
+		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.GoForward();
 	}
 
 	#region FullscreenStuff

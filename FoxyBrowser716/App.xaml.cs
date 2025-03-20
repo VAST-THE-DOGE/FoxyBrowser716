@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.IO.Pipes;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -7,8 +8,46 @@ namespace FoxyBrowser716;
 /// <summary>
 ///     Interaction logic for App.xaml
 /// </summary>
-public partial class App : Application;
+public partial class App : Application
+{
+	protected override void OnStartup(StartupEventArgs e)
+	{
+		base.OnStartup(e);
+		
+		var mutex = new Mutex(true, "FoxyBrowser716_Mutex", out var isNewInstance);
+		if (!isNewInstance)
+		{
+			SendMessage($"NewWindow|{e.Args.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))}");
+			return;
+		}
+		
+		ServerManager.RunServer(e);
+		mutex.ReleaseMutex();
+	}
+    
+	static void SendMessage(string message)
+	{
+		using var client = new NamedPipeClientStream(".", "FoxyBrowser716_Pipe", PipeDirection.Out);
+		try
+		{
+			client.Connect(1000);
+			using var writer = new System.IO.StreamWriter(client);
+			writer.WriteLine(message);
+			writer.Flush();
+		}
+		catch
+		{
+			// Handle if connection fails
+		}
+	}
+}
 
+
+
+
+
+
+//TODO: this shouldn't be here:
 public static class ColorPalette
 {
 	public static Color MainColor => Color.FromRgb(30, 35, 50);
