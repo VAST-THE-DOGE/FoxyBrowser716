@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Pipes;
 using System.Reflection;
 using System.Windows;
@@ -17,8 +18,15 @@ public class ServerManager
 
 	public static void RunServer(StartupEventArgs e)
 	{
-		Console.WriteLine("Starting server...");
+		// check if it is installed.
+		if (!InstallationManager.IsBrowserInstalled()
+		    && MessageBox.Show($"Would you like to register {InstallationManager.GetApplicationName()} as an app (allows you to set it as the default browser later on)?", "Finish Install?", MessageBoxButton.YesNo) 
+		    == MessageBoxResult.Yes)
+		{
+			InstallationManager.RegisterBrowser();
+		}
 		
+		// start a server instance
 		Instance = new ServerManager();
 		Task.Run(() => Instance.StartPipeServer());
 		if (e.Args.All(string.IsNullOrWhiteSpace))
@@ -40,8 +48,6 @@ public class ServerManager
 				newWindow.Show(); 
 			});
 		}
-
-		//TryInstall();
 	}
 	
 	private void StartPipeServer()
@@ -68,18 +74,5 @@ public class ServerManager
 				
 			}
 		}
-	}
-
-	private static void TryInstall()
-	{
-        var keyPath = @"SOFTWARE\Clients\StartMenuInternet\FoxyBrowser716";
-        var baseKey = Registry.LocalMachine;
-
-        // Try to open the key for reading
-        using var regKey = baseKey.OpenSubKey(keyPath, writable: true);
-        if (regKey == null)
-        {
-
-        }
 	}
 }
