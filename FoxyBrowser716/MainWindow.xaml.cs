@@ -18,7 +18,7 @@ namespace FoxyBrowser716;
 /// <summary>
 ///     Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow
 {
 	private HomePage _homePage;
 
@@ -28,10 +28,14 @@ public partial class MainWindow : Window
 	
 	internal readonly TabManager TabManager;
 
+	internal readonly ServerManager OwnerInstance;
+
 	internal Task _initTask;
 	
-	public MainWindow()
+	public MainWindow(ServerManager owner)
 	{
+		OwnerInstance = owner;
+		
 		InitializeComponent();
 
 		TabManager = new TabManager();
@@ -95,17 +99,18 @@ public partial class MainWindow : Window
 			
 			if (tab is null) return;
 
-			if (TabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
-				TabManager.RemovePin(TabManager.GetAllPins().FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
+				OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(OwnerInstance.BrowserData.PinInfo.GetAllTabInfos()
+					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
-				TabManager.AddPin(tab);
+				OwnerInstance.BrowserData.PinInfo.AddTabInfo(tab);
 			}
 		};
 		
@@ -315,7 +320,7 @@ private async Task BuildNewWindow(TabCard tabCard)
 	_buildingWindow = true;
 	
 	var relativePosition = Mouse.GetPosition(Application.Current.MainWindow);
-	var newWindow = new MainWindow
+	var newWindow = new MainWindow(OwnerInstance)
 	{
 		Width = Width,
 		Height = Height,
@@ -394,7 +399,7 @@ private async Task Initialize()
 	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
 	        }
 
-	        if (TabManager.GetAllPins().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 	        {
 	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 	            LabelPin.Content = "Unpin Tab";
@@ -438,17 +443,17 @@ private async Task Initialize()
 	        Tabs.Children.Remove(card);
 	};
 
-	TabManager.PinCreated += (key, pin) =>
+	OwnerInstance.BrowserData.PinInfo.TabInfoAdded += (key, pin) =>
 	{
 		var tabCard = new TabCard(key, pin);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
-		tabCard.RemoveRequested += () => TabManager.RemovePin(key);
+		tabCard.RemoveRequested += () => OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(key);
 
 		PinnedTabs.Children.Add(tabCard);
 	};
 
-	TabManager.PinRemoved += id =>
+	OwnerInstance.BrowserData.PinInfo.TabInfoRemoved += (id, _) =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
 		
@@ -457,7 +462,7 @@ private async Task Initialize()
 		
 		var tab = TabManager.GetTab(TabManager.ActiveTabId);
 		
-		if (TabManager.GetAllPins().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+		if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
 		{
 			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 			LabelPin.Content = "Unpin Tab";
@@ -469,12 +474,14 @@ private async Task Initialize()
 		}
 	};
 
-	foreach (var pinKeyValue in TabManager.GetAllPins())
+	var e = OwnerInstance.BrowserData.PinInfo.GetAllTabInfos();
+	PinnedTabs.Children.Clear();
+	foreach (var pinKeyValue in OwnerInstance.BrowserData.PinInfo.GetAllTabInfos())
 	{
 		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => TabManager.RemovePin(pinKeyValue.Key);
+		tabCard.RemoveRequested += () => OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
 		
 		PinnedTabs.Children.Add(tabCard);
 	}

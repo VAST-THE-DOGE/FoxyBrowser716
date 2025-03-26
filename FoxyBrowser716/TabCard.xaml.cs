@@ -48,7 +48,7 @@ public partial class TabCard
         DuplicateButton.Visibility = Visibility.Collapsed;
         TitleLabel.Content = tab.Title;
 
-        TabIcon.Child = tab.Image;
+        TabIcon.Child = tab.Image; //TODO ERROR: Specified element is already the logical child of another element. Disconnect it first.
 
         CloseButton.Click += (_, _) => RemoveRequested?.Invoke();
         

@@ -13,17 +13,17 @@ public class TabManager
 {
 	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
 
-	private readonly ConcurrentDictionary<int, TabInfo> _pins = [];
+	/*private readonly ConcurrentDictionary<int, TabInfo> _pins = [];
 
-	private readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];
+	private readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];*/
 
 	private int _pinBookmarkCounter;
 
 	private bool _initialized;
 	
 	public event Action TabsUpdated;
-	public event Action PinsUpdated;
-	public event Action BookmarksUpdated;
+	/*public event Action PinsUpdated;
+	public event Action BookmarksUpdated;*/
 	
 	/// <summary>
 	/// data is formated like this:
@@ -39,42 +39,42 @@ public class TabManager
 	public event Action<WebsiteTab> TabCreated;
 	public event Action<int> TabRemoved;
 	
-	public event Action<int, TabInfo> PinCreated;
+	/*public event Action<int, TabInfo> PinCreated;
 	public event Action<int> PinRemoved;
 	
 	public event Action<int, TabInfo> BookmarkCreated;
 	public event Action<int> BookmarkRemoved;
+	*/
 	
 	/// <summary>
 	/// Loads json data for pins and bookmarks.
 	/// </summary>
 	public async Task InitializeData()
 	{
-		var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
+		// var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
 
 		var options = new CoreWebView2EnvironmentOptions();
 		options.AreBrowserExtensionsEnabled = true;
 		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
 		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
 		
-		var pins = await loadPinTask;
+		/*var pins = await loadPinTask;
 		foreach (var pin in pins)
 		{
 			AddPin(pin);
-		}
+		}*/
 
 		_initialized = true; // allow saving pis and bookmarks
-		
 	}
 
 	// getter and setters
 	public WebsiteTab? GetTab(int tabId) => _tabs.GetValueOrDefault(tabId);
-	public TabInfo? GetPin(int pinId) => _pins.GetValueOrDefault(pinId);
-	public TabInfo? GetBookmark(int bookmarkId) => _bookmarks.GetValueOrDefault(bookmarkId);
+	//public TabInfo? GetPin(int pinId) => _pins.GetValueOrDefault(pinId);
+	//public TabInfo? GetBookmark(int bookmarkId) => _bookmarks.GetValueOrDefault(bookmarkId);
 	
 	public Dictionary<int,WebsiteTab> GetAllTabs() => _tabs.ToDictionary();
-	public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
-	public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
+	//public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
+	//public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
 	
 	public void RemoveTab(int tabId, bool keepCore = false) {
 		if (_tabs.Count > 1)
@@ -96,7 +96,7 @@ public class TabManager
 		TabsUpdated?.Invoke();
 		TabRemoved?.Invoke(tabId);
 	}
-	public void RemovePin(int tabId)
+	/*public void RemovePin(int tabId)
 	{
 		if (!_pins.TryRemove(tabId, out _)) return;
 		
@@ -116,7 +116,7 @@ public class TabManager
 		if (!_initialized) return;
 		Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _bookmarks.Values.ToArray()));
 
-	}
+	}*/
 	
 	public int AddTab(string url)
 	{
@@ -127,7 +127,7 @@ public class TabManager
 		return tab.TabId;
 	}
 
-	public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = new Image { Source = tab.Icon.Source } });
+	/*public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = new Image { Source = tab.Icon.Source } });
 	public int AddPin(TabInfo tab)
 	{
 		var key = Interlocked.Increment(ref _pinBookmarkCounter);
@@ -149,7 +149,7 @@ public class TabManager
 		if (_initialized)
 			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bookmarks.json"), _bookmarks.Values.ToArray()));
 		return key;
-	}
+	}*/
 
 	// tab management
 	private int? nextToSwap;

@@ -17,7 +17,19 @@ public record TabInfo
     public string? Base64Image { get; init; } // Make Base64Image public for serialization
     
     [JsonIgnore]
-    public Image Image { get; init; } = new Image();
+    private Image _image = new();
+    
+    [JsonIgnore]
+
+    public Image Image
+    {
+        get => new()
+        {
+            Source = _image.Source,
+            Stretch = _image.Stretch,
+        };
+        init => _image = value;
+    }
 
     private static string ImageSourceToBase64(ImageSource image)
     {
