@@ -262,13 +262,21 @@ private void OpenExtensions()
 
 private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
 {
-	if (relativeMove == null)
+	try
 	{
-		await BuildNewWindow(sender);
+		if (relativeMove == null)
+		{
+			//TODO: move to tab window
+			await BuildNewWindow(sender);
+		}
+		else
+		{
+			await UpdateTabOrder(sender, relativeMove.Value);
+		}
 	}
-	else
+	catch (Exception e)
 	{
-		await UpdateTabOrder(sender, relativeMove.Value);
+		// TODO handle exception
 	}
 }
 
@@ -489,18 +497,25 @@ private async Task Initialize()
 
 	private async void Search_Click(object? s, EventArgs e)
 	{
-		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-		
-		var tabCore = tab.TabCore;
-		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-
 		try
 		{
-			tabCore.CoreWebView2.Navigate(SearchBox.Text);
+			if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
+		
+			var tabCore = tab.TabCore;
+			await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+
+			try
+			{
+				tabCore.CoreWebView2.Navigate(SearchBox.Text);
+			}
+			catch (Exception exception)
+			{
+				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			}
 		}
-		catch (Exception exception)
+		catch (Exception ex)
 		{
-			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			// TODO handle exception
 		}
 	}
 	

@@ -11,7 +11,7 @@ namespace FoxyBrowser716;
 /// </summary>
 public class ServerManager
 {
-	public static ServerManager Instance { get; private set; }
+	private static ServerManager Instance { get; set; }
 
 	public InstanceDataManager BrowserData { get; private set; }
 	
