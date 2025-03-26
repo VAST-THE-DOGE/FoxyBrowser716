@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:FoxyBrowser716"
+        WindowStyle="None"
+        AllowsTransparency="True"
         mc:Ignorable="d"
         Title="TabMoveWindowCard" Height="30" Width="260"
-        Background="#881E1E2D">
+        Background="#661E1E2D">
     <Grid Name="RootPanel" Background="Transparent">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>

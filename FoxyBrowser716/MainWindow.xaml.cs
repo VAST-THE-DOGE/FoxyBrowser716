@@ -336,13 +336,12 @@ private async Task BuildNewWindow(TabCard tabCard)
 		Top = relativePosition.Y + Top,
 	};
 	
-	tabCard.STOP();
+	//tabCard.STOP();
 	
 	await newWindow._initTask;
 	
 	if (TabManager.GetTab(tabCard.Key) is { } tab)
 		await TabManager.TransferTab(newWindow.TabManager, tab);
-
 	
 	newWindow.Show();
 	
