@@ -16,6 +16,7 @@ public class WebsiteInfoList
 
 	public async Task LoadTabInfoFromJson(string filePath)
 	{
+		_filePath = filePath;
 		var tabInfos = await TabInfo.TryLoadTabs(filePath);
 
 		foreach (var t in tabInfos)
