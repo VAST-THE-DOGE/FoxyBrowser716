@@ -30,7 +30,7 @@ public partial class TabMoveWindowCard : Window
 	private void OnMouseMove(object sender, MouseEventArgs e)
 	{
 		var mousePos = Mouse.GetPosition(null);
-		mousePos = new Point(mousePos.X - GrabLocation.X, mousePos.Y - GrabLocation.Y);
+		mousePos = new Point(mousePos.X - GrabLocation.X, mousePos.Y - GrabLocation.Y + 60);
 		var screenPos = PointToScreen(mousePos);
 
 		Left = screenPos.X;

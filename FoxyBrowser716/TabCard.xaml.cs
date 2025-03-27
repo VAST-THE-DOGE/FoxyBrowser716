@@ -99,7 +99,7 @@ public partial class TabCard
     
     private void TabCard_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        DragStartPoint = Mouse.GetPosition(null);
+        DragStartPoint = e.GetPosition(null);
         CaptureMouse();
     }
 
