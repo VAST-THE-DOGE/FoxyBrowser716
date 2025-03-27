@@ -150,11 +150,4 @@ public partial class TabCard
         var move = (int)((currentPosition.Y - DragStartPoint.Y) / 30);
         return move == 0 ? (int?)0 : move;
     }
-
-    public void STOP() //TODO: not needed?
-    {
-        _isDragging = false;
-        _active = false;
-        Visibility = Visibility.Collapsed;
-    }
 }
