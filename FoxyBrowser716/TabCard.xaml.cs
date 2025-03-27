@@ -102,7 +102,6 @@ public partial class TabCard
         DragStartPoint = e.GetPosition(null);
         CaptureMouse();
     }
-  
     private void TabCard_MouseMove(object sender, MouseEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed || !IsMouseCaptured)
