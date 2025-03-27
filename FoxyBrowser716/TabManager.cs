@@ -39,42 +39,27 @@ public class TabManager
 	public event Action<WebsiteTab> TabCreated;
 	public event Action<int> TabRemoved;
 	
-	/*public event Action<int, TabInfo> PinCreated;
-	public event Action<int> PinRemoved;
-	
-	public event Action<int, TabInfo> BookmarkCreated;
-	public event Action<int> BookmarkRemoved;
-	*/
-	
 	/// <summary>
 	/// Loads json data for pins and bookmarks.
 	/// </summary>
 	public async Task InitializeData()
 	{
-		// var loadPinTask = TabInfo.TryLoadTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"));
-
-		var options = new CoreWebView2EnvironmentOptions();
-		options.AreBrowserExtensionsEnabled = true;
-		options.AllowSingleSignOnUsingOSPrimaryAccount = true;
-		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
-		
-		/*var pins = await loadPinTask;
-		foreach (var pin in pins)
+		var options = new CoreWebView2EnvironmentOptions
 		{
-			AddPin(pin);
-		}*/
+			AreBrowserExtensionsEnabled = true,
+			AllowSingleSignOnUsingOSPrimaryAccount = true
+		};
+		
+		//TODO: User data turns into "{InstanceName}\WebView2Data"
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
 
 		_initialized = true; // allow saving pis and bookmarks
 	}
 
 	// getter and setters
 	public WebsiteTab? GetTab(int tabId) => _tabs.GetValueOrDefault(tabId);
-	//public TabInfo? GetPin(int pinId) => _pins.GetValueOrDefault(pinId);
-	//public TabInfo? GetBookmark(int bookmarkId) => _bookmarks.GetValueOrDefault(bookmarkId);
 	
 	public Dictionary<int,WebsiteTab> GetAllTabs() => _tabs.ToDictionary();
-	//public Dictionary<int, TabInfo> GetAllPins() => _pins.ToDictionary();
-	//public Dictionary<int,TabInfo> GetAllBookmarks() => _bookmarks.ToDictionary();
 	
 	public void RemoveTab(int tabId, bool keepCore = false) {
 		if (_tabs.Count > 1)
@@ -96,27 +81,6 @@ public class TabManager
 		TabsUpdated?.Invoke();
 		TabRemoved?.Invoke(tabId);
 	}
-	/*public void RemovePin(int tabId)
-	{
-		if (!_pins.TryRemove(tabId, out _)) return;
-		
-		PinsUpdated?.Invoke();
-		PinRemoved?.Invoke(tabId);
-		
-		if (!_initialized) return;
-		Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray()));
-	}
-	public void RemoveBookmark(int tabId)
-	{
-		if (!_bookmarks.TryRemove(tabId, out _)) return;
-		
-		BookmarksUpdated?.Invoke();
-		BookmarkRemoved?.Invoke(tabId);
-		
-		if (!_initialized) return;
-		Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _bookmarks.Values.ToArray()));
-
-	}*/
 	
 	public int AddTab(string url)
 	{
@@ -126,30 +90,6 @@ public class TabManager
 		TabsUpdated?.Invoke();
 		return tab.TabId;
 	}
-
-	/*public int AddPin(WebsiteTab tab) => AddPin(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = new Image { Source = tab.Icon.Source } });
-	public int AddPin(TabInfo tab)
-	{
-		var key = Interlocked.Increment(ref _pinBookmarkCounter);
-		_pins.TryAdd(key, tab);
-		PinsUpdated?.Invoke();
-		PinCreated?.Invoke(key, tab);
-		if (_initialized)
-			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pins.json"), _pins.Values.ToArray()));
-		return key;
-	}
-	
-	public int AddBookmark(WebsiteTab tab) => AddBookmark(new TabInfo { Title = tab.Title, Url = tab.TabCore.Source.ToString(), Image = tab.Icon });
-	public int AddBookmark(TabInfo tab)
-	{
-		var key = Interlocked.Increment(ref _pinBookmarkCounter);
-		_bookmarks.TryAdd(key, tab);
-		BookmarksUpdated?.Invoke();
-		BookmarkCreated?.Invoke(key, tab);
-		if (_initialized)
-			Task.WhenAll(TabInfo.SaveTabs(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bookmarks.json"), _bookmarks.Values.ToArray()));
-		return key;
-	}*/
 
 	// tab management
 	private int? nextToSwap;
@@ -215,28 +155,17 @@ public class TabManager
 			SwapActiveTabTo(next);
 		}
 	}
-
-	/// <summary>
-	/// to be called with the other tab manager as a parameter to move a tab
-	/// </summary>
-	/// <param name="otherManager">manager to send the Tab to</param>
-	/// <param name="tab">tab to move</param>
-	public async Task TransferTab(TabManager otherManager, WebsiteTab tab)
-	{
-		if (otherManager == this) throw new ArgumentException("can't move tab to the same manager");
-		
-		RemoveTab(tab.TabId, true);
-		await otherManager.TransferTab(tab);
-	}
 	
 	/// <summary>
 	/// to be called by another tab manager
 	/// </summary>
 	/// <param name="tab">tab to add</param>
-	private async Task TransferTab(WebsiteTab tab)
+	public async Task<int> TransferTab(WebsiteTab tab)
 	{
 		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue? might be later on, not now.
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
+		
+		return tab.TabId;
 	}
 }

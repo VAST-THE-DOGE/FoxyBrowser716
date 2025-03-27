@@ -12,7 +12,16 @@ namespace FoxyBrowser716;
 
 public class WebsiteTab
 {
-	public Image Icon { get; private set; }
+	private Image _image = new();
+	public Image Icon
+	{
+		get => new()
+		{
+			Source = _image.Source,
+			Stretch = _image.Stretch,
+		};
+		private set => _image = value;
+	}
 	
 	public readonly WebView2 TabCore;
 	public readonly int TabId;

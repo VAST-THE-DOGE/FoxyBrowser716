@@ -6,14 +6,17 @@
         WindowStyle="None"
         AllowsTransparency="True"
         mc:Ignorable="d"
-        Title="TabMoveWindowCard" Height="30" Width="260"
-        Background="#661E1E2D">
-    <Grid Name="RootPanel" Background="Transparent">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Viewbox x:Name="TabIcon" Grid.Column="0" Margin="5" Width="20" Height="20" Stretch="Uniform"/>
-        <Label x:Name="TitleLabel" Grid.Column="1" Height="30" Foreground="#ffff" Background="Transparent" VerticalAlignment="Center"/>
-    </Grid>
+        Title="TabMoveWindowCard" Height="34" Width="260"
+        Background="Transparent"
+        Topmost="True">
+    <Border Name="RootPanel1" BorderBrush="#99FF9103" BorderThickness="2" Margin="0" Padding="0">
+        <Grid Name="RootPanel2" Background="#CC1E1E2D" Margin="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Viewbox x:Name="TabIcon" Grid.Column="0" Margin="5" Width="20" Height="20" Stretch="Uniform"/>
+            <Label x:Name="TitleLabel" Grid.Column="1" Height="30" Foreground="#ffff" Background="Transparent" VerticalAlignment="Center"/>
+        </Grid>
+    </Border>
 </Window>

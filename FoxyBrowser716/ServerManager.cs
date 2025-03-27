@@ -90,4 +90,16 @@ public class ServerManager
 			}
 		}
 	}
+
+	public async Task CreateWindowFromTab(WebsiteTab tab, Point spawnPoint)
+	{
+		var newWindow = new MainWindow(Instance)
+		{
+			Top = spawnPoint.Y,
+			Left = spawnPoint.X,
+		}; 
+		await newWindow._initTask; 
+		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab)); 
+		newWindow.Show(); 
+	}
 }

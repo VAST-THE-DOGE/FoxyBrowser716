@@ -324,26 +324,13 @@ private int _createdFor = -1;
 private async Task BuildNewWindow(TabCard tabCard)
 {
 	if (_buildingWindow || _createdFor == tabCard.Key) return;
-	
 	_buildingWindow = true;
+
+	if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
 	
-	var relativePosition = Mouse.GetPosition(Application.Current.MainWindow);
-	var newWindow = new MainWindow(OwnerInstance)
-	{
-		Width = Width,
-		Height = Height,
-		Left = relativePosition.X + Left,
-		Top = relativePosition.Y + Top,
-	};
-	
-	//tabCard.STOP();
-	
-	await newWindow._initTask;
-	
-	if (TabManager.GetTab(tabCard.Key) is { } tab)
-		await TabManager.TransferTab(newWindow.TabManager, tab);
-	
-	newWindow.Show();
+	var tabCardWindow = new TabMoveWindowCard(OwnerInstance, tab, tabCard.DragStartPoint);
+	TabManager.RemoveTab(tabCard.Key, true);
+	tabCardWindow.Show();
 	
 	_createdFor = tabCard.Key;
 	_buildingWindow = false;

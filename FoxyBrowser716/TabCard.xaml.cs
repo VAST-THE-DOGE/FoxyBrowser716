@@ -18,8 +18,8 @@ public partial class TabCard
 
     public event Action<TabCard, int?>? DragPositionChanged;
     private bool _isDragging;
-    private Point _dragStartPoint;
-    
+    public Point DragStartPoint { get; private set; }
+
     public TabCard(WebsiteTab tab, bool useDragging = true) : this(tab.TabId, tab, useDragging) {}
     public TabCard(int key, WebsiteTab tab, bool useDragging = true)
     {
@@ -99,7 +99,7 @@ public partial class TabCard
     
     private void TabCard_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _dragStartPoint = e.GetPosition(null);
+        DragStartPoint = Mouse.GetPosition(null);
         CaptureMouse();
     }
 
@@ -114,7 +114,7 @@ public partial class TabCard
         };
         
         var currentPosition = e.GetPosition(null);
-        var diff = currentPosition - _dragStartPoint;
+        var diff = currentPosition - DragStartPoint;
 
         if (!_isDragging && diff.Length > SystemParameters.MinimumHorizontalDragDistance)
         {
@@ -147,7 +147,7 @@ public partial class TabCard
     {
         if (currentPosition.X < 0 || currentPosition.X > Width) return null;
         
-        var move = (int)((currentPosition.Y - _dragStartPoint.Y) / 30);
+        var move = (int)((currentPosition.Y - DragStartPoint.Y) / 30);
         return move == 0 ? (int?)0 : move;
     }
 
