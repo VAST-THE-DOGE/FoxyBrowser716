@@ -280,43 +280,17 @@ private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
 	}
 }
 
-private int _alreadyMoved;
-private int _prevKey;
-private bool _moving;
-private async Task UpdateTabOrder(TabCard tabCard, int moveBy)
+private async Task UpdateTabOrder(TabCard tabCard, int moveTo)
 {
-	if (_moving) return;
-	_moving = true;
-
-	if (_prevKey != tabCard.Key)
+	if (moveTo < 1 || moveTo >= Tabs.Children.Count)
 	{
-		_prevKey = tabCard.Key;
-		_alreadyMoved = 0;
-	}
-	
-	var currentIndex = Tabs.Children.IndexOf(tabCard);
-	if (currentIndex < 0)
-	{
-		// should not happen
-		_moving = false;
-		return;
-	}
-
-	var newIndex = currentIndex + moveBy - _alreadyMoved;
-	
-	if (newIndex < 1 || newIndex >= Tabs.Children.Count)
-	{
-		if (newIndex > Tabs.Children.Count + 5)
+		if (moveTo > Tabs.Children.Count + 5)
 			await BuildNewWindow(tabCard);
-		
-		_moving = false;
 		return;
 	}
 
 	Tabs.Children.Remove(tabCard);
-	Tabs.Children.Insert(newIndex, tabCard);
-	_alreadyMoved = moveBy;
-	_moving = false;
+	Tabs.Children.Insert(moveTo, tabCard);
 }
 
 private bool _buildingWindow;
@@ -328,9 +302,14 @@ private async Task BuildNewWindow(TabCard tabCard)
 
 	if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
 	
-	var tabCardWindow = new TabMoveWindowCard(OwnerInstance, tab, tabCard.DragStartPoint);
-	TabManager.RemoveTab(tabCard.Key, true);
+	var point = PointToScreen(Mouse.GetPosition(null));
+	var tabCardWindow = new TabMoveWindowCard(OwnerInstance, tab)
+	{
+		Top = point.Y - 10,
+		Left = point.X - 20
+	};
 	tabCardWindow.Show();
+	TabManager.RemoveTab(tabCard.Key, true);
 	
 	_createdFor = tabCard.Key;
 	_buildingWindow = false;

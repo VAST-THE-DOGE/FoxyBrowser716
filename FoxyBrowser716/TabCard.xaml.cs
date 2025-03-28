@@ -113,8 +113,9 @@ public partial class TabCard
             return;
         };
         
-        var currentPosition = e.GetPosition(null);
-        var diff = currentPosition - DragStartPoint;
+        if (Parent is not StackPanel stackPanel) return;
+        var currentPosition = e.GetPosition(stackPanel);
+        var diff = e.GetPosition(null) - DragStartPoint;
 
         if (!_isDragging && diff.Length > SystemParameters.MinimumHorizontalDragDistance)
         {
@@ -124,7 +125,7 @@ public partial class TabCard
 
         if (_isDragging)
         {
-            int? relativeMove = CalculateRelativeMove(currentPosition);
+            var relativeMove = CalculateRelativeMove(currentPosition);
             DragPositionChanged?.Invoke(this, relativeMove);
         }
     }
@@ -147,7 +148,7 @@ public partial class TabCard
     {
         if (currentPosition.X < 0 || currentPosition.X > Width) return null;
         
-        var move = (int)((currentPosition.Y - DragStartPoint.Y) / 30);
+        var move = (int)(currentPosition.Y / 30);
         return move == 0 ? (int?)0 : move;
     }
 }

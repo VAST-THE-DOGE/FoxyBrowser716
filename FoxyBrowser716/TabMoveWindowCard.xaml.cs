@@ -5,45 +5,40 @@ namespace FoxyBrowser716;
 
 public partial class TabMoveWindowCard : Window
 {
-	private WebsiteTab Tab;
-	private ServerManager Instance;
-	private Point GrabLocation;
-    
-	public TabMoveWindowCard(ServerManager instance, WebsiteTab tab, Point grabLocation)
-	{
-		InitializeComponent();
+    private WebsiteTab Tab;
+    private ServerManager Instance;
 
-		Instance = instance;
-		Tab = tab;
-		
-		GrabLocation = grabLocation;
+    public TabMoveWindowCard(ServerManager instance, WebsiteTab tab)
+    {
+        InitializeComponent();
+        Instance = instance;
+        Tab = tab;
+        
+        TitleLabel.Content = Tab.Title;
+        TabIcon.Child = Tab.Icon;
 
-		TitleLabel.Content = Tab.Title;
-		TabIcon.Child = Tab.Icon;
-		
-		Loaded += (s, e) => CaptureMouse();
-		PreviewMouseMove += OnMouseMove;
-		PreviewMouseLeftButtonUp += OnMouseLeftButtonUp;
-	}
+        Loaded += (_,_) =>
+        {
+            DragMove();
+        };
 
-	//private Point? gl;
-	private void OnMouseMove(object sender, MouseEventArgs e)
-	{
-		var mousePos = Mouse.GetPosition(null);
-		mousePos = new Point(mousePos.X - GrabLocation.X, mousePos.Y - GrabLocation.Y + 60);
-		var screenPos = PointToScreen(mousePos);
+        var dragStarted = false;
+        MouseMove += (_, _) =>
+        {
+            if (!dragStarted && Mouse.LeftButton == MouseButtonState.Pressed)
+            {
+                DragMove();
+                dragStarted = true;
+            }
+        };
+        
+        MouseLeftButtonUp += OnMouseLeftButtonUp;
+    }
 
-		Left = screenPos.X;
-		Top = screenPos.Y;
-	}
-
-	private async void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-	{
-		var mousePos = Mouse.GetPosition(null);
-		var screenPos = PointToScreen(mousePos);
-		
-		ReleaseMouseCapture();
-		await Instance.CreateWindowFromTab(Tab, screenPos);
-		Close();
-	}
+    private async void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var finalPos = new Point(Left, Top);
+        await Instance.CreateWindowFromTab(Tab, finalPos);
+        Close();
+    }
 }

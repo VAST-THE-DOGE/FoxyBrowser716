@@ -6,7 +6,8 @@
         WindowStyle="None"
         AllowsTransparency="True"
         mc:Ignorable="d"
-        Title="TabMoveWindowCard" Height="34" Width="260"
+        Title="TabMoveWindowCard" 
+        Height="34" Width="260"
         Background="Transparent"
         Topmost="True">
     <Border Name="RootPanel1" BorderBrush="#99FF9103" BorderThickness="2" Margin="0" Padding="0">
