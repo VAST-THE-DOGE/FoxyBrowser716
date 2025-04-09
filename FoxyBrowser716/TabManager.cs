@@ -77,6 +77,8 @@ public class TabManager
 				tab.TabCore.Dispose();
 			else if (tab.TabCore.Parent is Grid g)
 				g.Children.Remove(tab.TabCore);
+			else
+				throw new Exception($"Tab (Id = {tabId}) could not be removed. Unknown TabCore Parent.");
 				
 		TabsUpdated?.Invoke();
 		TabRemoved?.Invoke(tabId);
@@ -162,7 +164,7 @@ public class TabManager
 	/// <param name="tab">tab to add</param>
 	public async Task<int> TransferTab(WebsiteTab tab)
 	{
-		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue? might be later on, not now.
+		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
 		

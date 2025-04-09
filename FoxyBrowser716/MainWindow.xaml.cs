@@ -128,36 +128,8 @@ public partial class MainWindow
 			MessageBox.Show("Not implemented yet");
 		};
 
-		LeftBar.MouseEnter += (_, _) =>
-		{
-			var animation = new DoubleAnimation
-			{
-				Duration = TimeSpan.FromSeconds(0.25),
-				To = 260,
-				EasingFunction = new CubicEase
-				{
-					EasingMode = EasingMode.EaseOut
-				}
-			};
-
-			// Apply the animation to the Grid's Height
-			LeftBar.BeginAnimation(WidthProperty, animation);
-		};
-		LeftBar.MouseLeave += (_, _) =>
-		{
-			var animation = new DoubleAnimation
-			{
-				Duration = TimeSpan.FromSeconds(0.25),
-				To = 30,
-				EasingFunction = new CubicEase
-				{
-					EasingMode = EasingMode.EaseOut
-				}
-			};
-
-			// Apply the animation to the Grid's Height
-			LeftBar.BeginAnimation(WidthProperty, animation);
-		};
+		LeftBar.MouseEnter += (_, _) => { OpenSideBar(); };
+		LeftBar.MouseLeave += (_, _) => { CloseSideBar(); };
 
 		SearchBox.KeyDown += (_, e) =>
 		{
@@ -166,6 +138,45 @@ public partial class MainWindow
 				Search_Click(null, EventArgs.Empty);
 			}
 		};
+	}
+
+	internal bool SideOpen;
+	internal void OpenSideBar()
+	{
+		SideOpen = true;
+		var animation = new DoubleAnimation
+		{
+			Duration = TimeSpan.FromSeconds(0.25),
+			To = 260,
+			EasingFunction = new CubicEase
+			{
+				EasingMode = EasingMode.EaseOut
+			}
+		};
+
+		LeftBar.BeginAnimation(WidthProperty, animation);
+	}
+	
+	internal void CloseSideBar()
+	{
+		SideOpen = false;
+		var animation = new DoubleAnimation
+		{
+			Duration = TimeSpan.FromSeconds(0.25),
+			To = 30,
+			EasingFunction = new CubicEase
+			{
+				EasingMode = EasingMode.EaseOut
+			}
+		};
+
+		LeftBar.BeginAnimation(WidthProperty, animation);
+	}
+
+	internal Rect GetLeftBarDropArea()
+	{
+		var p = PointToScreen(new Point(0, 30));
+		return new Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
 	}
 
 	private Control[] _normalButtons =>
@@ -305,8 +316,8 @@ private async Task BuildNewWindow(TabCard tabCard)
 	var point = PointToScreen(Mouse.GetPosition(null));
 	var tabCardWindow = new TabMoveWindowCard(OwnerInstance, tab)
 	{
-		Top = point.Y - 10,
-		Left = point.X - 20
+		Top = point.Y - 15,
+		Left = point.X - 75
 	};
 	tabCardWindow.Show();
 	TabManager.RemoveTab(tabCard.Key, true);
@@ -843,6 +854,5 @@ private async Task Initialize()
 		else
 			handle.Cursor = Cursors.Arrow;
 	}
-
 	#endregion
 }
