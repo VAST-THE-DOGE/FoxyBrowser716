@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using FoxyBrowser716.HomeWidgets.WidgetSettings;
 using static FoxyBrowser716.Animator;
 using static FoxyBrowser716.ColorPalette;
 
@@ -20,8 +21,10 @@ public partial class SearchWidget : IWidget
 
 	private TabManager _tabManager;
 
-	public override Task Initialize(TabManager manager)
+	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
 	{
+		base.Initialize(manager, settings);
+		
 		_tabManager = manager;
 		
 		SearchBox.GotKeyboardFocus += (_, _) =>

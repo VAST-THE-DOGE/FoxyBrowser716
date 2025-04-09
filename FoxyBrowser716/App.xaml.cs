@@ -50,6 +50,7 @@ public partial class App : Application
 //TODO: this shouldn't be here:
 public static class ColorPalette
 {
+	public static Color Transparent => Color.FromArgb(0, 0, 0,0);
 	public static Color MainColor => Color.FromRgb(30, 35, 50);
 	public static Color AccentColor => Color.FromRgb(54, 64, 91);
 

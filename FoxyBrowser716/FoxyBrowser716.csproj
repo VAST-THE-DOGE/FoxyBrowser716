@@ -49,6 +49,9 @@
       <Resource Include="Resources\NoiceLoadingIconBlack.gif" />
       <None Remove="Resources\NoiceLoadingIconWhite.gif" />
       <Resource Include="Resources\NoiceLoadingIconWhite.gif" />
+      <None Update="FoxyBrowserDefaultBackground.jpg">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -57,6 +60,11 @@
 
     <ItemGroup>
       <Page Update="HomeWidgets\YoutubeWidget.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+      <Page Update="HomeWidgets\EditConfigWidget.xaml">
         <Generator>MSBuild:Compile</Generator>
         <XamlRuntime>Wpf</XamlRuntime>
         <SubType>Designer</SubType>

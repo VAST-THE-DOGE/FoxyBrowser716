@@ -1,5 +1,7 @@
 ﻿using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
+using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
@@ -13,8 +15,10 @@ public partial class TimeWidget : IWidget
 	public const string StaticWidgetName = "TimeWidget";
 	public override string WidgetName => StaticWidgetName;
 
-	public override Task Initialize(TabManager manager)
+	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
 	{
+		base.Initialize(manager, settings);
+		
 		var timer = new System.Timers.Timer(50);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
@@ -26,5 +30,11 @@ public partial class TimeWidget : IWidget
 	private void UpdateTime(object? sender, ElapsedEventArgs elapsedEventArgs)
 	{
 		Dispatcher.Invoke(() => TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt"));
+	}
+	
+	private protected override void SetEditMode(bool value)
+	{
+		base.SetEditMode(value);
+		MessageBox.Show("e");
 	}
 }
