@@ -21,11 +21,12 @@ public partial class HomePage : UserControl
 
 	private async Task TryLoadWidgets()
 	{
-		if (File.Exists(WidgetsFileName))
+		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
+		if (File.Exists(path))
 		{
 			try
 			{
-				var jsonData = await File.ReadAllTextAsync(WidgetsFileName);
+				var jsonData = await File.ReadAllTextAsync(path);
 				_savedWidgets = JsonSerializer.Deserialize<List<WidgetData>>(jsonData) ?? GetDefaultWidgets();
 			}
 			catch
