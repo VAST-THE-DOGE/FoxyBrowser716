@@ -110,6 +110,7 @@ public class ServerManager
 			         where pos.X >= leftBoundS && pos.X <= rightBoundS && pos.Y >= topBoundS && pos.Y <= bottomBoundS
 			         select window))
 		{
+			//TODO: modify this to keep the tab dragging
 			await window.TabManager.TransferTab(tab);
 			return true;
 		}
