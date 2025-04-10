@@ -508,7 +508,7 @@ private void ToggleHomeEdit(bool editing)
 		foreach (var ho in homeOptions)
 		{
 			var card = new TabCard(ho.icon, ho.name);
-			card.CardClicked += () => _homePage.OptionClicked(ho.type);
+			card.CardClicked += async () => await _homePage.OptionClicked(ho.type);
 			PinnedTabs.Children.Add(card);
 		}
 	}
