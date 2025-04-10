@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Material.Icons.WPF;
 
 namespace FoxyBrowser716;
 
@@ -19,7 +21,7 @@ public partial class TabCard
     public event Action<TabCard, int?>? DragPositionChanged;
     private bool _isDragging;
     public Point DragStartPoint { get; private set; }
-
+    
     public TabCard(WebsiteTab tab, bool useDragging = true) : this(tab.TabId, tab, useDragging) {}
     public TabCard(int key, WebsiteTab tab, bool useDragging = true)
     {
@@ -48,7 +50,7 @@ public partial class TabCard
         DuplicateButton.Visibility = Visibility.Collapsed;
         TitleLabel.Content = tab.Title;
 
-        TabIcon.Child = tab.Image; //TODO ERROR: Specified element is already the logical child of another element. Disconnect it first.
+        TabIcon.Child = tab.Image;
 
         CloseButton.Click += (_, _) => RemoveRequested?.Invoke();
         
@@ -58,6 +60,42 @@ public partial class TabCard
             AttachDragHandlers();
         else
             MouseLeftButtonUp += (_, _) => CardClicked?.Invoke();
+    }
+    
+    public TabCard(BitmapSource? bitmapSource, string name)
+    {
+        InitializeComponent();
+
+        DuplicateButton.Visibility = Visibility.Collapsed;
+        CloseButton.Visibility = Visibility.Collapsed;
+
+        TitleLabel.Content = name;
+        if (bitmapSource is not null)
+            TabIcon.Child = new Image {Source = bitmapSource, Stretch = Stretch.Uniform};
+        else
+            TabIcon.Visibility = Visibility.Hidden;
+        
+        SetupAnimations();
+        
+        MouseLeftButtonUp += (_, _) => CardClicked?.Invoke();
+    }
+
+    public TabCard(MaterialIcon? icon, string name)
+    {
+        InitializeComponent();
+
+        DuplicateButton.Visibility = Visibility.Collapsed;
+        CloseButton.Visibility = Visibility.Collapsed;
+
+        TitleLabel.Content = name;
+        if (icon is not null)
+            TabIcon.Child = icon;
+        else
+            TabIcon.Visibility = Visibility.Hidden;
+        
+        SetupAnimations();
+        
+        MouseLeftButtonUp += (_, _) => CardClicked?.Invoke();
     }
 
     private void SetupAnimations()

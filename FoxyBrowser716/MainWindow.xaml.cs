@@ -362,6 +362,8 @@ private async Task Initialize()
 	TabHolder.Children.Add(_homePage);
 	TabManager.SwapActiveTabTo(-1);
 
+	_homePage.ToggleEditMode += ToggleHomeEdit;
+
 	TabManager.TabCreated += tab =>
 	{
 	    var tabCard = new TabCard(tab);
@@ -471,7 +473,57 @@ private async Task Initialize()
 	}
 }
 
-	private async void Search_Click(object? s, EventArgs e)
+private List<UIElement> _prevTopLPanelControls = [];
+private List<UIElement> _prevBottomLPanelControls = [];
+
+private void ToggleHomeEdit(bool editing)
+{
+	if (editing)
+	{
+		_prevTopLPanelControls.Clear();
+		_prevTopLPanelControls.AddRange(Tabs.Children.Cast<UIElement>());
+		_prevBottomLPanelControls.Clear();
+		_prevBottomLPanelControls.AddRange(PinnedTabs.Children.Cast<UIElement>());
+
+		Tabs.Children.Clear();
+		PinnedTabs.Children.Clear();
+
+		var widgetOptions = _homePage.GetWidgetOptions();
+		var homeOptions = _homePage.GetHomeOptions();
+
+		foreach (var wo in widgetOptions)
+		{
+			var card = new TabCard(wo.preview, wo.name);
+			card.CardClicked += () => _homePage.AddWidget(wo.name);
+			Tabs.Children.Add(card);
+		}
+
+		PinnedTabs.Children.Add(new Border
+		{
+			Height = 1,
+			Margin = new Thickness(5,0,5,0),
+			Background = Brushes.White,
+			HorizontalAlignment = HorizontalAlignment.Stretch
+		});
+		foreach (var ho in homeOptions)
+		{
+			var card = new TabCard(ho.icon, ho.name);
+			card.CardClicked += () => _homePage.OptionClicked(ho.type);
+			PinnedTabs.Children.Add(card);
+		}
+	}
+	else
+	{
+		Tabs.Children.Clear();
+		foreach (var c in _prevTopLPanelControls)
+			Tabs.Children.Add(c);
+		PinnedTabs.Children.Clear();
+		foreach (var c in _prevBottomLPanelControls)
+			PinnedTabs.Children.Add(c);	
+	}
+}
+
+private async void Search_Click(object? s, EventArgs e)
 	{
 		try
 		{

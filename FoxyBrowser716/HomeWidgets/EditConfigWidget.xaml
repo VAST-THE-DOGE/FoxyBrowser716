@@ -5,13 +5,9 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:homeWidgets="clr-namespace:FoxyBrowser716.HomeWidgets"
                  xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
-                 xmlns:local="clr-namespace:FoxyBrowser716.Converters"
                  mc:Ignorable="d"
                  d:DesignHeight="100" d:DesignWidth="750"
                  Background="Transparent">
-    <UserControl.Resources>
-        <local:ActualHeightToFontSizeConverter x:Key="FontSizeConverter" />
-    </UserControl.Resources>
     <Button Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" 
             Height="Auto" Name="EditConfigButton" BorderThickness="0"
             Background="#002D2D30" Foreground="White"
