@@ -199,7 +199,7 @@ public partial class HomePage : UserControl
                 break;
         }
 
-        widget.Data = widgetData; // Link widget to its data
+        widget.Data = widgetData;
 
         Grid.SetRow(widget, widgetData.Row);
         Grid.SetColumn(widget, widgetData.Column);
@@ -221,12 +221,10 @@ public partial class HomePage : UserControl
 
     private async Task CreateWidget(string widgetName)
     {
-        var widget = GetWidget(widgetName);
-
         var wData = new WidgetData()
         {
             Name = widgetName,
-            Row = 0, // Default position, can be adjusted
+            Row = 0,
             Column = 0,
             RowSpan = 1,
             ColumnSpan = 1,
@@ -234,11 +232,6 @@ public partial class HomePage : UserControl
 
         _savedWidgets.Add(wData);
         await AddWidget(wData);
-    }
-
-    private Point? FindOpenSpace()
-    {
-        return null; // Implement if needed
     }
 
     private void EditModeStart()

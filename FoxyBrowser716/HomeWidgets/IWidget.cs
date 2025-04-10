@@ -22,7 +22,7 @@ namespace FoxyBrowser716.HomeWidgets
         public virtual ICommand? RemoveCommand => CanRemove ? new RelayCommand(() => RemoveRequested?.Invoke()) : null;
         public virtual ICommand? SettingsCommand => WidgetSettings?.Count > 0 ? new RelayCommand(ShowSettings) : null;
         public virtual Dictionary<string, IWidgetSetting>? WidgetSettings { get; set; } = [];
-        public WidgetData Data { get; set; } // Added property
+        public WidgetData Data { get; set; }
 
         protected TabManager _tabManager;
 

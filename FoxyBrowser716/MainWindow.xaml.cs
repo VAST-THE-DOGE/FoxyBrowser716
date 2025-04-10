@@ -803,26 +803,26 @@ private async void Search_Click(object? s, EventArgs e)
 	            if (senderRect != null && mainWindow != null)
 	            {
 	                // Get the current mouse position relative to the main window
-	                Point pos = e.GetPosition(mainWindow);
+	                var pos = e.GetPosition(mainWindow);
 	
 	                // Start with current window values
-	                double newLeft = mainWindow.Left;
-	                double newTop = mainWindow.Top;
-	                double newWidth = mainWindow.Width;
-	                double newHeight = mainWindow.Height;
+	                var newLeft = mainWindow.Left;
+	                var newTop = mainWindow.Top;
+	                var newWidth = mainWindow.Width;
+	                var newHeight = mainWindow.Height;
 	
 	                // Check which sides are being resized
-	                bool resizeLeft = senderRect.Name.ToLower().Contains("left");
-	                bool resizeRight = senderRect.Name.ToLower().Contains("right");
-	                bool resizeTop = senderRect.Name.ToLower().Contains("top");
-	                bool resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+	                var resizeLeft = senderRect.Name.ToLower().Contains("left");
+	                var resizeRight = senderRect.Name.ToLower().Contains("right");
+	                var resizeTop = senderRect.Name.ToLower().Contains("top");
+	                var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
 	
 	                // Process left resizing: adjust newLeft and newWidth
 	                if (resizeLeft)
 	                {
 	                    // pos.X is the new distance from the left edge
-	                    double deltaX = pos.X;
-	                    double proposedWidth = mainWindow.Width - deltaX;
+	                    var deltaX = pos.X;
+	                    var proposedWidth = mainWindow.Width - deltaX;
 	                    if (proposedWidth >= mainWindow.MinWidth)
 	                    {
 	                        newLeft += deltaX;
@@ -834,7 +834,7 @@ private async void Search_Click(object? s, EventArgs e)
 	                if (resizeRight)
 	                {
 	                    // pos.X gives the new width from the left edge
-	                    double proposedWidth = pos.X + 1; // adding a little offset
+	                    var proposedWidth = pos.X + 1; // adding a little offset
 	                    if (proposedWidth >= mainWindow.MinWidth)
 	                    {
 	                        newWidth = proposedWidth;
@@ -844,8 +844,8 @@ private async void Search_Click(object? s, EventArgs e)
 	                // Process top resizing: adjust newTop and newHeight
 	                if (resizeTop)
 	                {
-	                    double deltaY = pos.Y;
-	                    double proposedHeight = mainWindow.Height - deltaY;
+	                    var deltaY = pos.Y;
+	                    var proposedHeight = mainWindow.Height - deltaY;
 	                    if (proposedHeight >= mainWindow.MinHeight)
 	                    {
 	                        newTop += deltaY;
@@ -856,7 +856,7 @@ private async void Search_Click(object? s, EventArgs e)
 	                // Process bottom resizing: new height based on mouse position
 	                if (resizeBottom)
 	                {
-	                    double proposedHeight = pos.Y + 1; // little offset
+	                    var proposedHeight = pos.Y + 1; // little offset
 	                    if (proposedHeight >= mainWindow.MinHeight)
 	                    {
 	                        newHeight = proposedHeight;

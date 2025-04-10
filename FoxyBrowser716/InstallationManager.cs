@@ -58,7 +58,7 @@ public static class InstallationManager
             }
         }
         
-        using (RegistryKey appPaths = Registry.CurrentUser.CreateSubKey(
+        using (var appPaths = Registry.CurrentUser.CreateSubKey(
 	               $@"Software\Microsoft\Windows\CurrentVersion\App Paths\{GetApplicationName()}.exe"))
         {
 	        var exePath = GetExecutablePath();

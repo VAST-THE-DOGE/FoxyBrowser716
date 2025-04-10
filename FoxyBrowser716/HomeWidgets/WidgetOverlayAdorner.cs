@@ -19,7 +19,7 @@ namespace FoxyBrowser716.HomeWidgets
         private readonly Grid _grid;
         private readonly Border _border;
         private readonly Ellipse _circle;
-        private readonly Ellipse _resizeHandle; // Added resize handle
+        private readonly Ellipse _resizeHandle;
         private readonly StackPanel _iconPanel;
         private bool _isDragging = false;
         private bool _isResizing = false;
@@ -119,18 +119,15 @@ namespace FoxyBrowser716.HomeWidgets
             _grid.Children.Add(_iconPanel);
             _visuals.Add(_grid);
 
-            // Attach event handlers for moving
             _circle.MouseLeftButtonDown += Circle_MouseLeftButtonDown;
             _circle.MouseMove += Circle_MouseMove;
             _circle.MouseLeftButtonUp += Circle_MouseLeftButtonUp;
 
-            // Attach event handlers for resizing
             _resizeHandle.MouseLeftButtonDown += ResizeHandle_MouseLeftButtonDown;
             _resizeHandle.MouseMove += ResizeHandle_MouseMove;
             _resizeHandle.MouseLeftButtonUp += ResizeHandle_MouseLeftButtonUp;
         }
 
-        // Moving event handlers
         private void Circle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _isDragging = true;
@@ -146,8 +143,8 @@ namespace FoxyBrowser716.HomeWidgets
                 if (grid != null)
                 {
                     var position = e.GetPosition(grid);
-                    int newRow = GetRowFromPosition(position, grid);
-                    int newColumn = GetColumnFromPosition(position, grid);
+                    var newRow = GetRowFromPosition(position, grid);
+                    var newColumn = GetColumnFromPosition(position, grid);
                     Grid.SetRow(_widget, newRow);
                     Grid.SetColumn(_widget, newColumn);
                 }
@@ -165,7 +162,6 @@ namespace FoxyBrowser716.HomeWidgets
             }
         }
 
-        // Resizing event handlers
         private void ResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _isResizing = true;
@@ -181,14 +177,14 @@ namespace FoxyBrowser716.HomeWidgets
                 if (grid != null)
                 {
                     var position = e.GetPosition(grid);
-                    int targetRow = GetRowFromPosition(position, grid);
-                    int targetColumn = GetColumnFromPosition(position, grid);
-                    int currentRow = Grid.GetRow(_widget);
-                    int currentColumn = Grid.GetColumn(_widget);
-                    int potentialRowSpan = targetRow - currentRow + 1;
-                    int potentialColumnSpan = targetColumn - currentColumn + 1;
-                    int newRowSpan = Math.Max(_widget.MinWidgetHeight, Math.Min(_widget.MaxWidgetHeight, potentialRowSpan));
-                    int newColumnSpan = Math.Max(_widget.MinWidgetWidth, Math.Min(_widget.MaxWidgetWidth, potentialColumnSpan));
+                    var targetRow = GetRowFromPosition(position, grid);
+                    var targetColumn = GetColumnFromPosition(position, grid);
+                    var currentRow = Grid.GetRow(_widget);
+                    var currentColumn = Grid.GetColumn(_widget);
+                    var potentialRowSpan = targetRow - currentRow + 1;
+                    var potentialColumnSpan = targetColumn - currentColumn + 1;
+                    var newRowSpan = Math.Max(_widget.MinWidgetHeight, Math.Min(_widget.MaxWidgetHeight, potentialRowSpan));
+                    var newColumnSpan = Math.Max(_widget.MinWidgetWidth, Math.Min(_widget.MaxWidgetWidth, potentialColumnSpan));
                     Grid.SetRowSpan(_widget, newRowSpan);
                     Grid.SetColumnSpan(_widget, newColumnSpan);
                 }
@@ -210,7 +206,7 @@ namespace FoxyBrowser716.HomeWidgets
         private int GetRowFromPosition(Point position, Grid grid)
         {
             double y = 0;
-            for (int row = 0; row < grid.RowDefinitions.Count; row++)
+            for (var row = 0; row < grid.RowDefinitions.Count; row++)
             {
                 y += grid.RowDefinitions[row].ActualHeight;
                 if (position.Y < y)
@@ -222,7 +218,7 @@ namespace FoxyBrowser716.HomeWidgets
         private int GetColumnFromPosition(Point position, Grid grid)
         {
             double x = 0;
-            for (int col = 0; col < grid.ColumnDefinitions.Count; col++)
+            for (var col = 0; col < grid.ColumnDefinitions.Count; col++)
             {
                 x += grid.ColumnDefinitions[col].ActualWidth;
                 if (position.X < x)
