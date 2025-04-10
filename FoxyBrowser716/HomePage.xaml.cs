@@ -24,6 +24,7 @@ public partial class HomePage : UserControl
 	private const string DefaultBackgroundName = "FoxyBrowserDefaultBackground.jpg";
 	private List<WidgetData> _savedWidgets;
 	private HomeSettings _settings;
+	private TabManager _manager;
 	
 	public event Action<bool> ToggleEditMode;
 	public bool InEditMode;
@@ -47,7 +48,12 @@ public partial class HomePage : UserControl
 		await TryLoadWidgets();
 		await TryLoadSettings();
 		await AddWidgetsToGrid(manager);
-		
+
+		ApplySettings();
+	}
+
+	private void ApplySettings()
+	{
 		MainGrid.Background = new ImageBrush
 		{
 			ImageSource = new BitmapImage(new Uri(_settings.BackgroundPath)),
@@ -176,34 +182,61 @@ public partial class HomePage : UserControl
 
 	private async Task AddWidgetsToGrid(TabManager manager)
 	{
-		List<Task> initTasks = [];
-		foreach (var widgetData in _savedWidgets)
+		MainGrid.Children.Clear();
+		await Task.WhenAll(_savedWidgets.Select(AddWidget));
+	}
+
+	private async Task AddWidget(WidgetData widgetData)
+	{
+		var widget = GetWidget(widgetData.Name);
+		switch (widget)
 		{
-			var widget = GetWidget(widgetData.Name);
-			if (widget is null)
-			{
+			case null:
 				MessageBox.Show($"Widget {widgetData.Name} not found", "Widget Error", MessageBoxButton.OK, MessageBoxImage.Error);
-				continue;
-			}
-
-			if (widget is EditConfigWidget editWidget)
-			{
+				return;
+			case EditConfigWidget editWidget:
 				editWidget.Clicked += EditModeStart;
-			}
-			
-			// do not await each task at one time,
-			// just add the task to a list and await all of them at one time
-			initTasks.Add(widget.Initialize(manager, widgetData.Settings));
-			
-			Grid.SetRow(widget, widgetData.Row);
-			Grid.SetColumn(widget, widgetData.Column);
-			Grid.SetRowSpan(widget, widgetData.RowSpan);
-			Grid.SetColumnSpan(widget, widgetData.ColumnSpan);
-
-			MainGrid.Children.Add(widget);
+				break;
 		}
+
+
+		Grid.SetRow(widget, widgetData.Row);
+		Grid.SetColumn(widget, widgetData.Column);
+		Grid.SetRowSpan(widget, widgetData.RowSpan);
+		Grid.SetColumnSpan(widget, widgetData.ColumnSpan);
+
+		MainGrid.Children.Add(widget);
 		
-		await Task.WhenAll(initTasks);
+		await widget.Initialize(_manager, widgetData.Settings);
+	}
+
+	private async Task CreateWidget(string widgetName)
+	{
+		var widget = GetWidget(widgetName);
+
+		// var openSpace = FindOpenSpace();
+		//
+		// if (openSpace is null)
+		// {
+		// 	MessageBox.Show("There is no space to put this widget. Please remove or resize another widget first.",
+		// 		"Widget Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		// 	return;
+		// }
+		
+		var wData = new WidgetData()
+		{
+			Name = widgetName,
+			RowSpan = 1,
+			ColumnSpan = 1,
+		};
+		
+		_savedWidgets.Add(wData);
+		await AddWidget(wData);
+	}
+
+	private Point? FindOpenSpace()
+	{
+		return null;
 	}
 
 	private void EditModeStart()
@@ -229,7 +262,6 @@ public partial class HomePage : UserControl
 			.Where(v => v.CanAdd)
 			.Select(v => (v.PreviewControl(),v.WidgetName))
 			.ToArray();
-
 	}
 	
 	public (MaterialIcon? icon, OptionType type, string name)[] GetHomeOptions()
@@ -252,10 +284,16 @@ public partial class HomePage : UserControl
 		switch (type)
 		{
 			case OptionType.Save:
+				await Task.WhenAll(SaveWidgetsToJson(), SaveSettingsToJson());
 				break;
 			case OptionType.SaveExit:
+				await Task.WhenAll(SaveWidgetsToJson(), SaveSettingsToJson());
+				EditModeEnd();
 				break;
 			case OptionType.Exit:
+				await Task.WhenAll(TryLoadWidgets(), TryLoadSettings());
+				await AddWidgetsToGrid(_manager);
+				ApplySettings();
 				EditModeEnd();
 				break;
 			case OptionType.ChangeImage:
@@ -270,22 +308,23 @@ public partial class HomePage : UserControl
 
 				if (result == true)
 				{
-					Console.WriteLine("setting path");
 					_settings.BackgroundPath = dialog.FileName;
-					MainGrid.Background = new ImageBrush
-					{
-						ImageSource = new BitmapImage(new Uri(_settings.BackgroundPath)),
-						Stretch = Stretch.UniformToFill
-					};
+					ApplySettings();
 				}
-				await SaveSettingsToJson();
 				break;
 		}
 	}
 
-	public void AddWidget(string name)
+	public async void AddWidgetClicked(string name)
 	{
-		
+		try
+		{
+			await CreateWidget(name);
+		}
+		catch (Exception e)
+		{
+			MessageBox.Show(e.Message, "Widget Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		}
 	}
 	
 	public enum OptionType

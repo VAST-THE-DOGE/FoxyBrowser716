@@ -494,7 +494,7 @@ private void ToggleHomeEdit(bool editing)
 		foreach (var wo in widgetOptions)
 		{
 			var card = new TabCard(wo.preview, wo.name);
-			card.CardClicked += () => _homePage.AddWidget(wo.name);
+			card.CardClicked += () => _homePage.AddWidgetClicked(wo.name);
 			Tabs.Children.Add(card);
 		}
 
