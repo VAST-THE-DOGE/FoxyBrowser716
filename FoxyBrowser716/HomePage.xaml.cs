@@ -60,9 +60,9 @@ public partial class HomePage : UserControl
 		return WidgetOptions.TryGetValue(widgetName, out var factory) ? factory() : null;
 	}
 
-	private async Task TryLoadSettings()
+	private async Task TryLoadWidgets()
 	{
-		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
+		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
 		if (File.Exists(path))
 		{
 			try
@@ -119,9 +119,9 @@ public partial class HomePage : UserControl
 		];
 	}
 	
-	private async Task TryLoadWidgets()
+	private async Task TryLoadSettings()
 	{
-		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
+		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
 		if (File.Exists(path))
 		{
 			try
@@ -170,7 +170,7 @@ public partial class HomePage : UserControl
 		}
 		catch (Exception e)
 		{
-			MessageBox.Show(e.Message, "Widget Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			MessageBox.Show(e.Message, "Setting Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
@@ -313,5 +313,5 @@ internal record WidgetData
 
 internal record HomeSettings
 {
-	internal required string BackgroundPath { get; set; }
+	public required string BackgroundPath { get; set; }
 }
