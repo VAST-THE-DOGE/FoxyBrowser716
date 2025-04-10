@@ -362,6 +362,8 @@ private async Task Initialize()
 	TabHolder.Children.Add(_homePage);
 	TabManager.SwapActiveTabTo(-1);
 
+	_homePage.ToggleEditMode += ToggleHomeEdit;
+
 	TabManager.TabCreated += tab =>
 	{
 	    var tabCard = new TabCard(tab);
@@ -471,7 +473,57 @@ private async Task Initialize()
 	}
 }
 
-	private async void Search_Click(object? s, EventArgs e)
+private List<UIElement> _prevTopLPanelControls = [];
+private List<UIElement> _prevBottomLPanelControls = [];
+
+private void ToggleHomeEdit(bool editing)
+{
+	if (editing)
+	{
+		_prevTopLPanelControls.Clear();
+		_prevTopLPanelControls.AddRange(Tabs.Children.Cast<UIElement>());
+		_prevBottomLPanelControls.Clear();
+		_prevBottomLPanelControls.AddRange(PinnedTabs.Children.Cast<UIElement>());
+
+		Tabs.Children.Clear();
+		PinnedTabs.Children.Clear();
+
+		var widgetOptions = _homePage.GetWidgetOptions();
+		var homeOptions = _homePage.GetHomeOptions();
+
+		foreach (var wo in widgetOptions)
+		{
+			var card = new TabCard(wo.preview, wo.name);
+			card.CardClicked += () => _homePage.AddWidgetClicked(wo.name);
+			Tabs.Children.Add(card);
+		}
+
+		PinnedTabs.Children.Add(new Border
+		{
+			Height = 1,
+			Margin = new Thickness(5,0,5,0),
+			Background = Brushes.White,
+			HorizontalAlignment = HorizontalAlignment.Stretch
+		});
+		foreach (var ho in homeOptions)
+		{
+			var card = new TabCard(ho.icon, ho.name);
+			card.CardClicked += async () => await _homePage.OptionClicked(ho.type);
+			PinnedTabs.Children.Add(card);
+		}
+	}
+	else
+	{
+		Tabs.Children.Clear();
+		foreach (var c in _prevTopLPanelControls)
+			Tabs.Children.Add(c);
+		PinnedTabs.Children.Clear();
+		foreach (var c in _prevBottomLPanelControls)
+			PinnedTabs.Children.Add(c);	
+	}
+}
+
+private async void Search_Click(object? s, EventArgs e)
 	{
 		try
 		{
@@ -751,26 +803,26 @@ private async Task Initialize()
 	            if (senderRect != null && mainWindow != null)
 	            {
 	                // Get the current mouse position relative to the main window
-	                Point pos = e.GetPosition(mainWindow);
+	                var pos = e.GetPosition(mainWindow);
 	
 	                // Start with current window values
-	                double newLeft = mainWindow.Left;
-	                double newTop = mainWindow.Top;
-	                double newWidth = mainWindow.Width;
-	                double newHeight = mainWindow.Height;
+	                var newLeft = mainWindow.Left;
+	                var newTop = mainWindow.Top;
+	                var newWidth = mainWindow.Width;
+	                var newHeight = mainWindow.Height;
 	
 	                // Check which sides are being resized
-	                bool resizeLeft = senderRect.Name.ToLower().Contains("left");
-	                bool resizeRight = senderRect.Name.ToLower().Contains("right");
-	                bool resizeTop = senderRect.Name.ToLower().Contains("top");
-	                bool resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+	                var resizeLeft = senderRect.Name.ToLower().Contains("left");
+	                var resizeRight = senderRect.Name.ToLower().Contains("right");
+	                var resizeTop = senderRect.Name.ToLower().Contains("top");
+	                var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
 	
 	                // Process left resizing: adjust newLeft and newWidth
 	                if (resizeLeft)
 	                {
 	                    // pos.X is the new distance from the left edge
-	                    double deltaX = pos.X;
-	                    double proposedWidth = mainWindow.Width - deltaX;
+	                    var deltaX = pos.X;
+	                    var proposedWidth = mainWindow.Width - deltaX;
 	                    if (proposedWidth >= mainWindow.MinWidth)
 	                    {
 	                        newLeft += deltaX;
@@ -782,7 +834,7 @@ private async Task Initialize()
 	                if (resizeRight)
 	                {
 	                    // pos.X gives the new width from the left edge
-	                    double proposedWidth = pos.X + 1; // adding a little offset
+	                    var proposedWidth = pos.X + 1; // adding a little offset
 	                    if (proposedWidth >= mainWindow.MinWidth)
 	                    {
 	                        newWidth = proposedWidth;
@@ -792,8 +844,8 @@ private async Task Initialize()
 	                // Process top resizing: adjust newTop and newHeight
 	                if (resizeTop)
 	                {
-	                    double deltaY = pos.Y;
-	                    double proposedHeight = mainWindow.Height - deltaY;
+	                    var deltaY = pos.Y;
+	                    var proposedHeight = mainWindow.Height - deltaY;
 	                    if (proposedHeight >= mainWindow.MinHeight)
 	                    {
 	                        newTop += deltaY;
@@ -804,7 +856,7 @@ private async Task Initialize()
 	                // Process bottom resizing: new height based on mouse position
 	                if (resizeBottom)
 	                {
-	                    double proposedHeight = pos.Y + 1; // little offset
+	                    var proposedHeight = pos.Y + 1; // little offset
 	                    if (proposedHeight >= mainWindow.MinHeight)
 	                    {
 	                        newHeight = proposedHeight;
