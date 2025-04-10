@@ -128,8 +128,8 @@ public partial class MainWindow
 			MessageBox.Show("Not implemented yet");
 		};
 
-		LeftBar.MouseEnter += (_, _) => { OpenSideBar(); };
-		LeftBar.MouseLeave += (_, _) => { CloseSideBar(); };
+		LeftBar.MouseEnter += LeftBarMouseEnter;
+		LeftBar.MouseLeave += LeftBarMouseLeave;
 
 		SearchBox.KeyDown += (_, e) =>
 		{
@@ -140,13 +140,36 @@ public partial class MainWindow
 		};
 	}
 
+	private bool _mouseOverSideBar;
+	private void LeftBarMouseEnter(object sender, MouseEventArgs e)
+	{
+		_mouseOverSideBar = true;
+		Task.Delay(150).ContinueWith(_ =>
+		{
+			if (_mouseOverSideBar && !SideOpen)
+				Dispatcher.Invoke(OpenSideBar);
+		});
+	}
+	
+	private void LeftBarMouseLeave(object sender, MouseEventArgs e)
+	{
+		_mouseOverSideBar = false;
+		Task.Delay(250).ContinueWith(_ =>
+		{
+			if (!_mouseOverSideBar && SideOpen)
+				Dispatcher.Invoke(CloseSideBar);
+		});
+	}
+
 	internal bool SideOpen;
 	internal void OpenSideBar()
 	{
+		if (SideOpen) return;
+		
 		SideOpen = true;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.25),
+			Duration = TimeSpan.FromSeconds(0.2),
 			To = 260,
 			EasingFunction = new CubicEase
 			{
@@ -159,10 +182,12 @@ public partial class MainWindow
 	
 	internal void CloseSideBar()
 	{
+		if (!SideOpen) return;
+		
 		SideOpen = false;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.25),
+			Duration = TimeSpan.FromSeconds(0.3),
 			To = 30,
 			EasingFunction = new CubicEase
 			{
