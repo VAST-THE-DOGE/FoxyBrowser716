@@ -37,8 +37,8 @@ public partial class SearchWidget : IWidget
 		};
 		SearchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SearchClick(this, EventArgs.Empty); };
 		
-		SearchButton.MouseEnter += (_, _) => { ChangeColorAnimation(SearchButton.Background, MainColor, AccentColor); };
-		SearchButton.MouseLeave += (_, _) => { ChangeColorAnimation(SearchButton.Background, AccentColor, MainColor); };
+		SearchButton.MouseEnter += (_, _) => { ChangeColorAnimation(SearchButton.Background, Transparent, AccentColor); };
+		SearchButton.MouseLeave += (_, _) => { ChangeColorAnimation(SearchButton.Background, AccentColor, Transparent); };
 		SearchButton.PreviewMouseLeftButtonUp += (_, _) => { ChangeColorAnimation(SearchButton.Foreground, HighlightColor, Colors.White); };
 		SearchButton.PreviewMouseLeftButtonDown += (_, _) => { SearchButton.Foreground = new SolidColorBrush(HighlightColor); };
 		
