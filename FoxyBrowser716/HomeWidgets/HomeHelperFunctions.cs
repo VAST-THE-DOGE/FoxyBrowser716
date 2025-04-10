@@ -10,7 +10,7 @@ namespace FoxyBrowser716.Converters;
 
 public class ActualHeightToFontSizeConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is double actualHeight)
         {
@@ -19,7 +19,7 @@ public class ActualHeightToFontSizeConverter : IValueConverter
         return 12.0;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }

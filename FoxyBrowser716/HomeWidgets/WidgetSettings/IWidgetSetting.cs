@@ -2,7 +2,6 @@ namespace FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 public interface IWidgetSetting
 {
-	string Name { get; init; }
 	object Value { get; set; } // Using object to be super flexible~ *winks*
 	event Action<object> ValueChanged; // Non-generic event
 }
@@ -15,8 +14,6 @@ public interface IWidgetSetting<T> : IWidgetSetting
 
 public abstract class WidgetSetting<T> : IWidgetSetting<T>
 {
-	public string Name { get; init; }
-
 	private T _value;
 
 	public T Value
@@ -43,9 +40,8 @@ public abstract class WidgetSetting<T> : IWidgetSetting<T>
 		remove { ValueChanged -= v => value?.Invoke(v); }
 	}
 
-	protected WidgetSetting(string name, T value)
+	protected WidgetSetting(T value)
 	{
-		Name = name;
 		_value = value;
 	}
 }

@@ -31,10 +31,4 @@ public partial class TimeWidget : IWidget
 	{
 		Dispatcher.Invoke(() => TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt"));
 	}
-	
-	private protected override void SetEditMode(bool value)
-	{
-		base.SetEditMode(value);
-		MessageBox.Show("e");
-	}
 }

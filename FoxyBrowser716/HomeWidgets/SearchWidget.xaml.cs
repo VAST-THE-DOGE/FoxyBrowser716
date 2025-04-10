@@ -19,6 +19,12 @@ public partial class SearchWidget : IWidget
 	public override string WidgetName => StaticWidgetName;
 	public override int MaxWidgetHeight => 10;
 
+	public override Dictionary<string, IWidgetSetting>? WidgetSettings { get; set; } =
+		new()
+		{
+			["DefaultBrowser"]=new WidgetSettingString("google"),
+		};
+
 	private TabManager _tabManager;
 
 	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
