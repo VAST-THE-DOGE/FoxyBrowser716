@@ -15,7 +15,7 @@ public partial class TimeWidget : IWidget
 	public const string StaticWidgetName = "TimeWidget";
 	public override string WidgetName => StaticWidgetName;
 
-	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
+	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)
 	{
 		base.Initialize(manager, settings);
 		

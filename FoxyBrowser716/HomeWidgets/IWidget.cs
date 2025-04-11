@@ -34,11 +34,18 @@ namespace FoxyBrowser716.HomeWidgets
             return Task.CompletedTask;
         }
 
-        protected virtual void ShowSettings() { }
+        protected virtual void ShowSettings()
+        {
+            OpenWidgetSettings?.Invoke(WidgetSettings);
+        }
+
+        public event Action<Dictionary<string, IWidgetSetting>?>? OpenWidgetSettings;
         
         private bool _inWidgetEditingMode;
         public bool InWidgetEditingMode { get => _inWidgetEditingMode; set => SetEditMode(value); }
         private WidgetOverlayAdorner? _overlayAdorner;
+        private SettingsAdorner? _settingsAdorner;
+
         private protected virtual void SetEditMode(bool value)
         {
             _inWidgetEditingMode = value;

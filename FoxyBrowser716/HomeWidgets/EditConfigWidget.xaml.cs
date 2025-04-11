@@ -23,7 +23,7 @@ public partial class EditConfigWidget : IWidget
 	
 	internal event Action Clicked;
 	
-	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
+	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)
 	{
 		EditConfigButton.MouseEnter += (_, _) => { ChangeColorAnimation(EditConfigButton.Background, Transparent, AccentColor); };
 		EditConfigButton.MouseLeave += (_, _) => { ChangeColorAnimation(EditConfigButton.Background, AccentColor, Transparent); };

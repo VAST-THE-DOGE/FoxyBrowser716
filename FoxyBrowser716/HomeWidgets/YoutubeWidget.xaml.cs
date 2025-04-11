@@ -17,7 +17,7 @@ public partial class YoutubeWidget : IWidget
 
 	private TabManager _tabManager;
 	
-	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
+	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)
 	{
 		base.Initialize(manager, settings);
 		

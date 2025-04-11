@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -213,6 +214,17 @@ public partial class HomePage : UserControl
         {
             _savedWidgets.Remove(widgetData);
             MainGrid.Children.Remove(widget);
+        };
+        widget.OpenWidgetSettings += wSettings =>
+        {
+            var adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            
+            if (adornerLayer != null)
+            {
+                var settingsAdorner = new SettingsAdorner(wSettings, $"{widget.Name} Settings", this);
+                settingsAdorner.CloseRequested += () => { adornerLayer.Remove(settingsAdorner); };
+                adornerLayer.Add(settingsAdorner);
+            }
         };
         
         if (InEditMode)
