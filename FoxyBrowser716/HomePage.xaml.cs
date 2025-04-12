@@ -34,6 +34,7 @@ public partial class HomePage : UserControl
         { SearchWidget.StaticWidgetName, () => new SearchWidget() },
         { TitleWidget.StaticWidgetName, () => new TitleWidget() },
         { TimeWidget.StaticWidgetName, () => new TimeWidget() },
+        { DateWidget.StaticWidgetName, () => new DateWidget() },
         { EditConfigWidget.StaticWidgetName, () => new EditConfigWidget() },
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
     };
