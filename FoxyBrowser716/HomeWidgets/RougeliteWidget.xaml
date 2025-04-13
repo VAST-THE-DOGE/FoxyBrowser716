@@ -6,9 +6,8 @@
              xmlns:homeWidgets="clr-namespace:FoxyBrowser716.HomeWidgets"
              mc:Ignorable="d"
              d:DesignHeight="200" d:DesignWidth="400"
-             Background="Transparent"
-             IsHitTestVisible="False">
-    <Grid Background="Transparent" IsHitTestVisible="False">
-        <Canvas Background="Transparent" Name="canvas" IsHitTestVisible="False"/>
+             Background="Transparent">
+    <Grid Background="Transparent">
+        <Canvas Background="Transparent" Name="canvas"/>
     </Grid>
 </homeWidgets:IWidget>
