@@ -93,5 +93,11 @@
         <SubType>Designer</SubType>
       </Page>
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="HomeWidgets\RougeLiteClasses.cs">
+        <DependentUpon>RougeliteWidget.xaml</DependentUpon>
+      </Compile>
+    </ItemGroup>
     
 </Project>
