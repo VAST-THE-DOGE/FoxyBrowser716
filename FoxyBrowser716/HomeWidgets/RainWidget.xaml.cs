@@ -1,8 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
@@ -19,11 +22,16 @@ public partial class RainWidget : IWidget
 
 	private List<Shape> _shapes = [];
 	private Random _random = new();
+
+	public override Dictionary<string, IWidgetSetting>? WidgetSettings { get; set; } = new()
+	{
+		["RainDropMultiplier"] = new WidgetSettingDouble(1),
+	};
 	
 	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings)
 	{
 		base.Initialize(manager, settings);
-		var timer = new System.Timers.Timer(30);
+		var timer = new System.Timers.Timer(25);
 		timer.Elapsed += Tick;
 		timer.AutoReset = true;
 		timer.Enabled = true;
@@ -31,12 +39,22 @@ public partial class RainWidget : IWidget
 		return Task.CompletedTask;
 	}
 
+	// used to slow down FPS on low-end systems
+	private bool inTick;
 	private void Tick(object? sender, ElapsedEventArgs elapsedEventArgs)
 	{
 		Dispatcher.Invoke(() =>
 		{
-			Console.WriteLine("s: "+_shapes.Count);
-			Console.WriteLine("c: "+canvas.Children.Count);
+			// shouldn't run if there is no one to see it
+			if (inTick || !IsVisible) return;
+			inTick = true;
+			
+			if (WidgetSettings?["RainDropMultiplier"] is not WidgetSettingDouble settingDouble) return;
+
+			// used to prevent grouping
+			// when moving a window (decreasing height), a lot of raindrops go to the top in a single wave without this.
+			var movedThisTick = 0;
+			
 			foreach (var shape in _shapes.ToList())
 			{
 				if (shape is Line line)
@@ -54,6 +72,18 @@ public partial class RainWidget : IWidget
 						line.X1 += 4;
 						line.X2 += 4.4;
 					} 
+					else if (_shapes.Count < settingDouble.Value * (ActualHeight) / 4)
+					{
+						if (movedThisTick++ >= 5) continue;
+						
+						var position = _random.Next(-((int)ActualHeight / 4), (int)ActualWidth);
+						line.X1 = position;
+						line.X2 = position + 2;
+						line.Y1 = 0;
+						line.Y2 = 10;
+						if (line.Parent == canvas && line.X1 < 0)
+							canvas.Children.Remove(line);
+					}
 					else
 					{
 						_shapes.Remove(line);
@@ -62,18 +92,23 @@ public partial class RainWidget : IWidget
 					}
 				}
 			}
-
-			for (var i = 0; i < 3; i++)
+			
+			if (_shapes.Count < settingDouble.Value * (ActualHeight)/5)
 			{
-				var position = _random.Next(-((int)ActualHeight/4), (int)ActualWidth);
-				var newLine = new Line
+				for (var i = 0; i < 3; i++)
 				{
-					X1 = position, X2 = position + 2, Y1 = 0, Y2 = 10,
-					Stroke = Brushes.CornflowerBlue,
-					StrokeThickness = 1
-				};
-				_shapes.Add(newLine);
+					var position = _random.Next(-((int)ActualHeight / 4), (int)ActualWidth);
+					var newLine = new Line
+					{
+						X1 = position, X2 = position + 2, Y1 = 0, Y2 = 10,
+						Stroke = Brushes.CornflowerBlue,
+						StrokeThickness = 1
+					};
+					_shapes.Add(newLine);
+				}
 			}
+			
+			inTick = false;
 		});
 	}
 }

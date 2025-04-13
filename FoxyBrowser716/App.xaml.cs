@@ -1,4 +1,5 @@
-﻿using System.IO.Pipes;
+﻿using System.Diagnostics;
+using System.IO.Pipes;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -48,6 +49,30 @@ public partial class App : Application
 
 
 //TODO: this shouldn't be here:
+public static class DebugHelpers
+{
+	public static Stopwatch? StartDebugTimer()
+	{
+#if DEBUG
+		{
+			var timer = new Stopwatch();
+			timer.Start();
+			return timer;
+		}
+#endif
+		return null;
+	}
+	
+	public static void EndDebugTimer(this Stopwatch? timer)
+	{
+		if (timer is null) return;
+		
+		timer.Stop();
+		var milliseconds = timer.ElapsedTicks / (double)Stopwatch.Frequency * 1000;
+		Console.WriteLine($"{milliseconds:F3} ms");
+	}
+}
+
 public static class ColorPalette
 {
 	public static Color Transparent => Color.FromArgb(0, 0, 0,0);
