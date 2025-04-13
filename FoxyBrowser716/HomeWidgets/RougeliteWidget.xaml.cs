@@ -35,8 +35,6 @@ public partial class RougeWidget : IWidget
 	{
 		Dispatcher.Invoke(() =>
 		{
-			Console.WriteLine("s: "+_shapes.Count);
-			Console.WriteLine("c: "+canvas.Children.Count);
 			foreach (var shape in _shapes.ToList())
 			{
 				if (shape is Line line)
