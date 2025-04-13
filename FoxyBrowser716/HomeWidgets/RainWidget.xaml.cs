@@ -7,14 +7,14 @@ using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class RougeWidget : IWidget
+public partial class RainWidget : IWidget
 {
-	public RougeWidget()
+	public RainWidget()
 	{
 		InitializeComponent();
 	}
 
-	public const string StaticWidgetName = "RougeWidget";
+	public const string StaticWidgetName = "RainWidget";
 	public override string WidgetName => StaticWidgetName;
 
 	private List<Shape> _shapes = [];
