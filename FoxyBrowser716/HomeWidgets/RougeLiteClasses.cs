@@ -19,6 +19,7 @@ public static class RougeLiteParticles
 	{
 		public Vector2 Velocity;
 		public Vector2 Acceleration;
+		public int ParticleSize;
 		public Line Box;
 
 		public void Move()
@@ -36,6 +37,7 @@ public static class RougeLiteParticles
 		{
 			Velocity = velocity;
 			Acceleration = acceleration;
+			ParticleSize = size;
 			Box = new Line
 			{
 				X1 = start.X,

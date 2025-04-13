@@ -39,8 +39,7 @@ public partial class HomePage : UserControl
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
         { RougeWidget.StaticWidgetName, () => new RougeWidget() },
         { RainWidget.StaticWidgetName, () => new RainWidget() },
-
-
+        { LAGWIDGET.StaticWidgetName, () => new LAGWIDGET() },
     };
 
     public HomePage()

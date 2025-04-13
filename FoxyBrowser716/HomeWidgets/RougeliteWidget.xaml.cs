@@ -29,20 +29,13 @@ public partial class RougeWidget : IWidget
 		
 		return Task.CompletedTask;
 	}
-
-	private List<RougeLiteParticles.BoxVectorParticle> particles = [];
+	
 	private void Tick(object? sender, ElapsedEventArgs elapsedEventArgs)
 	{
+		
 		Dispatcher.Invoke(() =>
 		{
-			var particle = new RougeLiteParticles.BoxVectorParticle(new Vector2(0,5), new Vector2(2,0), new Point(10,10), 5, Brushes.Aqua);
-			particles.Add(particle);
-			canvas.Children.Add(particle.Box);
-
-			foreach (var p in particles)
-			{
-				p.Move();
-			}
+			
 		});
 	}
 }
