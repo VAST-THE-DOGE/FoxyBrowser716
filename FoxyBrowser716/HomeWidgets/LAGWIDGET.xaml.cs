@@ -30,7 +30,7 @@ public partial class LAGWIDGET : IWidget
 		return Task.CompletedTask;
 	}
 
-	private List<RougeLiteParticles.BoxVectorParticle> particles = [];
+	private List<RoguelikeParticleClasses.BoxVectorParticle> particles = [];
 	private Brush particleBrush = new SolidColorBrush(Colors.White);
 	private Random random = new();
 	private float collisionMultiplier = 1.1f;
@@ -45,9 +45,9 @@ public partial class LAGWIDGET : IWidget
 		var Randomized = false;
 		Dispatcher.Invoke(() =>
 		{
-			for (var i = 0; i < 10; i++)
+			for (var i = 0; i < 5; i++)
 			{
-				var particle = new RougeLiteParticles.BoxVectorParticle(
+				var particle = new RoguelikeParticleClasses.BoxVectorParticle(
 					new Vector2(random.Next(-30, 30), random.Next(-30, 30)), new Vector2(0, 0), new Point(10, 10), random.Next(5, 30),
 					particleBrush);
 				particles.Add(particle);
@@ -56,8 +56,8 @@ public partial class LAGWIDGET : IWidget
 
 			foreach (var p in particles.ToList())			
 			{
-				if (p.Velocity.X > 10000000000 || p.Velocity.X < -10000000000 || p.Velocity.Y < -10000000000 ||
-				    p.Velocity.Y > 10000000000)
+				if (p.Velocity.X > 100 || p.Velocity.X < -100 || p.Velocity.Y < -100 ||
+				    p.Velocity.Y > 100)
 				{
 					particles.Remove(p);
 					canvas.Children.Remove(p.Box);

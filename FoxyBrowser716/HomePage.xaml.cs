@@ -27,7 +27,7 @@ public partial class HomePage : UserControl
     private TabManager _manager;
 
     public event Action<bool> ToggleEditMode;
-    public bool InEditMode;
+    public bool InEditMode { get; private set; }
 
     private static Dictionary<string, Func<IWidget>> WidgetOptions = new()
     {

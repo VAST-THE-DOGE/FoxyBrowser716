@@ -52,6 +52,21 @@
       <None Update="FoxyBrowserDefaultBackground.jpg">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="RogueliteData\CardBackgrounds\CommonCard.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="RogueliteData\CardBackgrounds\EpicCard.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="RogueliteData\CardBackgrounds\LegendaryCard.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="RogueliteData\CardBackgrounds\RareCard.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="RogueliteData\CardBackgrounds\UncommonCard.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -74,7 +89,7 @@
         <XamlRuntime>Wpf</XamlRuntime>
         <SubType>Designer</SubType>
       </Page>
-      <Page Update="HomeWidgets\RougeliteWidget.xaml">
+      <Page Update="HomeWidgets\RogueliteParticleWidget.xaml">
         <Generator>MSBuild:Compile</Generator>
         <XamlRuntime>Wpf</XamlRuntime>
         <SubType>Designer</SubType>
@@ -100,9 +115,34 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="HomeWidgets\RougeLiteClasses.cs">
-        <DependentUpon>RougeliteWidget.xaml</DependentUpon>
+      <Compile Update="HomeWidgets\RoguelikeParticleClasses.cs">
+        <DependentUpon>RoguelikeWidget.xaml</DependentUpon>
       </Compile>
+      <Compile Update="HomeWidgets\RogueliteParticleCards.cs">
+        <DependentUpon>RogueliteParticleWidget.xaml</DependentUpon>
+      </Compile>
+      <Compile Update="HomeWidgets\RogueliteParticleAiClasses.cs">
+        <DependentUpon>RogueliteParticleWidget.xaml</DependentUpon>
+      </Compile>
+      <Compile Update="HomeWidgets\RogueliteParticlePlayer.cs">
+        <DependentUpon>RogueliteParticleWidget.xaml</DependentUpon>
+      </Compile>
+      <Compile Update="HomeWidgets\RoguelikeAiClasses.cs">
+        <DependentUpon>RoguelikeWidget.xaml</DependentUpon>
+      </Compile>
+      <Compile Update="HomeWidgets\RoguelikeCards.cs">
+        <DependentUpon>RoguelikeWidget.xaml</DependentUpon>
+      </Compile>
+      <Compile Update="HomeWidgets\RoguelikePlayer.cs">
+        <DependentUpon>RoguelikeWidget.xaml</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="RogueliteData\CardIcons\" />
+      <Folder Include="RogueliteData\CardPacks\" />
+      <Folder Include="RogueliteData\EnemySprites\" />
+      <Folder Include="RogueliteData\PlayerSprites\" />
     </ItemGroup>
     
 </Project>

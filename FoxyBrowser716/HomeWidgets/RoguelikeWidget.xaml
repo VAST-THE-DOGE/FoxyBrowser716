@@ -1,0 +1,31 @@
+﻿<homeWidgets:IWidget x:Class="FoxyBrowser716.HomeWidgets.RougeWidget"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:homeWidgets="clr-namespace:FoxyBrowser716.HomeWidgets"
+                     xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+                     mc:Ignorable="d"
+                     d:DesignHeight="100" d:DesignWidth="400"
+                     Background="Transparent">
+    <Grid Name="widgetGrid" Background="Transparent">
+        <StackPanel Background="#AA444444" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Button Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" 
+                    Height="Auto" BorderThickness="0" HorizontalAlignment="Left"
+                    Background="#002D2D30" Foreground="White"
+                    Click="StartButtonClicked"
+                    Content="{wpf:MaterialIconExt Kind=PlayArrow}" >
+            </Button>             
+            <Viewbox Width="Auto" Stretch="Uniform">
+                <TextBlock Name="TimeLabel"
+                           Text="TODO" 
+                           FontWeight="Bold" 
+                           Foreground="white"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Viewbox>
+        </StackPanel>
+        
+        <Canvas x:Name="canvas" Width="1920" Height="1080" Background="Black" Visibility="Collapsed"/>
+    </Grid>
+</homeWidgets:IWidget>
