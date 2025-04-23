@@ -122,8 +122,7 @@ public partial class HomePage : UserControl
                         : _imageIndex % images.Count]));
                     
                     _imageControl.Source = source;
-                    if (source.UriSource.ToString().EndsWith(".gif"))
-                        ImageBehavior.SetAnimatedSource(_imageControl, source);
+                    ImageBehavior.SetAnimatedSource(_imageControl, source);
                 });
             }
         }
@@ -135,8 +134,8 @@ public partial class HomePage : UserControl
         {
             var source = new BitmapImage(new Uri(_settings.BackgroundPath));
             _imageControl.Source = source;
-            if (source.UriSource.ToString().EndsWith(".gif"))
-                ImageBehavior.SetAnimatedSource(_imageControl, source);
+            ImageBehavior.SetAnimatedSource(_imageControl, source);
+            
             Grid.SetRowSpan(_imageControl, 9999);
             Grid.SetColumnSpan(_imageControl, 9999);
             Panel.SetZIndex(_imageControl, -1);
