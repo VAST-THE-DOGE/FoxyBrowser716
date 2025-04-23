@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Documents;
@@ -39,6 +40,8 @@ public partial class HomePage : UserControl
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
     };
 
+    private System.Timers.Timer updateTimer;
+    
     public HomePage()
     {
         InitializeComponent();
@@ -51,7 +54,19 @@ public partial class HomePage : UserControl
         await TryLoadSettings();
         await AddWidgetsToGrid(manager);
 
+        updateTimer = new System.Timers.Timer(25);
+        updateTimer.Elapsed += TimerTick;
+        updateTimer.AutoReset = true;
+        updateTimer.Enabled = true;        
         ApplySettings();
+    }
+
+    private void TimerTick(object? sender, ElapsedEventArgs e)
+    {
+        if (_settings.DoSlideshow)
+        {
+            
+        }
     }
 
     private void ApplySettings()
@@ -217,14 +232,14 @@ public partial class HomePage : UserControl
         };
         widget.OpenWidgetSettings += wSettings =>
         {
-            var adornerLayer = AdornerLayer.GetAdornerLayer(this);
-            
-            if (adornerLayer != null)
-            {
-                var settingsAdorner = new SettingsAdorner(wSettings, $"{widget.Name} Settings", this);
-                settingsAdorner.CloseRequested += () => { adornerLayer.Remove(settingsAdorner); };
-                adornerLayer.Add(settingsAdorner);
-            }
+            // var adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            //
+            // if (adornerLayer != null)
+            // {
+            //     var settingsAdorner = new SettingsAdorner(wSettings, $"{widget.Name} Settings", this);
+            //     settingsAdorner.CloseRequested += () => { adornerLayer.Remove(settingsAdorner); };
+            //     adornerLayer.Add(settingsAdorner);
+            // }
         };
         
         if (InEditMode)
@@ -290,7 +305,8 @@ public partial class HomePage : UserControl
             (new MaterialIcon { Kind = MaterialIconKind.ContentSave, Foreground = Brushes.White}, OptionType.Save, "Save"),
             (new MaterialIcon { Kind = MaterialIconKind.Logout, Foreground = Brushes.White}, OptionType.SaveExit, "Save and Exit"),
             (new MaterialIcon { Kind = MaterialIconKind.Logout, Foreground = Brushes.White}, OptionType.Exit, "Exit Without Saving"),
-            (new MaterialIcon { Kind = MaterialIconKind.Image, Foreground = Brushes.White}, OptionType.ChangeImage, "Change Background Image")
+            (new MaterialIcon { Kind = MaterialIconKind.Image, Foreground = Brushes.White}, OptionType.ChangeImage, "Change Background Image"),
+            (new MaterialIcon { Kind = MaterialIconKind.ImageAlbum, Foreground = Brushes.White}, OptionType.ChangeSlideshow, "Change Slideshow Background"),
         ];
     }
 
@@ -327,9 +343,43 @@ public partial class HomePage : UserControl
                     ApplySettings();
                 }
                 break;
+            case OptionType.ChangeSlideshow:
+                var adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            
+                if (adornerLayer != null)
+                {
+                    var settingsAdorner = new SettingsAdorner(_slideshowSettings, $"Slideshow Settings", this);
+                    settingsAdorner.CloseRequested += (returnSettings) =>
+                    {
+                        adornerLayer.Remove(settingsAdorner);
+                        if (returnSettings.TryGetValue(2, out var valueRaw1) && valueRaw1.setting is WidgetSettingBool boolSetting1)
+                            _settings.DoSlideshow = boolSetting1.Value;
+                        if (returnSettings.TryGetValue(3, out var valueRaw2) && valueRaw2.setting is WidgetSettingBool boolSetting2)
+                            _settings.RandomPicking = boolSetting2.Value;
+                        if (returnSettings.TryGetValue(4, out var valueRaw3) && valueRaw3.setting is WidgetSettingInt intSetting)
+                            _settings.DisplayTime = intSetting.Value;
+                        if (returnSettings.TryGetValue(5, out var valueRaw4) && valueRaw4.setting is WidgetSettingFolderPicker folderSetting)
+                            _settings.FolderPath = folderSetting.Value;
+                        ApplySettings();
+                    };
+                    adornerLayer.Add(settingsAdorner);
+                }
+                
+                break;
         }
     }
 
+    private Dictionary<int, (IWidgetSetting setting, string title)> _slideshowSettings => new()
+    {
+        // [-3] = (new WidgetSettingSubTitle("Hello There"),""),
+        // [-2] = (new WidgetSettingDescription("Hello there."),""),
+        // [-1] = (new WidgetSettingDiv(),""),
+        [0] = (new WidgetSettingBool(_settings.DoSlideshow), "Enable Slideshow"),
+        [1] = (new WidgetSettingBool(_settings.RandomPicking), "Pick Random Images (will pick in alphabetical order when off)"),
+        [2] = (new WidgetSettingInt(_settings.DisplayTime), "Display Interval (in seconds)"),
+        [3] = (new WidgetSettingFolderPicker(_settings.FolderPath), "FolderPath (can have nested folders)"),
+    };
+    
     public async void AddWidgetClicked(string name)
     {
         try
@@ -347,7 +397,8 @@ public partial class HomePage : UserControl
         Save,
         SaveExit,
         Exit,
-        ChangeImage
+        ChangeImage,
+        ChangeSlideshow,
     }
 }
 
@@ -363,5 +414,12 @@ public record WidgetData
 
 internal record HomeSettings
 {
+    // background
     public required string BackgroundPath { get; set; }
+    
+    // slideshow background
+    public bool DoSlideshow { get; set; }
+    public bool RandomPicking { get; set; }
+    public string FolderPath { get; set; } = "";
+    public int DisplayTime { get; set; } = 60;
 }

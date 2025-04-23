@@ -22,8 +22,10 @@ namespace FoxyBrowser716.HomeWidgets
         public virtual ICommand? RemoveCommand => CanRemove ? new RelayCommand(() => RemoveRequested?.Invoke()) : null;
         public virtual ICommand? SettingsCommand => WidgetSettings?.Count > 0 ? new RelayCommand(ShowSettings) : null;
         public virtual Dictionary<string, IWidgetSetting>? WidgetSettings { get; set; } = [];
+        //TODO: move to a class that manages the names, default values, set values and serializing to/from JSON.
+        
         public WidgetData Data { get; set; }
-
+        
         protected TabManager _tabManager;
 
         public virtual Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)

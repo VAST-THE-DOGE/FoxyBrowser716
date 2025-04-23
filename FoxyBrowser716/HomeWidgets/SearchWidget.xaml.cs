@@ -24,7 +24,7 @@ public partial class SearchWidget : IWidget
 		{
 			["DefaultBrowser"]=new WidgetSettingString("google"),
 		};
-
+	
 	private TabManager _tabManager;
 
 	public override Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)
