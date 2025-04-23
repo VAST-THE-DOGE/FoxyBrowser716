@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -14,6 +16,7 @@ using FoxyBrowser716.HomeWidgets.WidgetSettings;
 using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Win32;
+using WpfAnimatedGif;
 
 namespace FoxyBrowser716;
 
@@ -39,6 +42,8 @@ public partial class HomePage : UserControl
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
     };
 
+    private System.Timers.Timer updateTimer;
+    
     public HomePage()
     {
         InitializeComponent();
@@ -46,21 +51,106 @@ public partial class HomePage : UserControl
 
     public async Task Initialize(TabManager manager)
     {
-        _manager = manager; // Store manager for later use
-        await TryLoadWidgets();
+        _manager = manager; // save manager for later use
         await TryLoadSettings();
-        await AddWidgetsToGrid(manager);
-
+        _imageControl = new Image
+        {
+            Source = null,
+            Stretch = Stretch.UniformToFill
+        };
         ApplySettings();
+        Panel.SetZIndex(_imageControl, -1);
+        MainGrid.Children.Add(_imageControl);
+
+        await TryLoadWidgets();
+        await AddWidgetsToGrid();
+
+
+        updateTimer = new System.Timers.Timer(250);
+        updateTimer.Elapsed += async (_,_) => await TimerTick();
+        updateTimer.AutoReset = true;
+        updateTimer.Enabled = true;  
+        
+        updateTimer.Start();
+    }
+
+    private int _imageIndex = -1;
+    private Random _random = new();
+    private Image _imageControl;
+    private async Task TimerTick()
+    {
+        if (_settings.DoSlideshow)
+        {
+            var i = (DateTime.Now.Hour * 3600 + DateTime.Now.Minute * 60 + DateTime.Now.Second) / _settings.DisplayTime;
+            if (_imageIndex != i)
+            {
+                _imageIndex = i;
+                
+                if (!Directory.Exists(_settings.FolderPath))
+                {
+                    MessageBox.Show("The specified directory does not exist for slideshow images, turning off slideshow.",
+                        "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _settings.DoSlideshow = false;
+                    return;
+                }
+
+                string[] extensions = [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".avi", ".mov", ".wmv"];
+
+                List<string> images = [];
+                try
+                {
+                    images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
+                        .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while reading slideshow images: {ex.Message}",
+                        "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                if (images.Count == 0)
+                {
+                    MessageBox.Show($"No images found, turning off slideshow.",
+                        "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _settings.DoSlideshow = false;
+                    return;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    Uri? uri = null;
+                    try
+                    {
+                        uri = new Uri(images[_settings.RandomPicking
+                            ? _random.Next(0, images.Count)
+                            : _imageIndex % images.Count]);
+                        
+                        var source = new BitmapImage(uri);
+
+                        _imageControl.Source = source;
+                        ImageBehavior.SetAnimatedSource(_imageControl, source);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("e: "+uri??"null");
+                    }
+                });
+            }
+        }
     }
 
     private void ApplySettings()
     {
-        MainGrid.Background = new ImageBrush
+        if (!_settings.DoSlideshow)
         {
-            ImageSource = new BitmapImage(new Uri(_settings.BackgroundPath)),
-            Stretch = Stretch.UniformToFill
-        };
+            var source = new BitmapImage(new Uri(_settings.BackgroundPath));
+            _imageControl.Source = source;
+            ImageBehavior.SetAnimatedSource(_imageControl, source);
+            
+            Grid.SetRowSpan(_imageControl, 9999);
+            Grid.SetColumnSpan(_imageControl, 9999);
+            Panel.SetZIndex(_imageControl, -1);
+        }
     }
 
     private static IWidget? GetWidget(string widgetName)
@@ -181,9 +271,10 @@ public partial class HomePage : UserControl
         }
     }
 
-    private async Task AddWidgetsToGrid(TabManager manager)
+    private async Task AddWidgetsToGrid()
     {
         MainGrid.Children.Clear();
+        MainGrid.Children.Add(_imageControl);
         await Task.WhenAll(_savedWidgets.Select(AddWidget));
     }
 
@@ -197,6 +288,7 @@ public partial class HomePage : UserControl
                 return;
             case EditConfigWidget editWidget:
                 editWidget.Clicked += EditModeStart;
+                Panel.SetZIndex(editWidget, 500);
                 break;
         }
 
@@ -206,6 +298,7 @@ public partial class HomePage : UserControl
         Grid.SetColumn(widget, widgetData.Column);
         Grid.SetRowSpan(widget, widgetData.RowSpan);
         Grid.SetColumnSpan(widget, widgetData.ColumnSpan);
+        
 
         MainGrid.Children.Add(widget);
 
@@ -214,6 +307,17 @@ public partial class HomePage : UserControl
         {
             _savedWidgets.Remove(widgetData);
             MainGrid.Children.Remove(widget);
+        };
+        widget.OpenWidgetSettings += wSettings =>
+        {
+            // var adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            //
+            // if (adornerLayer != null)
+            // {
+            //     var settingsAdorner = new SettingsAdorner(wSettings, $"{widget.Name} Settings", this);
+            //     settingsAdorner.CloseRequested += () => { adornerLayer.Remove(settingsAdorner); };
+            //     adornerLayer.Add(settingsAdorner);
+            // }
         };
         
         if (InEditMode)
@@ -279,7 +383,8 @@ public partial class HomePage : UserControl
             (new MaterialIcon { Kind = MaterialIconKind.ContentSave, Foreground = Brushes.White}, OptionType.Save, "Save"),
             (new MaterialIcon { Kind = MaterialIconKind.Logout, Foreground = Brushes.White}, OptionType.SaveExit, "Save and Exit"),
             (new MaterialIcon { Kind = MaterialIconKind.Logout, Foreground = Brushes.White}, OptionType.Exit, "Exit Without Saving"),
-            (new MaterialIcon { Kind = MaterialIconKind.Image, Foreground = Brushes.White}, OptionType.ChangeImage, "Change Background Image")
+            (new MaterialIcon { Kind = MaterialIconKind.Image, Foreground = Brushes.White}, OptionType.ChangeImage, "Change Background Image"),
+            (new MaterialIcon { Kind = MaterialIconKind.FolderImage, Foreground = Brushes.White}, OptionType.ChangeSlideshow, "Change Slideshow Background"),
         ];
     }
 
@@ -296,14 +401,14 @@ public partial class HomePage : UserControl
                 break;
             case OptionType.Exit:
                 await Task.WhenAll(TryLoadWidgets(), TryLoadSettings());
-                await AddWidgetsToGrid(_manager);
+                await AddWidgetsToGrid();
                 ApplySettings();
                 EditModeEnd();
                 break;
             case OptionType.ChangeImage:
                 var dialog = new OpenFileDialog
                 {
-                    Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|All Files (*.*)|*.*",
+                    Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;|All Files (*.*)|*.*",
                     Title = "Pick a background image",
                     Multiselect = false
                 };
@@ -316,9 +421,43 @@ public partial class HomePage : UserControl
                     ApplySettings();
                 }
                 break;
+            case OptionType.ChangeSlideshow:
+                var adornerLayer = AdornerLayer.GetAdornerLayer(this);
+            
+                if (adornerLayer != null)
+                {
+                    var settingsAdorner = new SettingsAdorner(_slideshowSettings, $"Slideshow Settings", this);
+                    settingsAdorner.CloseRequested += (returnSettings) =>
+                    {
+                        adornerLayer.Remove(settingsAdorner);
+                        if (returnSettings.TryGetValue(0, out var valueRaw1) && valueRaw1.setting is WidgetSettingBool boolSetting1)
+                            _settings.DoSlideshow = boolSetting1.Value;
+                        if (returnSettings.TryGetValue(1, out var valueRaw2) && valueRaw2.setting is WidgetSettingBool boolSetting2)
+                            _settings.RandomPicking = boolSetting2.Value;
+                        if (returnSettings.TryGetValue(2, out var valueRaw3) && valueRaw3.setting is WidgetSettingInt intSetting)
+                            _settings.DisplayTime = intSetting.Value;
+                        if (returnSettings.TryGetValue(3, out var valueRaw4) && valueRaw4.setting is WidgetSettingFolderPicker folderSetting)
+                            _settings.FolderPath = folderSetting.Value;
+                        ApplySettings();
+                    };
+                    adornerLayer.Add(settingsAdorner);
+                }
+                
+                break;
         }
     }
 
+    private Dictionary<int, (IWidgetSetting setting, string title)> _slideshowSettings => new()
+    {
+        // [-3] = (new WidgetSettingSubTitle("Hello There"),""),
+        // [-2] = (new WidgetSettingDescription("Hello there."),""),
+        // [-1] = (new WidgetSettingDiv(),""),
+        [0] = (new WidgetSettingBool(_settings.DoSlideshow), "Enable Slideshow"),
+        [1] = (new WidgetSettingBool(_settings.RandomPicking), "Pick Random Images (will pick in alphabetical order when off)"),
+        [2] = (new WidgetSettingInt(_settings.DisplayTime), "Display Interval (in seconds)"),
+        [3] = (new WidgetSettingFolderPicker(_settings.FolderPath), "FolderPath (can have nested folders)"),
+    };
+    
     public async void AddWidgetClicked(string name)
     {
         try
@@ -336,7 +475,8 @@ public partial class HomePage : UserControl
         Save,
         SaveExit,
         Exit,
-        ChangeImage
+        ChangeImage,
+        ChangeSlideshow,
     }
 }
 
@@ -352,5 +492,12 @@ public record WidgetData
 
 internal record HomeSettings
 {
+    // background
     public required string BackgroundPath { get; set; }
+    
+    // slideshow background
+    public bool DoSlideshow { get; set; }
+    public bool RandomPicking { get; set; }
+    public string FolderPath { get; set; } = "";
+    public int DisplayTime { get; set; } = 60;
 }

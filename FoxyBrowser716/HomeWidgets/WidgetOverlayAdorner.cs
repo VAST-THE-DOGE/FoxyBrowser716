@@ -21,8 +21,8 @@ namespace FoxyBrowser716.HomeWidgets
         private readonly Ellipse _circle;
         private readonly Ellipse _resizeHandle;
         private readonly StackPanel _iconPanel;
-        private bool _isDragging = false;
-        private bool _isResizing = false;
+        private bool _isDragging;
+        private bool _isResizing;
 
         public WidgetOverlayAdorner(IWidget widget) : base(widget)
         {
@@ -139,8 +139,7 @@ namespace FoxyBrowser716.HomeWidgets
         {
             if (_isDragging)
             {
-                var grid = _widget.Parent as Grid;
-                if (grid != null)
+                if (_widget.Parent is Grid grid)
                 {
                     var position = e.GetPosition(grid);
                     var newRow = GetRowFromPosition(position, grid);
@@ -173,8 +172,7 @@ namespace FoxyBrowser716.HomeWidgets
         {
             if (_isResizing)
             {
-                var grid = _widget.Parent as Grid;
-                if (grid != null)
+                if (_widget.Parent is Grid grid)
                 {
                     var position = e.GetPosition(grid);
                     var targetRow = GetRowFromPosition(position, grid);
