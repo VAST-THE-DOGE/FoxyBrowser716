@@ -117,12 +117,22 @@ public partial class HomePage : UserControl
 
                 Dispatcher.Invoke(() =>
                 {
-                    var source = new BitmapImage(new Uri(images[_settings.RandomPicking 
-                        ? _random.Next(0, images.Count) 
-                        : _imageIndex % images.Count]));
-                    
-                    _imageControl.Source = source;
-                    ImageBehavior.SetAnimatedSource(_imageControl, source);
+                    Uri? uri = null;
+                    try
+                    {
+                        uri = new Uri(images[_settings.RandomPicking
+                            ? _random.Next(0, images.Count)
+                            : _imageIndex % images.Count]);
+                        
+                        var source = new BitmapImage(uri);
+
+                        _imageControl.Source = source;
+                        ImageBehavior.SetAnimatedSource(_imageControl, source);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("e: "+uri??"null");
+                    }
                 });
             }
         }
