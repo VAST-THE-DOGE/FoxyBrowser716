@@ -5,7 +5,7 @@ using System.Windows.Shapes;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public static class RoguelikeAiClasses
+internal static class RoguelikeAiClasses
 {
 	
 }

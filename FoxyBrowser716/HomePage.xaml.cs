@@ -37,7 +37,7 @@ public partial class HomePage : UserControl
         { DateWidget.StaticWidgetName, () => new DateWidget() },
         { EditConfigWidget.StaticWidgetName, () => new EditConfigWidget() },
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
-        { RougeWidget.StaticWidgetName, () => new RougeWidget() },
+        { RougelikeWidget.StaticWidgetName, () => new RougelikeWidget() },
         { RainWidget.StaticWidgetName, () => new RainWidget() },
         { LAGWIDGET.StaticWidgetName, () => new LAGWIDGET() },
     };

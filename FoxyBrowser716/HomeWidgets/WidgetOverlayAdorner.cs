@@ -48,7 +48,7 @@ namespace FoxyBrowser716.HomeWidgets
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(5, 5, 0, 0),
-                Cursor = Cursors.SizeAll
+                Cursor = Cursors.SizeAll,
             };
 
             _resizeHandle = new Ellipse

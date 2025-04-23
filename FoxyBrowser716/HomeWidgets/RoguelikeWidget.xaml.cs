@@ -1,23 +1,35 @@
-﻿using System.Numerics;
+﻿using System.ComponentModel;
+using System.Numerics;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
-using Point = System.Drawing.Point;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class RougeWidget : IWidget
+public partial class RougelikeWidget : IWidget
 {
-	public RougeWidget()
+	public RougelikeWidget()
 	{
 		InitializeComponent();
+		canvas.DataContext = this;
 	}
 
+	#region Texures
+	// internal Image
+	public Image MoneyImage = new() 
+	{
+		Stretch = Stretch.Uniform,
+		Source = new BitmapImage(new Uri("C:\\Users\\penfo\\RiderProjects\\FoxyBrowser716\\FoxyBrowser716\\RoguelikeData\\CardIcons\\FoxyCoin.png", UriKind.RelativeOrAbsolute))
+	};
+	public string MoneyAmount = "12345";
+	#endregion
+	
 	public const string StaticWidgetName = "RougelikeWidget";
 	public override string WidgetName => StaticWidgetName;
 	

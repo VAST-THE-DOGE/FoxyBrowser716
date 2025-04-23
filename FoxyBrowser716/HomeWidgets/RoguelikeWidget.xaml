@@ -1,4 +1,4 @@
-﻿<homeWidgets:IWidget x:Class="FoxyBrowser716.HomeWidgets.RougeWidget"
+﻿<homeWidgets:IWidget x:Class="FoxyBrowser716.HomeWidgets.RougelikeWidget"
                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -26,6 +26,98 @@
             </Viewbox>
         </StackPanel>
         
-        <Canvas x:Name="canvas" Width="1920" Height="1080" Background="Black" Visibility="Collapsed"/>
+        <Canvas x:Name="canvas" Width="1920" Height="1080" Background="Black" Visibility="Collapsed">
+            <Border Panel.ZIndex="1000" BorderThickness="4" BorderBrush="White" Canvas.Left="10" Canvas.Top="10" Width="500" Height="30">
+                <Grid x:Name="healthBar">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{Binding HpCurrentWidth}"/>
+                        <ColumnDefinition Width="{Binding HpMaxWidth}"/>
+                        <ColumnDefinition Width="{Binding HpEternalWidth}"/>
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Grid.Column="0" Fill="Green"/>
+                    <Rectangle Grid.Column="1" Fill="{Binding HpBarFill}"/>
+                    <Rectangle Grid.Column="2" Fill="Black"/>
+                    <TextBlock Grid.ColumnSpan="3" Text="{Binding pText}" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                </Grid>
+            </Border>
+                
+            <StackPanel Panel.ZIndex="1000" Canvas.Left="10" Canvas.Top="50" Orientation="Vertical">
+                <Grid Width="120" Height="100">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="100"/>
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar Grid.Column="0" Orientation="Vertical" Height="100" Value="{Binding DashCooldown}" 
+                                 Maximum="100" Foreground="{Binding DashCooldown, Converter={StaticResource CooldownConverter}}"/>
+                    <Grid Grid.Column="1">
+                        <Image Source="{Binding DashImage}" Width="100" Height="100"/>
+                        <Image Source="{Binding ShiftKeyImage}" Width="25" Height="25" 
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                </Grid>
+                <!--
+                <Grid Width="120" Height="100" Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="100"/>
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar Grid.Column="0" Orientation="Vertical" Height="100" Value="{Binding OtherCooldown}" 
+                                 Maximum="100" Foreground="{Binding OtherCooldown, Converter={StaticResource CooldownConverter}}"/>
+                    <Grid Grid.Column="1">
+                        <Image Source="{Binding OtherImage}" Width="100" Height="100"/>
+                        <Image Source="{Binding OtherKeyImage}" Width="25" Height="25" 
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                </Grid>
+                -->
+            </StackPanel>
+
+            <StackPanel Panel.ZIndex="1000" Canvas.Left="1700" Canvas.Top="10" Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="{Binding MoneyImage.Source}" Width="20" Height="20"/>
+                    <TextBlock Text="{Binding MoneyAmount}" Foreground="White" Margin="5,0,0,0" FontSize="20"/>
+                </StackPanel>
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Image Source="{Binding ShopImage}" Width="100" Height="100"/>
+                        <Image Source="{Binding RKeyImage}" Width="25" Height="25" 
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Text="Shop" Foreground="White" HorizontalAlignment="Center"/>
+                </Grid>
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Image Source="{Binding MenuImage}" Width="100" Height="100"/>
+                        <Image Source="{Binding EscKeyImage}" Width="25" Height="25" 
+                               HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Text="Menu" Foreground="White" HorizontalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+
+            <Grid Canvas.Bottom="10" Width="1920">
+                <ItemsControl ItemsSource="{Binding Cards}" HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" MaxWidth="1900"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <!-- <local:CardControl DataContext="{Binding}" Width="50" Height="70" Margin="5"/> -->
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Canvas>
     </Grid>
 </homeWidgets:IWidget>

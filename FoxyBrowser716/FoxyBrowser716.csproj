@@ -67,6 +67,9 @@
       <None Update="RogueliteData\CardBackgrounds\UncommonCard.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="RoguelikeData\CardIcons\FoxyCoin.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -139,10 +142,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="RogueliteData\CardIcons\" />
-      <Folder Include="RogueliteData\CardPacks\" />
-      <Folder Include="RogueliteData\EnemySprites\" />
-      <Folder Include="RogueliteData\PlayerSprites\" />
+      <Folder Include="RoguelikeData\CardPacks\" />
+      <Folder Include="RoguelikeData\EnemySprites\" />
+      <Folder Include="RoguelikeData\PlayerSprites\" />
     </ItemGroup>
     
 </Project>

@@ -1,6 +1,6 @@
 namespace FoxyBrowser716.HomeWidgets;
 
-public class RoguelikeCards
+internal class RoguelikeCards
 {
 	public enum CardId
 	{
