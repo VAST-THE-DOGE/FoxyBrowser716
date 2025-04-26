@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace FoxyBrowser716;
 
@@ -14,6 +15,10 @@ public partial class App : Application
 	{
 		base.OnStartup(e);
 		
+		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+		Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
+		TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+		
 		var mutex = new Mutex(true, "FoxyBrowser716_Mutex", out var isNewInstance);
 		if (!isNewInstance)
 		{
@@ -23,6 +28,29 @@ public partial class App : Application
 		
 		ServerManager.RunServer(e);
 		mutex.ReleaseMutex();
+	}
+	
+	private void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+	{
+		MessageBox.Show($"An unhandled UI exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}",
+			"Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		
+		e.Handled = true;
+	}
+
+	private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+	{
+		var exception = e.ExceptionObject as Exception;
+		MessageBox.Show($"A fatal error occurred:\n\n{exception?.Message}\n\n{exception?.StackTrace}",
+			"Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+	}
+
+	private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+	{
+		MessageBox.Show($"An unobserved task exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.InnerException?.Message}",
+			"Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		
+		e.SetObserved();
 	}
     
 	static void SendMessage(string message)
@@ -35,9 +63,9 @@ public partial class App : Application
 			writer.WriteLine(message);
 			writer.Flush();
 		}
-		catch
+		catch (Exception e)
 		{
-			// Handle if connection fails
+			throw;
 		}
 	}
 }

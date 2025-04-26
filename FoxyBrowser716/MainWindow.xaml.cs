@@ -290,6 +290,11 @@ private void OpenHistory()
 
 private void OpenDownloads()
 {
+	var tabCoreRaw = TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.CoreWebView2;
+	if (tabCoreRaw is not { } tabCore) return;
+	
+	if (tabCore.IsDefaultDownloadDialogOpen) tabCore.CloseDefaultDownloadDialog();
+	else tabCore.OpenDefaultDownloadDialog();
 }
 
 private void OpenExtensions()
@@ -302,7 +307,6 @@ private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
 	{
 		if (relativeMove == null)
 		{
-			//TODO: move to tab window
 			await BuildNewWindow(sender);
 		}
 		else
