@@ -59,6 +59,10 @@ public class WebsiteTab
 	{
 		await TabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 			
+		TabCore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
+		TabCore.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
+		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = true;
+			
 		TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
 			
 		await LoadExtensions();

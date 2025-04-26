@@ -47,7 +47,7 @@ public class TabManager
 		var options = new CoreWebView2EnvironmentOptions
 		{
 			AreBrowserExtensionsEnabled = true,
-			AllowSingleSignOnUsingOSPrimaryAccount = true
+			AllowSingleSignOnUsingOSPrimaryAccount = true,
 		};
 		
 		//TODO: User data turns into "{InstanceName}\WebView2Data"
