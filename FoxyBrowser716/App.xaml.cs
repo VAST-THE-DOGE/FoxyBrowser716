@@ -47,7 +47,7 @@ public partial class App : Application
 
 	private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
 	{
-		MessageBox.Show($"An unobserved task exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.InnerException?.Message}",
+		MessageBox.Show($"An unobserved task exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.InnerException?.Message}\n\n{e.Exception.InnerException?.StackTrace}",
 			"Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
 		
 		e.SetObserved();
