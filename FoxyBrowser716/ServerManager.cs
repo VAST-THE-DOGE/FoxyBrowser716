@@ -72,9 +72,12 @@ public class ServerManager
 	
 	private void StartPipeServer()
 	{
+		using var server = new NamedPipeServerStream("FoxyBrowser716_Pipe", 
+			PipeDirection.In,
+			NamedPipeServerStream.MaxAllowedServerInstances
+		);
 		while (true)
 		{
-			using var server = new NamedPipeServerStream("FoxyBrowser716_Pipe");
 			server.WaitForConnection();
 			using var reader = new StreamReader(server);
 			var message = reader.ReadLine();
