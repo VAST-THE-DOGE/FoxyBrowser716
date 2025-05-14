@@ -31,7 +31,7 @@ public class WebsiteTab
 		
 	private static int _tabCounter;
 
-	public WebsiteTab(string url)
+	public WebsiteTab(string url, CoreWebView2Environment websiteEnvironment)
 	{
 		var webView = new WebView2();
 		webView.Visibility = Visibility.Collapsed;
@@ -47,7 +47,7 @@ public class WebsiteTab
 		Icon = image;
 		Title = "Loading...";
 		
-		SetupTask = Initialize(url);
+		SetupTask = Initialize(url, websiteEnvironment);
 	}
 
 	public event Action UrlChanged;
@@ -55,9 +55,9 @@ public class WebsiteTab
 	public event Action TitleChanged;
 	public event Action<string> NewTabRequested;
 	
-	private async Task Initialize(string url)
+	private async Task Initialize(string url, CoreWebView2Environment websiteEnvironment)
 	{
-		await TabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+		await TabCore.EnsureCoreWebView2Async(websiteEnvironment);
 			
 		TabCore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
 		TabCore.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
@@ -100,10 +100,8 @@ public class WebsiteTab
 	{
 	    try
 	    {
-	        // Define the extension folder path relative to the application directory
 	        var extensionsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "extensions");
-	
-	        // Check if the directory exists, if not, create it (just in case)
+	        
 	        if (!Directory.Exists(extensionsFolder))
 	        {
 	            Directory.CreateDirectory(extensionsFolder);
@@ -122,21 +120,18 @@ public class WebsiteTab
 		        return manifestFile != null;
 	        }
 	        
-	        // Find all subfolders within the "extensions" directory
 	        foreach (var subfolder in Directory.GetDirectories(extensionsFolder))
 	        {
 	            try
 	            {
-		            // Check if the subfolder contains a manifest.json file
 		            if (await IsExtension(subfolder)) continue;
 		            if (Directory.GetDirectories(subfolder).Length == 1)
-			            await IsExtension(Directory.GetDirectories(subfolder)[0]);
+			            await IsExtension(Directory.GetDirectories(subfolder)[0]); //TODO: loop through all + what if empty folder?
 	                else
 		                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
 	            }
 	            catch (Exception ex)
 	            {
-	                // If any error occurs loading an extension, show a message box for now
 	                MessageBox.Show(
 	                    $"Failed to load extension in folder: {subfolder}\nError: {ex.Message}",
 	                    "Extension Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -145,7 +140,6 @@ public class WebsiteTab
 	    }
 	    catch (Exception ex)
 	    {
-	        // Catch and display errors in initializing or accessing the extensions folder
 	        MessageBox.Show(
 	            $"Failed to initialize extensions loader.\nError: {ex.Message}",
 	            "Extensions Error", MessageBoxButton.OK, MessageBoxImage.Error);

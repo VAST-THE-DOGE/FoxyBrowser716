@@ -7,15 +7,13 @@ namespace FoxyBrowser716
     public partial class TabMoveWindowCard : Window
     {
         private WebsiteTab _tab;
-        private ServerManager _instance;
         private bool _isDragging = true;
         private bool _dragInitiated = false;
         private double _startTime;
 
-        public TabMoveWindowCard(ServerManager instance, WebsiteTab tab)
+        public TabMoveWindowCard(WebsiteTab tab)
         {
             InitializeComponent();
-            _instance = instance;
             _tab = tab;
 
             _startTime = DateTime.Now.Millisecond;
@@ -38,7 +36,7 @@ namespace FoxyBrowser716
         {
             try
             {
-                if (_instance.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await _instance.TryTabTransfer(_tab, Left, Top))
+                if (ServerManager.Context.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await ServerManager.Context.TryTabTransfer(_tab, Left, Top))
                 {
                     _isDragging = false;
                     Close();
@@ -69,7 +67,7 @@ namespace FoxyBrowser716
             if (!_isDragging) return;
             _isDragging = false;
             var finalRect = new Rect(Left, Top, ActualWidth, ActualHeight);
-            await _instance.CreateWindowFromTab(_tab, finalRect, WindowState == WindowState.Maximized);
+            await ServerManager.Context.CreateWindowFromTab(_tab, finalRect, WindowState == WindowState.Maximized);
             Close();
         }
     }

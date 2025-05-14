@@ -1,24 +1,30 @@
 using System.IO;
 using System.IO.Pipes;
-using System.Reflection;
 using System.Windows;
-using System.Windows.Input;
-using Microsoft.Win32;
+using System.Windows.Threading;
 
 namespace FoxyBrowser716;
+
+// layout plan:
+// Server Manager (holds everything)
+// breaks down into instances and windows
+
+
 
 /// <summary>
 /// Browser works as a server-client system to easily manage and sync data across windows
 /// </summary>
 public class ServerManager
 {
-	private static ServerManager Instance { get; set; }
+	public static ServerManager Context { get; private set; }
 
-	public InstanceDataManager BrowserData { get; private set; }
+	public static readonly string InstanceFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Instances");
+	
+	public InstanceManager DefaultBrowserManager { get; private set; }
+	
+	public List<InstanceManager> AllBrowserManagers = [];
 	
 	public List<MainWindow> BrowserWindows = [];
-
-	public readonly string InstanceName = "Main";
 	
 	private ServerManager()
 	{ /*TODO*/ }
@@ -37,21 +43,30 @@ public class ServerManager
 		}
 		
 		// start a server instance
-		Instance = new ServerManager();
-		Task.Run(() => Instance.StartPipeServer());
+		Context = new ServerManager();
+		Task.Run(() => Context.StartPipeServer());
+
+		foreach (var path in Directory.GetDirectories(InstanceFolderPath))
+		{
+			var instanceName = path.Split(@"\")[^1];
+			if (instanceName == "Default") continue;
+			
+			Context.AllBrowserManagers.Add(new InstanceManager(instanceName));
+		}
 		
 		// initialize that new server instance
-		Instance.BrowserData = new InstanceDataManager(Instance);
-		tasks.Add(Instance.BrowserData.Initialize());
+		Context.DefaultBrowserManager = new InstanceManager("Default");
+		Context.AllBrowserManagers.Add(Context.DefaultBrowserManager);
+		tasks.Add(Context.DefaultBrowserManager.Initialize());
 			
 		// start the first browser window of the instance
 		if (e.Args.All(string.IsNullOrWhiteSpace))
 		{
 			Application.Current.Dispatcher.Invoke(() => 
 			{
-				var firstWindow = new MainWindow(Instance);
-				Instance.BrowserWindows.Add(firstWindow);
-				firstWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
+				var firstWindow = new MainWindow(Context.DefaultBrowserManager);
+				Context.BrowserWindows.Add(firstWindow);
+				firstWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
 				firstWindow.Show();
 			});
 		}
@@ -60,11 +75,11 @@ public class ServerManager
 			var url = e.Args.First(s => !string.IsNullOrWhiteSpace(s));
 			Application.Current.Dispatcher.Invoke(async () => 
 			{ 
-				var newWindow = new MainWindow(Instance); 
+				var newWindow = new MainWindow(Context.DefaultBrowserManager); 
 				await newWindow._initTask; 
 				newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)); 
-				Instance.BrowserWindows.Add(newWindow);
-				newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
+				Context.BrowserWindows.Add(newWindow);
+				newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
 				newWindow.Show(); 
 			});
 		}
@@ -82,14 +97,14 @@ public class ServerManager
 			{
 				var url = message.Replace("NewWindow|", "");
 				Application.Current.Dispatcher.Invoke(async () => { 
-					var newWindow = new MainWindow(Instance);
+					var newWindow = new MainWindow(Context.DefaultBrowserManager);
 					if (!string.IsNullOrWhiteSpace(url))
 					{
 						await newWindow._initTask;
 						newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
 					}
-					Instance.BrowserWindows.Add(newWindow);
-					newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
+					Context.BrowserWindows.Add(newWindow);
+					newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
 					newWindow.Show(); 
 				});
 			}
@@ -118,9 +133,9 @@ public class ServerManager
 		return false;
 	}
 	
-	public async Task CreateWindowFromTab(WebsiteTab tab, Rect finalRect, bool fullscreen)
+	public async Task CreateWindowFromTab(WebsiteTab tab, Rect finalRect, bool fullscreen, InstanceManager? instance = null)
 	{
-		var newWindow = new MainWindow(Instance)
+		var newWindow = new MainWindow(instance ?? Context.DefaultBrowserManager)
 		{
 			Top = finalRect.Y,
 			Left = finalRect.X,
@@ -133,8 +148,8 @@ public class ServerManager
 		
 		await newWindow._initTask; 
 		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab)); 
-		Instance.BrowserWindows.Add(newWindow);
-		newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
+		Context.BrowserWindows.Add(newWindow);
+		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
 		newWindow.Show();
 
 		if (fullscreen)
@@ -142,7 +157,32 @@ public class ServerManager
 			newWindow.WindowState = WindowState.Maximized;
 		}
 	}
+	
+	public async Task CreateWindow(Rect? finalRect = null, bool? fullscreen = null, InstanceManager? instance = null)
+	{
+		var newWindow = new MainWindow(instance ?? Context.DefaultBrowserManager);
+		if (finalRect is { } fR)
+		{
+			newWindow.Top = fR.Y;
+			newWindow.Left = fR.X;
+		}
+		
+		if (finalRect is { Height: > 50, Width: > 280 } fR2)
+		{
+			newWindow.Height = fR2.Height;
+			newWindow.Width = fR2.Width;
+		}
+		
+		await newWindow._initTask; 
+		Context.BrowserWindows.Add(newWindow);
+		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
+		newWindow.Show();
 
+		if (fullscreen is true)
+		{
+			newWindow.WindowState = WindowState.Maximized;
+		}
+	}
 	
 	private MainWindow? _lastOpenedWindow;
 

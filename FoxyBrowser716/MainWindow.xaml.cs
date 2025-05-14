@@ -28,17 +28,17 @@ public partial class MainWindow
 	
 	internal readonly TabManager TabManager;
 
-	internal readonly ServerManager OwnerInstance;
+	private InstanceManager InstanceData;
 
 	internal Task _initTask;
 	
-	public MainWindow(ServerManager owner)
+	public MainWindow(InstanceManager instanceData)
 	{
-		OwnerInstance = owner;
-		
+		InstanceData = instanceData;
+			
 		InitializeComponent();
 
-		TabManager = new TabManager();
+		TabManager = new TabManager(InstanceData);
 		_initTask = Initialize();
 		
 		//TODO: find a better way to do all this crazy GUI stuff
@@ -52,7 +52,7 @@ public partial class MainWindow
 				ChangeColorAnimation(button.Foreground, HighlightColor, Colors.White);
 			};
 		}
-
+		
 		SearchBox.GotKeyboardFocus += (_, _) =>
 		{
 			ChangeColorAnimation(SearchBackground.BorderBrush, Colors.White, HighlightColor);
@@ -99,18 +99,18 @@ public partial class MainWindow
 			
 			if (tab is null) return;
 
-			if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
-				OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(OwnerInstance.BrowserData.PinInfo.GetAllTabInfos()
+				InstanceData.PinInfo.RemoveTabInfo(InstanceData.PinInfo.GetAllTabInfos()
 					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
-				OwnerInstance.BrowserData.PinInfo.AddTabInfo(tab);
+				InstanceData.PinInfo.AddTabInfo(tab);
 			}
 		};
 		
@@ -215,7 +215,28 @@ public partial class MainWindow
 		ForwardButton
 	];
 	
-	private ContextMenu _menu;
+	private ContextMenu _menu = new()
+	{
+		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
+		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
+		BorderThickness = new Thickness(1),
+		Padding = new Thickness(0),    
+		Margin = new Thickness(0),
+		StaysOpen = true,
+		Focusable = true,
+		HorizontalOffset = 30,
+	};
+	private ContextMenu _secondaryMenu = new()
+	{
+		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
+		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
+		BorderThickness = new Thickness(1),
+		Padding = new Thickness(0),    
+		Margin = new Thickness(0),
+		StaysOpen = true,
+		Focusable = true,
+		HorizontalOffset = 30,
+	};
 
 	private void ButtonMenu_Click(object sender, RoutedEventArgs e)
 	{
@@ -225,28 +246,35 @@ public partial class MainWindow
 			return;
 		}
 
-		_menu = new ContextMenu
-		{
-			Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
-			BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
-			BorderThickness = new Thickness(1),
-			Padding = new Thickness(0),    
-			Margin = new Thickness(0),
-			StaysOpen = true,
-			Focusable = true,
-			HorizontalOffset = 30,
-		};
+		Dictionary<string, Action> menuItems = TabManager.ActiveTabId != -1
+			? new()
+			{
+				{ "Settings", OpenSettings },
+				{ "Bookmarks", OpenBookmarks },
+				{ "History", OpenHistory },
+				{ "Downloads", OpenDownloads },
+				{ "Instances", OpenInstances },
+				{ "Extensions", OpenExtensions }
+			}
+			: new()
+			{
+				{ "Settings", OpenSettings },
+				{ "Bookmarks", OpenBookmarks },
+				{ "History", OpenHistory },
+				{ "Instances", OpenInstances },
+			};
+		
+		ApplyMenuItems(_menu, menuItems);
+		
+		_menu.PlacementTarget = (Button)sender;
+		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_menu.IsOpen = true;
+	}
 
-		var menuItems = new Dictionary<string, Action>
-		{
-			{ "Settings", OpenSettings },
-			{ "Bookmarks", OpenBookmarks },
-			{ "History", OpenHistory },
-			{ "Downloads", OpenDownloads },
-			{ "Extensions", OpenExtensions }
-		};
-
-		foreach (var menuItem in menuItems)
+	private void ApplyMenuItems(ContextMenu menu, Dictionary<string, Action> items)
+	{
+		menu.Items.Clear();
+		foreach (var menuItem in items)
 		{
 			var item = new MenuItem
 			{
@@ -265,23 +293,55 @@ public partial class MainWindow
 				((MenuItem)s).Background = Brushes.Transparent;
 
 			item.Click += (_, _) => menuItem.Value?.Invoke();
-			_menu.Items.Add(item);
+			menu.Items.Add(item);
 		}
-
-		_menu.PlacementTarget = (Button)sender;
-		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-		_menu.IsOpen = true;
-
-		_menu.Closed += (_, _) => _menu = null;
 	}
 
-// Menu action handlers (replace with your actual logic)
 private void OpenSettings()
 {
+	
+}
+
+private void OpenInstances()
+{
+	var openNewWindow = TabManager.GetAllTabs().Count > 0;
+	var instanceOptions = ServerManager.Context.AllBrowserManagers
+		.Where(i => i.InstanceName != InstanceData.InstanceName)
+		.ToDictionary<InstanceManager, string, Action>(i => $"{(openNewWindow ? "Open" : "Swap To")} {i.InstanceName}",
+			i => async () =>
+			{
+				if (openNewWindow)
+					await ServerManager.Context.CreateWindow(null, null, i);
+				else
+				{
+					await ServerManager.Context.CreateWindow(_originalRectangle, _inFullscreen, i);
+					Close();
+				}
+			});
+	instanceOptions.Add("Manage Instances", () =>
+	{
+		MessageBox.Show("Manage Instances is WIP, please use file explorer to rename, add, or delete folders. Editing the folders in the \"Instances\" folder will modify the instances that are in use.",
+			"WIP");
+	});
+	ApplyMenuItems(_secondaryMenu, instanceOptions);
+	_secondaryMenu.PlacementTarget = ButtonMenu;
+	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+	_secondaryMenu.IsOpen = true;
+}
+
+private void OpenBookmark(string url)
+{
+	TabManager.SwapActiveTabTo(TabManager.AddTab(url));
 }
 
 private void OpenBookmarks()
 {
+	ApplyMenuItems(_secondaryMenu, InstanceData.BookmarkInfo.GetAllTabInfos().Values
+		.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
+	);
+	_secondaryMenu.PlacementTarget = ButtonMenu;
+	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+	_secondaryMenu.IsOpen = true;
 }
 
 private void OpenHistory()
@@ -343,7 +403,7 @@ private async Task BuildNewWindow(TabCard tabCard)
 	if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
 	
 	var point = PointToScreen(Mouse.GetPosition(null));
-	var tabCardWindow = new TabMoveWindowCard(OwnerInstance, tab)
+	var tabCardWindow = new TabMoveWindowCard(tab)
 	{
 		Top = point.Y - 15,
 		Left = point.X - 75
@@ -387,7 +447,7 @@ private async Task Initialize()
 	await TabManager.InitializeData();
 	
 	_homePage = new HomePage();
-	await _homePage.Initialize(TabManager);
+	await _homePage.Initialize(TabManager, InstanceData);
 	TabHolder.Children.Add(_homePage);
 	TabManager.SwapActiveTabTo(-1);
 
@@ -414,7 +474,7 @@ private async Task Initialize()
 	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
 	        }
 
-	        if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 	        {
 	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 	            LabelPin.Content = "Unpin Tab";
@@ -458,17 +518,17 @@ private async Task Initialize()
 	        Tabs.Children.Remove(card);
 	};
 
-	OwnerInstance.BrowserData.PinInfo.TabInfoAdded += (key, pin) =>
+	InstanceData.PinInfo.TabInfoAdded += (key, pin) =>
 	{
 		var tabCard = new TabCard(key, pin);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
-		tabCard.RemoveRequested += () => OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(key);
+		tabCard.RemoveRequested += () => InstanceData.PinInfo.RemoveTabInfo(key);
 
 		PinnedTabs.Children.Add(tabCard);
 	};
 
-	OwnerInstance.BrowserData.PinInfo.TabInfoRemoved += (id, _) =>
+	InstanceData.PinInfo.TabInfoRemoved += (id, _) =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
 		
@@ -477,7 +537,7 @@ private async Task Initialize()
 		
 		var tab = TabManager.GetTab(TabManager.ActiveTabId);
 		
-		if (OwnerInstance.BrowserData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+		if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
 		{
 			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 			LabelPin.Content = "Unpin Tab";
@@ -489,14 +549,14 @@ private async Task Initialize()
 		}
 	};
 
-	var e = OwnerInstance.BrowserData.PinInfo.GetAllTabInfos();
+	var e = InstanceData.PinInfo.GetAllTabInfos();
 	PinnedTabs.Children.Clear();
-	foreach (var pinKeyValue in OwnerInstance.BrowserData.PinInfo.GetAllTabInfos())
+	foreach (var pinKeyValue in InstanceData.PinInfo.GetAllTabInfos())
 	{
 		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => OwnerInstance.BrowserData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
+		tabCard.RemoveRequested += () => InstanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
 		
 		PinnedTabs.Children.Add(tabCard);
 	}

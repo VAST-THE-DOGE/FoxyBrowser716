@@ -19,7 +19,10 @@ public partial class DateWidget : IWidget
 	{
 		base.Initialize(manager, settings);
 		
-		var timer = new System.Timers.Timer(1000);
+		// set the time immediately
+		TimeLabel.Text = DateTime.Now.ToString("M/d/yy");
+		
+		var timer = new System.Timers.Timer(10000);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
 		timer.Enabled = true;

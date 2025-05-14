@@ -28,7 +28,8 @@ public partial class HomePage : UserControl
     private List<WidgetData> _savedWidgets;
     private HomeSettings _settings;
     private TabManager _manager;
-
+    private InstanceManager _instanceData;
+    
     public event Action<bool> ToggleEditMode;
     public bool InEditMode;
 
@@ -49,9 +50,11 @@ public partial class HomePage : UserControl
         InitializeComponent();
     }
 
-    public async Task Initialize(TabManager manager)
+    public async Task Initialize(TabManager manager, InstanceManager instanceManager)
     {
         _manager = manager; // save manager for later use
+        _instanceData = instanceManager;
+        
         await TryLoadSettings();
         _imageControl = new Image
         {
@@ -160,7 +163,7 @@ public partial class HomePage : UserControl
 
     private async Task TryLoadWidgets()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, WidgetsFileName);
         if (File.Exists(path))
         {
             try
@@ -219,7 +222,7 @@ public partial class HomePage : UserControl
 
     private async Task TryLoadSettings()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, SettingsFileName);
         if (File.Exists(path))
         {
             try
@@ -245,7 +248,7 @@ public partial class HomePage : UserControl
 
     private async Task SaveWidgetsToJson()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, WidgetsFileName);
         try
         {
             var jsonData = JsonSerializer.Serialize(_savedWidgets, new JsonSerializerOptions { WriteIndented = true });
@@ -259,7 +262,7 @@ public partial class HomePage : UserControl
 
     private async Task SaveSettingsToJson()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, SettingsFileName);
         try
         {
             var jsonData = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });

@@ -30,7 +30,7 @@
     <ItemGroup>
         <PackageReference Include="Material.Icons" Version="2.1.10"/>
         <PackageReference Include="Material.Icons.WPF" Version="2.1.10"/>
-        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2950-prerelease"/>
+        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3230-prerelease" />
         <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
     </ItemGroup>
 

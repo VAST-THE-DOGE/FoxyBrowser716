@@ -19,7 +19,7 @@ public partial class TimeWidget : IWidget
 	{
 		base.Initialize(manager, settings);
 		
-		var timer = new System.Timers.Timer(50);
+		var timer = new System.Timers.Timer(100);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
 		timer.Enabled = true;
@@ -29,6 +29,9 @@ public partial class TimeWidget : IWidget
 
 	private void UpdateTime(object? sender, ElapsedEventArgs elapsedEventArgs)
 	{
-		Dispatcher.Invoke(() => TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt"));
+		Dispatcher.Invoke(() =>
+		{
+			TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt");
+		});
 	}
 }

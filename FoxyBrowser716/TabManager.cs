@@ -34,10 +34,17 @@ public class TabManager
 
 	private bool _performanceMode = false; //TODO: link into settings?
 	
-	public static CoreWebView2Environment? WebsiteEnvironment { get; private set; }
+	public CoreWebView2Environment? WebsiteEnvironment { get; private set; }
 	
 	public event Action<WebsiteTab> TabCreated;
 	public event Action<int> TabRemoved;
+
+	public InstanceManager InstanceData;
+	
+	public TabManager(InstanceManager instanceData)
+	{
+		InstanceData = instanceData;
+	}
 	
 	/// <summary>
 	/// Loads json data for pins and bookmarks.
@@ -51,7 +58,7 @@ public class TabManager
 		};
 		
 		//TODO: User data turns into "{InstanceName}\WebView2Data"
-		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, $@"{InstanceData.InstanceFolder}\WebView2", options);
 
 		_initialized = true; // allow saving pis and bookmarks
 	}
@@ -86,7 +93,7 @@ public class TabManager
 	
 	public int AddTab(string url)
 	{
-		var tab = new WebsiteTab(url);
+		var tab = new WebsiteTab(url, WebsiteEnvironment);
 		_tabs.TryAdd(tab.TabId, tab);
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
