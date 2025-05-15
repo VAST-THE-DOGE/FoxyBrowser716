@@ -9,6 +9,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
+using Microsoft.Web.WebView2.Core;
 using static FoxyBrowser716.ColorPalette;
 using static FoxyBrowser716.Animator;
 
@@ -125,7 +126,24 @@ public partial class MainWindow
 		{
 			ChangeColorAnimation(ButtonBookmark.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelBookmark.Foreground, HighlightColor, Colors.White);
-			MessageBox.Show("Not implemented yet");
+			
+			var tab = TabManager.GetTab(TabManager.ActiveTabId);
+			
+			if (tab is null) return;
+
+			if (InstanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			{
+				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+				LabelBookmark.Content = "Add Bookmark";
+				InstanceData.BookmarkInfo.RemoveTabInfo(InstanceData.BookmarkInfo.GetAllTabInfos()
+					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
+			}
+			else
+			{
+				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+				LabelBookmark.Content = "Remove bookmark";
+				InstanceData.BookmarkInfo.AddTabInfo(tab);
+			}
 		};
 
 		LeftBar.MouseEnter += LeftBarMouseEnter;
@@ -299,7 +317,7 @@ public partial class MainWindow
 
 private void OpenSettings()
 {
-	
+	throw new NotImplementedException();
 }
 
 private void OpenInstances()
@@ -314,7 +332,7 @@ private void OpenInstances()
 					await ServerManager.Context.CreateWindow(null, null, i);
 				else
 				{
-					await ServerManager.Context.CreateWindow(_originalRectangle, _inFullscreen, i);
+					await ServerManager.Context.CreateWindow(new Rect(Left, Top, Width, Height), _inFullscreen, i);
 					Close();
 				}
 			});
@@ -357,8 +375,18 @@ private void OpenDownloads()
 	else tabCore.OpenDefaultDownloadDialog();
 }
 
-private void OpenExtensions()
+private async void OpenExtensions()
 {
+	if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
+
+	var extensions = await tab.TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+	ApplyMenuItems(_secondaryMenu, extensions
+		.ToDictionary<CoreWebView2BrowserExtension, string, Action>(k => $"{ k.Id } - { k.Name }",
+			k => () => { MessageBox.Show($"not implemented yet."); })
+	);
+	_secondaryMenu.PlacementTarget = ButtonMenu;
+	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+	_secondaryMenu.IsOpen = true;
 }
 
 private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
@@ -484,6 +512,17 @@ private async Task Initialize()
 	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 	            LabelPin.Content = "Pin Tab";
 	        }
+	        
+	        if (InstanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        {
+		        ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+		        LabelBookmark.Content = "Remove Bookmark";
+	        }
+	        else
+	        {
+		        ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+		        LabelBookmark.Content = "Add Bookmark";
+	        }
 	    };
 
 	    tab.TitleChanged += () =>
@@ -498,7 +537,7 @@ private async Task Initialize()
 
 	    tab.NewTabRequested += (uri) =>
 	    {
-		    TabManager.SwapActiveTabTo(TabManager.AddTab(uri));
+		    TabManager.AddTab(uri);
 	    };
 
 	    tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);

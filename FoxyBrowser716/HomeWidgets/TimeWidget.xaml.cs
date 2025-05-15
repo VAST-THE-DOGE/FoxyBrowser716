@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-using System.Timers;
-using System.Windows;
+﻿using System.Timers;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;

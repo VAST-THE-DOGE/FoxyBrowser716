@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using FoxyBrowser716.ErrorHandling;
 
 namespace FoxyBrowser716;
 
@@ -45,25 +46,35 @@ public partial class App : Application
 
     private void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show($"An unhandled UI exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}",
-            "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
-        e.Handled = true;
+        var errorPopup = new ErrorPopup(e);
+        errorPopup.ShowDialog();
+        
+        // MessageBox.Show($"An unhandled UI exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}",
+        //     "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //
+        // e.Handled = true;
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        var exception = e.ExceptionObject as Exception;
-        MessageBox.Show($"A fatal error occurred:\n\n{exception?.Message}\n\n{exception?.StackTrace}",
-            "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        if (e.ExceptionObject is not Exception ex) return;
+        
+        var errorPopup = new ErrorPopup(ex);
+        errorPopup.ShowDialog();
+        
+        // MessageBox.Show($"A fatal error occurred:\n\n{exception?.Message}\n\n{exception?.StackTrace}",
+        //     "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
-        MessageBox.Show($"An unobserved task exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.InnerException?.Message}",
-            "Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
-        e.SetObserved();
+        var errorPopup = new ErrorPopup(e);
+        errorPopup.ShowDialog();
+        
+        // MessageBox.Show($"An unobserved task exception occurred:\n\n{e.Exception.Message}\n\n{e.Exception.InnerException?.Message}",
+        //     "Task Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //
+        // e.SetObserved();
     }
 
     static void SendMessage(string message)
