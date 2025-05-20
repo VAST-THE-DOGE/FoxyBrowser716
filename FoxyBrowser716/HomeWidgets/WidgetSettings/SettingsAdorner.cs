@@ -9,8 +9,8 @@ using FoxyBrowser716.HomeWidgets.WidgetSettings;
 using Material.Icons;
 using Material.Icons.WPF;
 
-using static FoxyBrowser716.ColorPalette;
-using static FoxyBrowser716.Animator;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 
 namespace FoxyBrowser716.HomeWidgets
 {

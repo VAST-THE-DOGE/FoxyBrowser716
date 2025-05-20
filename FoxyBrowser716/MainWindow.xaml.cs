@@ -10,8 +10,8 @@ using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Web.WebView2.Core;
-using static FoxyBrowser716.ColorPalette;
-using static FoxyBrowser716.Animator;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 
 
 namespace FoxyBrowser716;

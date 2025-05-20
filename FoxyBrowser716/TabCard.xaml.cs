@@ -1,5 +1,5 @@
-using static FoxyBrowser716.ColorPalette;
-using static FoxyBrowser716.Animator;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
