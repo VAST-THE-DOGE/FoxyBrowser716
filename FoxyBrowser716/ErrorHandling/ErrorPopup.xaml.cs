@@ -1,6 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media; // Required for MouseButtonEventArgs
 using System.Windows.Threading;
+using static System.Runtime.GCSettings;
 
 namespace FoxyBrowser716.ErrorHandling;
 
@@ -24,7 +28,7 @@ public partial class ErrorPopup : Window
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
-		this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
+		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 	
 	public ErrorPopup(DispatcherUnhandledExceptionEventArgs ex)
@@ -33,7 +37,7 @@ public partial class ErrorPopup : Window
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
-		this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
+		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 	
 	public ErrorPopup(UnobservedTaskExceptionEventArgs ex)
@@ -42,7 +46,7 @@ public partial class ErrorPopup : Window
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
-		this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
+		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 
     // Event handler for dragging the window
@@ -74,7 +78,7 @@ public partial class ErrorPopup : Window
 		
 		sb.AppendLine("=== ERROR DETAILS ===");
 		sb.AppendLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-		sb.AppendLine($"Application: FoxyBrowser716 v{appVersion}");
+		sb.AppendLine($"Version: v{appVersion}");
 		
 		// Add current window information if available
 		try
@@ -86,8 +90,8 @@ public partial class ErrorPopup : Window
 			
 			// Count open windows
 			var windowCount = Application.Current.Windows.Count;
-			sb.AppendLine($"All Open Windows (includes error dialog): {windowCount}");
-			sb.AppendLine($"ServerManager.Context.BrowserWindows Count: {ServerManager.Context.BrowserWindows.Count}");
+			sb.AppendLine($"All Windows Count (includes error dialog): {windowCount}");
+			sb.AppendLine($"BrowserWindows Count: {ServerManager.Context.BrowserWindows.Count}");
 		}
 		catch (Exception ex)
 		{
@@ -101,32 +105,27 @@ public partial class ErrorPopup : Window
 		if (normEx != null)
 		{
 			exception = normEx;
-			sb.AppendLine("Error Type: Unhandled Exception");
+			sb.AppendLine("Type: Unhandled Exception");
 		}
 		else if (dispatcherEx != null)
 		{
 			exception = dispatcherEx.Exception;
-			sb.AppendLine("Error Type: Dispatcher Unhandled Exception");
+			sb.AppendLine("Type: Dispatcher Unhandled Exception");
 			//sb.AppendLine($"Handled: {dispatcherEx.Handled}");
 		}
 		else if (unobservedEx != null)
 		{
 			exception = unobservedEx.Exception;
-			sb.AppendLine("Error Type: Unobserved Task Exception");
+			sb.AppendLine("Type: Unobserved Task Exception");
 			//sb.AppendLine($"Observed: {unobservedEx.Observed}");
 		}
 		
 		if (exception != null)
 		{
-			sb.AppendLine();
-			sb.AppendLine($"Exception: {exception.GetType().FullName}");
-			sb.AppendLine($"Message: {exception.Message}");
-			sb.AppendLine($"HRESULT: 0x{exception.HResult:X8}");
-			
 			// Add more specific info based on exception type
-			if (exception is System.IO.IOException)
+			if (exception is IOException)
 			{
-				sb.AppendLine("Type: I/O Error");
+				sb.AppendLine("Subtype: I/O Error");
 			}
 			else if (exception is System.Net.WebException webEx)
 			{
@@ -141,20 +140,27 @@ public partial class ErrorPopup : Window
 				sb.AppendLine($"Win32 Error Code: {win32Ex.NativeErrorCode}");
 			}
 			
+			sb.AppendLine($"HRESULT: 0x{exception.HResult:X8}");
+
+			
+			sb.AppendLine();
+			sb.AppendLine($"Exception: {exception.GetType().FullName}");
+			sb.AppendLine($"Message: {exception.Message}");
+			
 			sb.AppendLine();
 			sb.AppendLine("Stack Trace:");
 			sb.AppendLine(exception.StackTrace);
 			
 			// Add data from exception.Data collection if any
-			if (exception.Data.Count > 0)
-			{
-				sb.AppendLine();
-				sb.AppendLine("Exception Data:");
-				foreach (System.Collections.DictionaryEntry entry in exception.Data)
-				{
-					sb.AppendLine($"  {entry.Key}: {entry.Value}");
-				}
-			}
+			// if (exception.Data.Count > 0)
+			// {
+			// 	sb.AppendLine();
+			// 	sb.AppendLine("Exception Data:");
+			// 	foreach (System.Collections.DictionaryEntry entry in exception.Data)
+			// 	{
+			// 		sb.AppendLine($"  {entry.Key}: {entry.Value}");
+			// 	}
+			// }
 			
 			// Include inner exception details if available
 			var innerException = exception.InnerException;
@@ -167,6 +173,8 @@ public partial class ErrorPopup : Window
 				sb.AppendLine();
 				sb.AppendLine("Stack Trace:");
 				sb.AppendLine(innerException.StackTrace);
+				sb.AppendLine("");
+				sb.AppendLine();
 				
 				innerException = innerException.InnerException;
 			}
@@ -176,10 +184,10 @@ public partial class ErrorPopup : Window
 		sb.AppendLine("=== SYSTEM INFORMATION ===");
 		sb.AppendLine($"OS: {Environment.OSVersion}");
 		sb.AppendLine($"OS Version: {GetWindowsVersion()}");
-		sb.AppendLine($"64-bit OS: {Environment.Is64BitOperatingSystem}");
-		sb.AppendLine($"64-bit Process: {Environment.Is64BitProcess}");
+		// sb.AppendLine($"64-bit OS: {Environment.Is64BitOperatingSystem}");
+		// sb.AppendLine($"64-bit Process: {Environment.Is64BitProcess}");
 		sb.AppendLine($".NET Version: {Environment.Version}");
-		sb.AppendLine($"Machine Name: {Environment.MachineName}");
+		sb.AppendLine($"Machine ID: {GetHashedMachineName()}");
 		sb.AppendLine($"Current Culture: {currentCulture}");
 		sb.AppendLine($"Current UI Culture: {currentUICulture}");
 		sb.AppendLine($"System Boot Time: {GetSystemBootTime()}");
@@ -196,14 +204,57 @@ public partial class ErrorPopup : Window
 		
 		sb.AppendLine();
 		sb.AppendLine("=== RUNTIME INFORMATION ===");
-		sb.AppendLine($"Process ID: {System.Diagnostics.Process.GetCurrentProcess().Id}");
-		sb.AppendLine($"Process Start Time: {System.Diagnostics.Process.GetCurrentProcess().StartTime}");
-		sb.AppendLine($"Total Process Memory: {System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024)} MB");
+		
+		// Process information
+		var process = Process.GetCurrentProcess();
+		sb.AppendLine($"Process ID: {process.Id}");
+		sb.AppendLine($"Process Name: {process.ProcessName}");
+		sb.AppendLine($"Process Start Time: {process.StartTime}");
+		sb.AppendLine($"Process Runtime: {DateTime.Now - process.StartTime}");
+		sb.AppendLine($"Total Process Memory: {process.WorkingSet64 / (1024 * 1024)} MB");
+		sb.AppendLine($"Private Memory: {process.PrivateMemorySize64 / (1024 * 1024)} MB");
+		sb.AppendLine($"Virtual Memory: {process.VirtualMemorySize64 / (1024 * 1024)} MB");
+		sb.AppendLine($"Handle Count: {process.HandleCount}");
+		sb.AppendLine($"Thread Count: {process.Threads.Count}");
+		
+		// Garbage Collection information
+		sb.AppendLine();
 		sb.AppendLine($"GC Total Memory: {GC.GetTotalMemory(false) / (1024 * 1024)} MB");
-		sb.AppendLine($"Thread ID: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
-		sb.AppendLine($"Thread Name: {System.Threading.Thread.CurrentThread.Name ?? "Unnamed"}");
-		sb.AppendLine($"Thread Culture: {System.Threading.Thread.CurrentThread.CurrentCulture.Name}");
-		sb.AppendLine($"Thread UI Culture: {System.Threading.Thread.CurrentThread.CurrentUICulture.Name}");
+		sb.AppendLine($"GC Mode: {(IsServerGC ? "Server" : "Workstation")}");
+		sb.AppendLine($"GC Latency Mode: {LatencyMode}");
+		sb.AppendLine($"GC LOH Compaction Mode: {LargeObjectHeapCompactionMode}");
+		
+		// Thread information
+		var currentThread = Thread.CurrentThread;
+		sb.AppendLine();
+		sb.AppendLine($"Thread ID: {currentThread.ManagedThreadId}");
+		sb.AppendLine($"Thread Name: {currentThread.Name ?? "Unnamed"}");
+		sb.AppendLine($"Thread State: {currentThread.ThreadState}");
+		sb.AppendLine($"Thread Priority: {currentThread.Priority}");
+		sb.AppendLine($"Thread Culture: {currentThread.CurrentCulture.Name}");
+		sb.AppendLine($"Thread UI Culture: {currentThread.CurrentUICulture.Name}");
+		sb.AppendLine($"Thread Apartment State: {currentThread.GetApartmentState()}");
+		
+		// Environment configuration
+		// sb.AppendLine($"Current Directory: {Environment.CurrentDirectory}");
+		// sb.AppendLine($"System Directory: {Environment.SystemDirectory}");
+		// sb.AppendLine($"User Interactive: {Environment.UserInteractive}");
+		// sb.AppendLine($"Command Line: {Environment.CommandLine}");
+		
+		// Performance information
+		// sb.AppendLine($"Processor Time: {process.TotalProcessorTime}");
+		// sb.AppendLine($"User Processor Time: {process.UserProcessorTime}");
+		
+		// Try to get detailed .NET runtime info
+		// try 
+		// {
+		// 	sb.AppendLine($"Runtime Path: {System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()}");
+		// 	sb.AppendLine($"Runtime Framework Version: {AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName}");
+		// }
+		// catch (Exception ex)
+		// {
+		// 	sb.AppendLine($"Error getting detailed runtime info: {ex.Message}");
+		// }
 		
 		return sb.ToString();
 	}
@@ -255,7 +306,7 @@ public partial class ErrorPopup : Window
 		try
 		{
 			var processorCount = Environment.ProcessorCount;
-			sb.AppendLine($"Processor Count: {processorCount}");
+			sb.AppendLine($"Thread Count: {processorCount}");
 			
 			using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
 			if (key != null)
@@ -292,27 +343,27 @@ public partial class ErrorPopup : Window
 		}
 		
 		// Get video card information
-		try
-		{
-			using var graphicsKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000");
-			if (graphicsKey != null)
-			{
-				var gpuName = graphicsKey.GetValue("DriverDesc") as string;
-				if (!string.IsNullOrEmpty(gpuName))
-				{
-					sb.AppendLine($"Graphics Card: {gpuName}");
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			sb.AppendLine($"Could not retrieve graphics card info: {ex.Message}");
-		}
+		// try
+		// {
+		// 	using var graphicsKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000");
+		// 	if (graphicsKey != null)
+		// 	{
+		// 		var gpuName = graphicsKey.GetValue("DriverDesc") as string;
+		// 		if (!string.IsNullOrEmpty(gpuName))
+		// 		{
+		// 			sb.AppendLine($"Graphics Card: {gpuName}");
+		// 		}
+		// 	}
+		// }
+		// catch (Exception ex)
+		// {
+		// 	sb.AppendLine($"Could not retrieve graphics card info: {ex.Message}");
+		// }
 		
 		// WPF rendering information
 		try
 		{
-			var renderingTier = (System.Windows.Media.RenderCapability.Tier / 0x10000);
+			var renderingTier = (RenderCapability.Tier / 0x10000);
 			sb.AppendLine($"WPF Rendering Tier: {renderingTier}");
 			sb.AppendLine($"WPF Software Rendering: {RenderOptions.ProcessRenderMode == RenderMode.SoftwareOnly}");
 		}
@@ -322,7 +373,7 @@ public partial class ErrorPopup : Window
 		}
 		
 		// Installed .NET Runtime versions
-		try
+		/*try
 		{
 			sb.AppendLine();
 			sb.AppendLine("=== .NET RUNTIME INFORMATION ===");
@@ -401,99 +452,119 @@ public partial class ErrorPopup : Window
 		catch (Exception ex)
 		{
 			sb.AppendLine($"Could not retrieve .NET version info: {ex.Message}");
-		}
+		}*/
 		
 		// Application domain information
-		try
-		{
-			sb.AppendLine();
-			sb.AppendLine("=== APP DOMAIN INFORMATION ===");
-			var domain = AppDomain.CurrentDomain;
-			sb.AppendLine($"Domain Name: {domain.FriendlyName}");
-			sb.AppendLine($"Base Directory: {domain.BaseDirectory}");
-			sb.AppendLine($"Shadow Copy Enabled: {domain.ShadowCopyFiles}");
-			sb.AppendLine($"Setup Information: {domain.SetupInformation.ApplicationBase}");
-		}
-		catch (Exception ex)
-		{
-			sb.AppendLine($"Could not retrieve AppDomain info: {ex.Message}");
-		}
+		// try
+		// {
+		// 	sb.AppendLine();
+		// 	sb.AppendLine("=== APP DOMAIN INFORMATION ===");
+		// 	var domain = AppDomain.CurrentDomain;
+		// 	sb.AppendLine($"Domain Name: {domain.FriendlyName}");
+		// 	sb.AppendLine($"Base Directory: {domain.BaseDirectory}");
+		// 	sb.AppendLine($"Shadow Copy Enabled: {domain.ShadowCopyFiles}");
+		// 	sb.AppendLine($"Setup Information: {domain.SetupInformation.ApplicationBase}");
+		// }
+		// catch (Exception ex)
+		// {
+		// 	sb.AppendLine($"Could not retrieve AppDomain info: {ex.Message}");
+		// }
 		
 		// Add information about loaded modules
+		// try
+		// {
+		// 	sb.AppendLine();
+		// 	sb.AppendLine("=== LOADED ASSEMBLIES ===");
+		// 	
+		// 	var currentProcess = Process.GetCurrentProcess();
+		// 	var mainModule = currentProcess.MainModule;
+		// 	
+		// 	sb.AppendLine($"Main Module: {mainModule?.FileName ?? "Unknown"}");
+		// 	sb.AppendLine($"Main Module Version: {mainModule?.FileVersionInfo.FileVersion ?? "Unknown"}");
+		// 	
+		// 	// List first 10 loaded assemblies to avoid making the report too large
+		// 	var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+		// 	sb.AppendLine($"Total Loaded Assemblies: {loadedAssemblies.Length}");
+		// 	sb.AppendLine("First 10 Loaded Assemblies:");
+		// 	
+		// 	foreach (var assembly in loadedAssemblies.Take(10))
+		// 	{
+		// 		try
+		// 		{
+		// 			var assemblyName = assembly.GetName();
+		// 			sb.AppendLine($"  {assemblyName.Name}, Version={assemblyName.Version}");
+		// 		}
+		// 		catch
+		// 		{
+		// 			sb.AppendLine($"  {assembly} (Could not retrieve detailed information)");
+		// 		}
+		// 	}
+		// }
+		// catch (Exception ex)
+		// {
+		// 	sb.AppendLine($"Could not retrieve loaded modules info: {ex.Message}");
+		// }
+	}
+	
+	// private void CheckDotNetFramework4Release(StringBuilder sb, Microsoft.Win32.RegistryKey versionKey)
+	// {
+	// 	// Check for .NET Framework 4.5 and later versions
+	// 	var release = versionKey.GetValue("Release", 0).ToString();
+	// 	if (!string.IsNullOrEmpty(release))
+	// 	{
+	// 		int releaseKey = Convert.ToInt32(release);
+	// 		string version45AndLater = GetDotNet45PlusVersion(releaseKey);
+	// 		if (!string.IsNullOrEmpty(version45AndLater))
+	// 		{
+	// 			sb.AppendLine($".NET Framework {version45AndLater}");
+	// 		}
+	// 	}
+	// }
+	//
+	// private string GetDotNet45PlusVersion(int releaseKey)
+	// {
+	// 	// Values from: https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+	// 	if (releaseKey >= 528040)
+	// 		return "4.8";
+	// 	if (releaseKey >= 461808)
+	// 		return "4.7.2";
+	// 	if (releaseKey >= 461308)
+	// 		return "4.7.1";
+	// 	if (releaseKey >= 460798)
+	// 		return "4.7";
+	// 	if (releaseKey >= 394802)
+	// 		return "4.6.2";
+	// 	if (releaseKey >= 394254)
+	// 		return "4.6.1";
+	// 	if (releaseKey >= 393295)
+	// 		return "4.6";
+	// 	if (releaseKey >= 379893)
+	// 		return "4.5.2";
+	// 	if (releaseKey >= 378675)
+	// 		return "4.5.1";
+	// 	if (releaseKey >= 378389)
+	// 		return "4.5";
+	// 	return "";
+	// }
+	
+	/// <summary>
+	/// Creates a short hash of the machine name for privacy while still allowing identification of recurring issues
+	/// </summary>
+	private string GetHashedMachineName()
+	{
 		try
+        {
+            var machineName = Environment.MachineName;
+            
+            var bytes = Encoding.UTF8.GetBytes(machineName);
+            var hashBytes = System.Security.Cryptography.SHA256.HashData(bytes);
+            
+            return Convert.ToHexString(hashBytes, 0, 3);
+        }
+        catch
 		{
-			sb.AppendLine();
-			sb.AppendLine("=== LOADED ASSEMBLIES ===");
-			
-			var currentProcess = Process.GetCurrentProcess();
-			var mainModule = currentProcess.MainModule;
-			
-			sb.AppendLine($"Main Module: {mainModule?.FileName ?? "Unknown"}");
-			sb.AppendLine($"Main Module Version: {mainModule?.FileVersionInfo.FileVersion ?? "Unknown"}");
-			
-			// List first 10 loaded assemblies to avoid making the report too large
-			var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-			sb.AppendLine($"Total Loaded Assemblies: {loadedAssemblies.Length}");
-			sb.AppendLine("First 10 Loaded Assemblies:");
-			
-			foreach (var assembly in loadedAssemblies.Take(10))
-			{
-				try
-				{
-					var assemblyName = assembly.GetName();
-					sb.AppendLine($"  {assemblyName.Name}, Version={assemblyName.Version}");
-				}
-				catch
-				{
-					sb.AppendLine($"  {assembly} (Could not retrieve detailed information)");
-				}
-			}
+			return "Unknown";
 		}
-		catch (Exception ex)
-		{
-			sb.AppendLine($"Could not retrieve loaded modules info: {ex.Message}");
-		}
-	}
-	
-	private void CheckDotNetFramework4Release(StringBuilder sb, Microsoft.Win32.RegistryKey versionKey)
-	{
-		// Check for .NET Framework 4.5 and later versions
-		var release = versionKey.GetValue("Release", 0).ToString();
-		if (!string.IsNullOrEmpty(release))
-		{
-			int releaseKey = Convert.ToInt32(release);
-			string version45AndLater = GetDotNet45PlusVersion(releaseKey);
-			if (!string.IsNullOrEmpty(version45AndLater))
-			{
-				sb.AppendLine($".NET Framework {version45AndLater}");
-			}
-		}
-	}
-	
-	private string GetDotNet45PlusVersion(int releaseKey)
-	{
-		// Values from: https://docs.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
-		if (releaseKey >= 528040)
-			return "4.8";
-		if (releaseKey >= 461808)
-			return "4.7.2";
-		if (releaseKey >= 461308)
-			return "4.7.1";
-		if (releaseKey >= 460798)
-			return "4.7";
-		if (releaseKey >= 394802)
-			return "4.6.2";
-		if (releaseKey >= 394254)
-			return "4.6.1";
-		if (releaseKey >= 393295)
-			return "4.6";
-		if (releaseKey >= 379893)
-			return "4.5.2";
-		if (releaseKey >= 378675)
-			return "4.5.1";
-		if (releaseKey >= 378389)
-			return "4.5";
-		return "";
 	}
 	
 	// Native methods for memory information
@@ -514,7 +585,7 @@ public partial class ErrorPopup : Window
 			
 			public MEMORYSTATUSEX()
 			{
-				this.dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+				dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(MEMORYSTATUSEX));
 			}
 		}
 		
@@ -604,7 +675,7 @@ public partial class ErrorPopup : Window
 			TextWrapping = TextWrapping.Wrap,
 			VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
 			HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-			FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+			FontFamily = new FontFamily("Consolas"),
 			FontSize = 12,
 			Background = new SolidColorBrush(Color.FromRgb(50, 50, 70)),
 			Foreground = Brushes.White,
@@ -647,11 +718,9 @@ public partial class ErrorPopup : Window
 		}
 	}
 	
-	private void AutoReportClick(object sender, RoutedEventArgs e)
+	private async void AutoReportClick(object sender, RoutedEventArgs e)
 	{
-		// TODO: Implement automatic error reporting to a server or API
-		// This would typically involve sending the error details to a logging service
-		throw new NotImplementedException();
+		MessageBox.Show("WIP");
 	}
 	
 	private void ContinueClick(object sender, RoutedEventArgs e)
@@ -718,7 +787,7 @@ public partial class ErrorPopup : Window
 		{
 			// If we couldn't identify a specific window, ask the user what they want to do
 			var result = MessageBox.Show(
-				"Do you want to close the entire application?\n\nYes - Close the entire application (all windows)\nNo - Just dismiss this error and continue",
+				"\nThe application window responsible for the error could not be identified.\nDo you want to close the entire application?\n\nYes - Close the entire application (all windows)\nNo - Just dismiss this error and continue",
 				"Close Application?",
 				MessageBoxButton.YesNo,
 				MessageBoxImage.Question);

@@ -15,6 +15,7 @@
         <Authors>Vast The Doge &amp; FoxyGuy716</Authors>
         <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
         <NeutralLanguage>en</NeutralLanguage>
+        <UserSecretsId>foxybroswer716-github-reporter</UserSecretsId>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -28,8 +29,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Material.Icons" Version="2.1.10"/>
-        <PackageReference Include="Material.Icons.WPF" Version="2.1.10"/>
+        <PackageReference Include="Material.Icons" Version="2.1.10" />
+        <PackageReference Include="Material.Icons.WPF" Version="2.1.10" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
         <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3230-prerelease" />
         <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
     </ItemGroup>
@@ -52,10 +54,6 @@
       <None Update="FoxyBrowserDefaultBackground.jpg">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="extensions\**\*" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

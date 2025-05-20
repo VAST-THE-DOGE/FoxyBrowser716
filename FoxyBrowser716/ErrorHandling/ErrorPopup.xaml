@@ -22,9 +22,7 @@ view technical details&#160;
                 <Run Text="We are sorry for this inconvenience. Please consider reporting an anonymous bug report (only error message, stack trace, and any other error related information is shared). This will help to inform us that there is an issue and give us the information to work on a fix.&#x0a;Please see below for what each button will do:"/>
                 <LineBreak/>
                 <LineBreak/>
-                <Run Text="&#160;
-&#160;
-• &#160;
+                <Run Text="&#160;&#160;• &#160;
 A manual report will bring you to GitHub (requires login) and allow you to post an issue with any extra information. You might be contacted on GitHub later on for any extra information or any potential fixes to the issue."/>
                 <LineBreak/>
                 <LineBreak/>
@@ -50,7 +48,7 @@ A manual report will bring you to GitHub (requires login) and allow you to post 
                 <Button BorderBrush="#FF910F" FontWeight="SemiBold" Foreground="#59A1FF" Background="#38384C" Margin="10,3" FontSize="14" HorizontalAlignment="Left" Content="&#160;
 report manually&#160;
 " Click="ManualReportClick"/>
-                <Button BorderBrush="#FF910F" FontWeight="SemiBold" Foreground="#59A1FF" Background="#38384C" Margin="10,3" FontSize="14" HorizontalAlignment="Left" Content="&#160;
+                <Button Visibility="Collapsed" BorderBrush="#FF910F" FontWeight="SemiBold" Foreground="#59A1FF" Background="#38384C" Margin="10,3" FontSize="14" HorizontalAlignment="Left" Content="&#160;
 report automatically&#160;
 " Click="AutoReportClick"/>
                 <Button BorderBrush="#FF910F" FontWeight="SemiBold" Foreground="#05F950" Background="#38384C" Margin="10,3" FontSize="14" HorizontalAlignment="Left" Content="&#160;
