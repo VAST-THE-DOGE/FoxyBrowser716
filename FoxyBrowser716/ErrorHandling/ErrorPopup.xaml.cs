@@ -714,7 +714,7 @@ public partial class ErrorPopup : Window
 		}
 	}
 	
-	private async void AutoReportClick(object sender, RoutedEventArgs e)
+	private void AutoReportClick(object sender, RoutedEventArgs e)
 	{
 		MessageBox.Show("WIP");
 	}

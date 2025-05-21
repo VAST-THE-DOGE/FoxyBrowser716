@@ -191,7 +191,7 @@
                         </Border>
 
                         <Button Grid.Column="4" Name="SearchButton" Width="30" Height="30" BorderThickness="0"
-                                Background="#002D2D30" Click="Search_Click" Foreground="White"
+                                Background="#002D2D30" Foreground="White"
                                 Content="{wpf:MaterialIconExt Kind=SearchWeb}" />
                     </Grid>
                 </StackPanel>

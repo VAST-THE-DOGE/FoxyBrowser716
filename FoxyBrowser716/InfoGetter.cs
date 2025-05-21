@@ -13,7 +13,7 @@ public static class InfoGetter
     #region Versioning
     public static readonly Version? Version = Assembly.GetExecutingAssembly().GetName().Version;
     public static readonly string VersionString = Version is not null 
-        ? $"{Version.Major}.{Version.Minor}.{Version.Build}" 
+        ? $"v{Version.Major}.{Version.Minor}.{Version.Build}" 
         : "Unknown";
     #endregion
     

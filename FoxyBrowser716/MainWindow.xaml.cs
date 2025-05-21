@@ -43,6 +43,8 @@ public partial class MainWindow
 		InitTask = Initialize();
 		
 		//TODO: find a better way to do all this crazy GUI stuff
+		SearchButton.Click += async (s,e) => await Search_Click(s,e);
+		
 		foreach (var button in NormalButtons)
 		{
 			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
@@ -272,7 +274,7 @@ public partial class MainWindow
 				{ "History", OpenHistory },
 				{ "Downloads", OpenDownloads },
 				{ "Instances", OpenInstances },
-				{ "Extensions", OpenExtensions }
+				{ "Extensions", async () => await OpenExtensions() }
 			}
 			: new()
 			{
@@ -374,7 +376,7 @@ private void OpenDownloads()
 	else tabCore.OpenDefaultDownloadDialog();
 }
 
-private async void OpenExtensions()
+private async Task OpenExtensions()
 {
 	if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
 
@@ -388,22 +390,15 @@ private async void OpenExtensions()
 	_secondaryMenu.IsOpen = true;
 }
 
-private async void OnTabCardDragChanged(TabCard sender, int? relativeMove)
+private async Task OnTabCardDragChanged(TabCard sender, int? relativeMove)
 {
-	try
+	if (relativeMove == null)
 	{
-		if (relativeMove == null)
-		{
-			await BuildNewWindow(sender);
-		}
-		else
-		{
-			await UpdateTabOrder(sender, relativeMove.Value);
-		}
+		await BuildNewWindow(sender);
 	}
-	catch (Exception e)
+	else
 	{
-		// TODO handle exception
+		await UpdateTabOrder(sender, relativeMove.Value);
 	}
 }
 
@@ -447,21 +442,21 @@ private async Task Initialize()
 	StackBookmark.Visibility = Visibility.Collapsed;
 	StackPin.Visibility = Visibility.Collapsed;
 	NavigationGrid.Visibility = Visibility.Collapsed;
-	
+
 	TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
 	{
 		StackBookmark.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
 		StackPin.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
 		NavigationGrid.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
 		_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
-		
+
 		AddTabStack.Background = newActiveTab == -1
 			? new SolidColorBrush(HighlightColor)
 			: new SolidColorBrush(MainColor);
 		_homePage.Visibility = newActiveTab == -1
 			? Visibility.Visible
 			: Visibility.Collapsed;
-		
+
 		foreach (var card in Tabs.Children.OfType<TabCard>())
 		{
 			if (card.Key == oldActiveTab)
@@ -470,9 +465,9 @@ private async Task Initialize()
 				card.ToggleActiveTo(true);
 		}
 	};
-	
+
 	await TabManager.InitializeData();
-	
+
 	_homePage = new HomePage();
 	await _homePage.Initialize(TabManager, _instanceData);
 	TabHolder.Children.Add(_homePage);
@@ -482,78 +477,69 @@ private async Task Initialize()
 
 	TabManager.TabCreated += tab =>
 	{
-	    var tabCard = new TabCard(tab);
-	    
-	    TabHolder.Children.Add(tab.TabCore);
+		var tabCard = new TabCard(tab);
 
-	    tabCard.DragPositionChanged += OnTabCardDragChanged;
-	    
-	    tab.UrlChanged += () =>
-	    {
-	        if (tab.TabId == TabManager.ActiveTabId)
-	        {
-	            SearchBox.Text = tab.TabCore.Source.ToString();
-	            BackButton.Foreground = tab.TabCore.CanGoBack
-	                ? new SolidColorBrush(Colors.White)
-	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
-	            ForwardButton.Foreground = tab.TabCore.CanGoForward
-	                ? new SolidColorBrush(Colors.White)
-	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
-	        }
+		TabHolder.Children.Add(tab.TabCore);
 
-	        if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
-	        {
-	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
-	            LabelPin.Content = "Unpin Tab";
-	        }
-	        else
-	        {
-	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
-	            LabelPin.Content = "Pin Tab";
-	        }
-	        
-	        if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
-	        {
-		        ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
-		        LabelBookmark.Content = "Remove Bookmark";
-	        }
-	        else
-	        {
-		        ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
-		        LabelBookmark.Content = "Add Bookmark";
-	        }
-	    };
+		tabCard.DragPositionChanged += async (s, e) => await OnTabCardDragChanged(s, e);
 
-	    tab.TitleChanged += () =>
-	    {
-	        tabCard.TitleLabel.Content = tab.Title;
-	    };
+		tab.UrlChanged += () =>
+		{
+			if (tab.TabId == TabManager.ActiveTabId)
+			{
+				SearchBox.Text = tab.TabCore.Source.ToString();
+				BackButton.Foreground = tab.TabCore.CanGoBack
+					? new SolidColorBrush(Colors.White)
+					: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+				ForwardButton.Foreground = tab.TabCore.CanGoForward
+					? new SolidColorBrush(Colors.White)
+					: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+			}
 
-	    tab.ImageChanged += () =>
-	    {
-	        tabCard.TabIcon.Child = tab.Icon;
-	    };
+			if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+				LabelPin.Content = "Unpin Tab";
+			}
+			else
+			{
+				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+				LabelPin.Content = "Pin Tab";
+			}
 
-	    tab.NewTabRequested += (uri) =>
-	    {
-		    TabManager.AddTab(uri);
-	    };
+			if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+			{
+				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+				LabelBookmark.Content = "Remove Bookmark";
+			}
+			else
+			{
+				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+				LabelBookmark.Content = "Add Bookmark";
+			}
+		};
 
-	    tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);
-	    tabCard.RemoveRequested += () => TabManager.RemoveTab(tab.TabId);
-	    tabCard.DuplicateRequested += () =>
-	    {
-		    TabManager.SwapActiveTabTo(TabManager.AddTab(tab.TabCore.Source.ToString()));
-	    };
+		tab.TitleChanged += () => { tabCard.TitleLabel.Content = tab.Title; };
 
-	    Tabs.Children.Add(tabCard);
+		tab.ImageChanged += () => { tabCard.TabIcon.Child = tab.Icon; };
+
+		tab.NewTabRequested += (uri) => { TabManager.AddTab(uri); };
+
+		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);
+		tabCard.RemoveRequested += () => TabManager.RemoveTab(tab.TabId);
+		tabCard.DuplicateRequested += () =>
+		{
+			TabManager.SwapActiveTabTo(TabManager.AddTab(tab.TabCore.Source.ToString()));
+		};
+
+		Tabs.Children.Add(tabCard);
 	};
 
 	TabManager.TabRemoved += id =>
 	{
-	    var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
-	    if (card != null)
-	        Tabs.Children.Remove(card);
+		var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+		if (card != null)
+			Tabs.Children.Remove(card);
 	};
 
 	_instanceData.PinInfo.TabInfoAdded += (key, pin) =>
@@ -569,13 +555,14 @@ private async Task Initialize()
 	_instanceData.PinInfo.TabInfoRemoved += (id, _) =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
-		
+
 		if (card != null)
 			PinnedTabs.Children.Remove(card);
-		
+
 		var tab = TabManager.GetTab(TabManager.ActiveTabId);
-		
-		if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+
+		if (_instanceData.PinInfo.GetAllTabInfos()
+		    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 		{
 			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 			LabelPin.Content = "Unpin Tab";
@@ -595,7 +582,7 @@ private async Task Initialize()
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
 		tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
-		
+
 		PinnedTabs.Children.Add(tabCard);
 	}
 }
@@ -650,7 +637,7 @@ private void ToggleHomeEdit(bool editing)
 	}
 }
 
-private async void Search_Click(object? s, EventArgs e)
+private async Task Search_Click(object? s, EventArgs e)
 	{
 		try
 		{

@@ -62,8 +62,7 @@ public partial class HomePage
 
         await TryLoadWidgets();
         await AddWidgetsToGrid();
-
-
+        
         _updateTimer = new System.Timers.Timer(250);
         _updateTimer.Elapsed += async (_,_) => await TimerTick();
         _updateTimer.AutoReset = true;
@@ -79,7 +78,7 @@ public partial class HomePage
     {
         if (_settings.DoSlideshow)
         {
-            var i = (DateTime.Now.Hour * 3600 + DateTime.Now.Minute * 60 + DateTime.Now.Second) / _settings.DisplayTime;
+            var i = (DateTime.Now.Hour * 3600 + DateTime.Now.Minute * 60 + DateTime.Now.Second) / (_settings.DisplayTime == 0 ? 1 : _settings.DisplayTime);
             if (_imageIndex != i)
             {
                 _imageIndex = i;
@@ -133,16 +132,22 @@ public partial class HomePage
 
     private void ApplySettings()
     {
-        if (!_settings.DoSlideshow)
+        try
         {
-            var source = new BitmapImage(new Uri(_settings.BackgroundPath));
-            _imageControl.Source = source;
-            ImageBehavior.SetAnimatedSource(_imageControl, source);
-            
-            Grid.SetRowSpan(_imageControl, 9999);
-            Grid.SetColumnSpan(_imageControl, 9999);
-            Panel.SetZIndex(_imageControl, -1);
+            if (!_settings.DoSlideshow)
+            {
+                var source = new BitmapImage(new Uri(_settings.BackgroundPath));
+                _imageControl.Source = source;
+                ImageBehavior.SetAnimatedSource(_imageControl, source);
+            }
         }
+        catch (IOException _)
+        {
+            _imageControl.Source = null;
+        }
+        Grid.SetRowSpan(_imageControl, 9999);
+        Grid.SetColumnSpan(_imageControl, 9999);
+        Panel.SetZIndex(_imageControl, -1);
     }
 
     private static Widget? GetWidget(string widgetName)
@@ -163,7 +168,7 @@ public partial class HomePage
             catch
             {
                 _savedWidgets = GetDefaultWidgets();
-                await SaveSettingsToJson();
+                await SaveWidgetsToJson();
             }
         }
         else
@@ -437,7 +442,7 @@ public partial class HomePage
         [3] = (new WidgetSettingFolderPicker(_settings.FolderPath), "FolderPath (can have nested folders)"),
     };
     
-    public async void AddWidgetClicked(string name)
+    public async Task AddWidgetClicked(string name)
     {
         await CreateWidget(name);
     }

@@ -26,12 +26,12 @@ namespace FoxyBrowser716
             };
 
             // Hook up event handlers
-            LocationChanged += Window_LocationChanged;
+            LocationChanged += async (s,e) => await Window_LocationChanged(s,e);
             MouseMove += OnMouseMove;
-            MouseLeftButtonUp += OnMouseLeftButtonUp;
+            MouseLeftButtonUp += async (s,e) => await OnMouseLeftButtonUp(s,e);
         }
 
-        private async void Window_LocationChanged(object? sender, EventArgs e)
+        private async Task Window_LocationChanged(object? sender, EventArgs e)
         {
             if (ServerManager.Context.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await ServerManager.Context.TryTabTransfer(_tab, Left, Top))
             {
@@ -54,7 +54,7 @@ namespace FoxyBrowser716
             }
         }
 
-        private async void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs? e)
+        private async Task OnMouseLeftButtonUp(object sender, MouseButtonEventArgs? e)
         {
             if (!_isDragging) return;
             _isDragging = false;

@@ -10,7 +10,7 @@
   <Identity
     Name="f0e6aa1b-dbac-4bcc-9d62-a5cb54509118"
     Publisher="CN=William Herbert"
-    Version="0.3.0.0" />
+    Version="0.3.1.0" />
 
   <Properties>
     <DisplayName>PKG_FoxyBrowser716</DisplayName>
@@ -19,8 +19,7 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14393.0" MaxVersionTested="10.0.14393.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14393.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
 
   <Resources>
@@ -29,8 +28,8 @@
 
   <Applications>
     <Application Id="App"
-      Executable="$targetnametoken$.exe"
-      EntryPoint="FoxyBrowser716.exe" uap18:RuntimeBehavior="windowsApp" uap18:TrustLevel="appContainer">
+      Executable="FoxyBrowser716.exe"
+      EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="FoxyBrowser716"
         Description="FoxyBrowser716 is a simple web browser based off of WebView2."
@@ -48,10 +47,80 @@
         <uap:InitialRotationPreference>
           <uap:Rotation Preference="landscape"/></uap:InitialRotationPreference>
       </uap:VisualElements>
+
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="http">
+            <uap:DisplayName>FoxyBrowser716</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="https">
+            <uap:DisplayName>FoxyBrowser716</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="webdocument">
+            <uap:DisplayName>Web Document</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.htm</uap:FileType>
+              <uap:FileType>.html</uap:FileType>
+              <uap:FileType>.xhtml</uap:FileType>
+              <uap:FileType>.mht</uap:FileType>
+              <uap:FileType>.mhtml</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="pdfdocument">
+            <uap:DisplayName>PDF Document</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.pdf</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="xmldocument">
+            <uap:DisplayName>XML Document</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.xml</uap:FileType>
+              <uap:FileType>.xaml</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="webimage">
+            <uap:DisplayName>Web Image</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.svg</uap:FileType>
+              <uap:FileType>.webp</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="textdocument">
+            <uap:DisplayName>Text Document</uap:DisplayName>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.txt</uap:FileType>
+              <uap:FileType>.json</uap:FileType>
+              <uap:FileType>.js</uap:FileType>
+              <uap:FileType>.css</uap:FileType>
+              <uap:FileType>.md</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 
-  <Capabilities>
+
+<Capabilities>
     <Capability Name="internetClient" />
     <rescap:Capability Name="runFullTrust" />
   </Capabilities>
