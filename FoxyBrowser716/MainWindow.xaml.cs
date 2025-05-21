@@ -25,25 +25,25 @@ public partial class MainWindow
 
 	private bool _inFullscreen;
 
-	private Rect _originalRectangle;
+	private System.Windows.Rect _originalRectangle;
 	
 	internal readonly TabManager TabManager;
 
-	private InstanceManager InstanceData;
+	private InstanceManager _instanceData;
 
-	internal Task _initTask;
+	internal Task InitTask;
 	
 	public MainWindow(InstanceManager instanceData)
 	{
-		InstanceData = instanceData;
+		_instanceData = instanceData;
 			
 		InitializeComponent();
 
-		TabManager = new TabManager(InstanceData);
-		_initTask = Initialize();
+		TabManager = new TabManager(_instanceData);
+		InitTask = Initialize();
 		
 		//TODO: find a better way to do all this crazy GUI stuff
-		foreach (var button in _normalButtons)
+		foreach (var button in NormalButtons)
 		{
 			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
 			button.MouseLeave += (_, _) => { ChangeColorAnimation(button.Background, AccentColor, MainColor); };
@@ -100,18 +100,18 @@ public partial class MainWindow
 			
 			if (tab is null) return;
 
-			if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
-				InstanceData.PinInfo.RemoveTabInfo(InstanceData.PinInfo.GetAllTabInfos()
+				_instanceData.PinInfo.RemoveTabInfo(_instanceData.PinInfo.GetAllTabInfos()
 					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
-				InstanceData.PinInfo.AddTabInfo(tab);
+				_instanceData.PinInfo.AddTabInfo(tab);
 			}
 		};
 		
@@ -131,18 +131,18 @@ public partial class MainWindow
 			
 			if (tab is null) return;
 
-			if (InstanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
 			{
 				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
 				LabelBookmark.Content = "Add Bookmark";
-				InstanceData.BookmarkInfo.RemoveTabInfo(InstanceData.BookmarkInfo.GetAllTabInfos()
+				_instanceData.BookmarkInfo.RemoveTabInfo(_instanceData.BookmarkInfo.GetAllTabInfos()
 					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
 			}
 			else
 			{
 				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
 				LabelBookmark.Content = "Remove bookmark";
-				InstanceData.BookmarkInfo.AddTabInfo(tab);
+				_instanceData.BookmarkInfo.AddTabInfo(tab);
 			}
 		};
 
@@ -216,13 +216,13 @@ public partial class MainWindow
 		LeftBar.BeginAnimation(WidthProperty, animation);
 	}
 
-	internal Rect GetLeftBarDropArea()
+	internal System.Windows.Rect GetLeftBarDropArea()
 	{
 		var p = PointToScreen(new Point(0, 30));
-		return new Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
+		return new System.Windows.Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
 	}
 
-	private Control[] _normalButtons =>
+	private Control[] NormalButtons =>
 	[
 		ButtonMaximize,
 		ButtonMinimize,
@@ -324,7 +324,7 @@ private void OpenInstances()
 {
 	var openNewWindow = TabManager.GetAllTabs().Count > 0;
 	var instanceOptions = ServerManager.Context.AllBrowserManagers
-		.Where(i => i.InstanceName != InstanceData.InstanceName)
+		.Where(i => i.InstanceName != _instanceData.InstanceName)
 		.ToDictionary<InstanceManager, string, Action>(i => $"{(openNewWindow ? "Open" : "Swap To")} {i.InstanceName}",
 			i => async () =>
 			{
@@ -332,14 +332,13 @@ private void OpenInstances()
 					await ServerManager.Context.CreateWindow(null, null, i);
 				else
 				{
-					await ServerManager.Context.CreateWindow(new Rect(Left, Top, Width, Height), _inFullscreen, i);
+					await ServerManager.Context.CreateWindow(new System.Windows.Rect(Left, Top, Width, Height), _inFullscreen, i);
 					Close();
 				}
 			});
 	instanceOptions.Add("Manage Instances", () =>
 	{
-		MessageBox.Show("Manage Instances is WIP, please use file explorer to rename, add, or delete folders. Editing the folders in the \"Instances\" folder will modify the instances that are in use.",
-			"WIP");
+		throw new NotImplementedException();
 	});
 	ApplyMenuItems(_secondaryMenu, instanceOptions);
 	_secondaryMenu.PlacementTarget = ButtonMenu;
@@ -354,7 +353,7 @@ private void OpenBookmark(string url)
 
 private void OpenBookmarks()
 {
-	ApplyMenuItems(_secondaryMenu, InstanceData.BookmarkInfo.GetAllTabInfos().Values
+	ApplyMenuItems(_secondaryMenu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
 		.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
 	);
 	_secondaryMenu.PlacementTarget = ButtonMenu;
@@ -382,7 +381,7 @@ private async void OpenExtensions()
 	var extensions = await tab.TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
 	ApplyMenuItems(_secondaryMenu, extensions
 		.ToDictionary<CoreWebView2BrowserExtension, string, Action>(k => $"{ k.Id } - { k.Name }",
-			k => () => { MessageBox.Show($"not implemented yet."); })
+			k => () => throw new NotImplementedException())
 	);
 	_secondaryMenu.PlacementTarget = ButtonMenu;
 	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
@@ -475,7 +474,7 @@ private async Task Initialize()
 	await TabManager.InitializeData();
 	
 	_homePage = new HomePage();
-	await _homePage.Initialize(TabManager, InstanceData);
+	await _homePage.Initialize(TabManager, _instanceData);
 	TabHolder.Children.Add(_homePage);
 	TabManager.SwapActiveTabTo(-1);
 
@@ -502,7 +501,7 @@ private async Task Initialize()
 	                : new SolidColorBrush(Color.FromRgb(100, 100, 100));
 	        }
 
-	        if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 	        {
 	            ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 	            LabelPin.Content = "Unpin Tab";
@@ -513,7 +512,7 @@ private async Task Initialize()
 	            LabelPin.Content = "Pin Tab";
 	        }
 	        
-	        if (InstanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+	        if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 	        {
 		        ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
 		        LabelBookmark.Content = "Remove Bookmark";
@@ -557,17 +556,17 @@ private async Task Initialize()
 	        Tabs.Children.Remove(card);
 	};
 
-	InstanceData.PinInfo.TabInfoAdded += (key, pin) =>
+	_instanceData.PinInfo.TabInfoAdded += (key, pin) =>
 	{
 		var tabCard = new TabCard(key, pin);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
-		tabCard.RemoveRequested += () => InstanceData.PinInfo.RemoveTabInfo(key);
+		tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(key);
 
 		PinnedTabs.Children.Add(tabCard);
 	};
 
-	InstanceData.PinInfo.TabInfoRemoved += (id, _) =>
+	_instanceData.PinInfo.TabInfoRemoved += (id, _) =>
 	{
 		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
 		
@@ -576,7 +575,7 @@ private async Task Initialize()
 		
 		var tab = TabManager.GetTab(TabManager.ActiveTabId);
 		
-		if (InstanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
+		if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()?? "__NULL__")))
 		{
 			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 			LabelPin.Content = "Unpin Tab";
@@ -588,14 +587,14 @@ private async Task Initialize()
 		}
 	};
 
-	var e = InstanceData.PinInfo.GetAllTabInfos();
+	var e = _instanceData.PinInfo.GetAllTabInfos();
 	PinnedTabs.Children.Clear();
-	foreach (var pinKeyValue in InstanceData.PinInfo.GetAllTabInfos())
+	foreach (var pinKeyValue in _instanceData.PinInfo.GetAllTabInfos())
 	{
 		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
 		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => InstanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
+		tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
 		
 		PinnedTabs.Children.Add(tabCard);
 	}
@@ -694,7 +693,7 @@ private async void Search_Click(object? s, EventArgs e)
 			if (_inFullscreen)
 				ExitFullscreen(true);
 
-			_originalRectangle = new Rect(Left, Top, Width, Height);
+			_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
 			DragMove();
 		}
 	}
@@ -736,110 +735,88 @@ private async void Search_Click(object? s, EventArgs e)
 
 	private void EnterFullscreen()
 	{
-		try
-		{
-			_inFullscreen = true;
-			_originalRectangle = new Rect(Left, Top, Width, Height);
+		_inFullscreen = true;
+		_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
 
-			var screen = GetCurrentScreen();
+		var screen = GetCurrentScreen();
 
-			Left = screen.Left;
-			Top = screen.Top;
-			Width = screen.Width;
-			Height = screen.Height;
-			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
-		}
+		Left = screen.Left;
+		Top = screen.Top;
+		Width = screen.Width;
+		Height = screen.Height;
+		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
 	}
 
 	private void ExitFullscreen(bool moveToMouse = false)
 	{
-		try
+		_inFullscreen = false;
+
+		if (moveToMouse)
 		{
-			_inFullscreen = false;
+			// Get mouse position relative to this window, then convert to screen coordinates
+			var mousePos = Mouse.GetPosition(this);
+			mousePos = PointToScreen(mousePos);
 
-			if (moveToMouse)
-			{
-				// Get mouse position relative to this window, then convert to screen coordinates
-				var mousePos = Mouse.GetPosition(this);
-				mousePos = PointToScreen(mousePos);
+			// Convert from device pixels to DIPs using our presentation source magic
+			var source = PresentationSource.FromVisual(this);
+			mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos)?? mousePos;
 
-				// Convert from device pixels to DIPs using our presentation source magic
-				var source = PresentationSource.FromVisual(this);
-				mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos)?? mousePos;
+			// Calculate the mouse's relative position within the current window
+			var relX = (mousePos.X - this.Left) / this.Width;
+			var relY = (mousePos.Y - this.Top) / this.Height;
 
-				// Calculate the mouse's relative position within the current window
-				var relX = (mousePos.X - this.Left) / this.Width;
-				var relY = (mousePos.Y - this.Top) / this.Height;
+			// Restore original window size
+			Width = _originalRectangle.Width;
+			Height = _originalRectangle.Height;
 
-				// Restore original window size
-				Width = _originalRectangle.Width;
-				Height = _originalRectangle.Height;
-
-				// Reposition so the mouse is at the same spot on the window
-				Left = mousePos.X - (relX * this.Width);
-				Top = mousePos.Y - (relY * this.Height);
-			}
-			else
-			{
-				// Normal restore without the flirty mouse magic
-				Left = _originalRectangle.Left;
-				Top = _originalRectangle.Top;
-				Width = _originalRectangle.Width;
-				Height = _originalRectangle.Height;
-			}
-
-			ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
+			// Reposition so the mouse is at the same spot on the window
+			Left = mousePos.X - (relX * this.Width);
+			Top = mousePos.Y - (relY * this.Height);
 		}
-		catch (Exception ex)
+		else
 		{
-			MessageBox.Show(ex.Message, "Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			// Normal restore without the flirty mouse magic
+			Left = _originalRectangle.Left;
+			Top = _originalRectangle.Top;
+			Width = _originalRectangle.Width;
+			Height = _originalRectangle.Height;
 		}
+
+		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 	}
 
-	private Rect GetCurrentScreen()
+	private System.Windows.Rect GetCurrentScreen()
 	{
-		try
+		var hWnd = new WindowInteropHelper(this).Handle;
+		var hMonitor = MonitorFromWindow(hWnd, MonitorDefaulttonearest);
+
+		var monitorInfo = new Monitorinfo
 		{
-			var hWnd = new WindowInteropHelper(this).Handle;
-			var hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+			cbSize = Marshal.SizeOf<Monitorinfo>()
+        };
 
-			var monitorInfo = new MONITORINFO
+		if (GetMonitorInfo(hMonitor, ref monitorInfo))
+		{
+			// Get raw bounds in device pixels
+			var rawRect = new System.Windows.Rect(
+				monitorInfo.rcMonitor.Left,
+				monitorInfo.rcMonitor.Top,
+				monitorInfo.rcMonitor.Width,
+				monitorInfo.rcMonitor.Height);
+
+			// Convert to DIPs so everything stays in sync
+			var source = PresentationSource.FromVisual(this);
+			if (source?.CompositionTarget != null)
 			{
-				cbSize = Marshal.SizeOf<MONITORINFO>()
-            };
-
-			if (GetMonitorInfo(hMonitor, ref monitorInfo))
-			{
-				// Get raw bounds in device pixels
-				var rawRect = new Rect(
-					monitorInfo.rcMonitor.Left,
-					monitorInfo.rcMonitor.Top,
-					monitorInfo.rcMonitor.Width,
-					monitorInfo.rcMonitor.Height);
-
-				// Convert to DIPs so everything stays in sync
-				var source = PresentationSource.FromVisual(this);
-				if (source?.CompositionTarget != null)
-				{
-					var transform = new MatrixTransform(source.CompositionTarget.TransformFromDevice);
-					var dipRect = transform.TransformBounds(rawRect);
-					return dipRect;
-				}
-				return rawRect;
+				var transform = new MatrixTransform(source.CompositionTarget.TransformFromDevice);
+				var dipRect = transform.TransformBounds(rawRect);
+				return dipRect;
 			}
+			return rawRect;
+		}
 
-			// Fallback: if monitor info fails, use the primary monitor's work area
-			return SystemParameters.WorkArea with { X = 0, Y = 0 };
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message, "Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
-			return new Rect(0, 0, 200, 100);
-		}
+		// Fallback: if monitor info fails, use the primary monitor's work area
+		return SystemParameters.WorkArea with { X = 0, Y = 0 };
 	}
 
 	
@@ -851,21 +828,21 @@ private async void Search_Click(object? s, EventArgs e)
 
 	// Get information about a monitor
 	[DllImport("user32.dll")]
-	private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+	private static extern bool GetMonitorInfo(IntPtr hMonitor, ref Monitorinfo lpmi);
 
 	// Monitor Info Struct
 	[StructLayout(LayoutKind.Sequential)]
-	public struct MONITORINFO
+	public struct Monitorinfo
 	{
 		public int cbSize;
-		public RECT rcMonitor;
-		public RECT rcWork;
+		public Rect rcMonitor;
+		public Rect rcWork;
 		public uint dwFlags;
 	}
 
 	// Rect struct to define monitor size
 	[StructLayout(LayoutKind.Sequential)]
-	public struct RECT
+	public struct Rect
 	{
 		public int Left;
 		public int Top;
@@ -877,7 +854,7 @@ private async void Search_Click(object? s, EventArgs e)
 	}
 
 	// Constants
-	private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+	private const uint MonitorDefaulttonearest = 0x00000002;
 
 	#endregion
 
@@ -885,124 +862,103 @@ private async void Search_Click(object? s, EventArgs e)
 
 	#region ResizeWindows
 
-	private bool ResizeInProcess;
+	private bool _resizeInProcess;
 	private void Resize_Init(object sender, MouseButtonEventArgs e)
 	{
-		try
+		var senderRect = sender as Rectangle;
+		if (senderRect != null && !_inFullscreen)//TODO: verify that this works
 		{
-			var senderRect = sender as Rectangle;
-			if (senderRect != null && !_inFullscreen)//TODO: verify that this works
-			{
-				ResizeInProcess = true;
-				senderRect.CaptureMouse();
-			}
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_resizeInProcess = true;
+			senderRect.CaptureMouse();
 		}
 	}
 
 	private void Resize_End(object sender, MouseButtonEventArgs e)
 	{
-		try
+		var senderRect = sender as Rectangle;
+		if (senderRect != null)
 		{
-			var senderRect = sender as Rectangle;
-			if (senderRect != null)
-			{
-				ResizeInProcess = false;
-				senderRect.ReleaseMouseCapture();
-			}
-		}
-		catch (Exception ex)
-		{
-			MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			_resizeInProcess = false;
+			senderRect.ReleaseMouseCapture();
 		}
 	}
 
 	private void Resizeing_Form(object sender, MouseEventArgs e)
 	{
-	    try
-	    {
-	        if (ResizeInProcess)
-	        {
-	            var senderRect = sender as Rectangle;
-	            var mainWindow = senderRect?.Tag as Window;
-	            if (senderRect != null && mainWindow != null)
-	            {
-	                // Get the current mouse position relative to the main window
-	                var pos = e.GetPosition(mainWindow);
-	
-	                // Start with current window values
-	                var newLeft = mainWindow.Left;
-	                var newTop = mainWindow.Top;
-	                var newWidth = mainWindow.Width;
-	                var newHeight = mainWindow.Height;
-	
-	                // Check which sides are being resized
-	                var resizeLeft = senderRect.Name.ToLower().Contains("left");
-	                var resizeRight = senderRect.Name.ToLower().Contains("right");
-	                var resizeTop = senderRect.Name.ToLower().Contains("top");
-	                var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
-	
-	                // Process left resizing: adjust newLeft and newWidth
-	                if (resizeLeft)
-	                {
-	                    // pos.X is the new distance from the left edge
-	                    var deltaX = pos.X;
-	                    var proposedWidth = mainWindow.Width - deltaX;
-	                    if (proposedWidth >= mainWindow.MinWidth)
-	                    {
-	                        newLeft += deltaX;
-	                        newWidth = proposedWidth;
-	                    }
-	                }
-	
-	                // Process right resizing: new width based on mouse position
-	                if (resizeRight)
-	                {
-	                    // pos.X gives the new width from the left edge
-	                    var proposedWidth = pos.X + 1; // adding a little offset
-	                    if (proposedWidth >= mainWindow.MinWidth)
-	                    {
-	                        newWidth = proposedWidth;
-	                    }
-	                }
-	
-	                // Process top resizing: adjust newTop and newHeight
-	                if (resizeTop)
-	                {
-	                    var deltaY = pos.Y;
-	                    var proposedHeight = mainWindow.Height - deltaY;
-	                    if (proposedHeight >= mainWindow.MinHeight)
-	                    {
-	                        newTop += deltaY;
-	                        newHeight = proposedHeight;
-	                    }
-	                }
-	
-	                // Process bottom resizing: new height based on mouse position
-	                if (resizeBottom)
-	                {
-	                    var proposedHeight = pos.Y + 1; // little offset
-	                    if (proposedHeight >= mainWindow.MinHeight)
-	                    {
-	                        newHeight = proposedHeight;
-	                    }
-	                }
-	
-	                // Apply the computed values
-	                mainWindow.Left = newLeft;
-	                mainWindow.Top = newTop;
-	                mainWindow.Width = newWidth;
-	                mainWindow.Height = newHeight;
-	            }
-	        }
-	    }
-	    catch (Exception ex)
-	    {
-	        MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
-	    }
+        if (_resizeInProcess)
+        {
+            var senderRect = sender as Rectangle;
+            var mainWindow = senderRect?.Tag as Window;
+            if (senderRect != null && mainWindow != null)
+            {
+                // Get the current mouse position relative to the main window
+                var pos = e.GetPosition(mainWindow);
+
+                // Start with current window values
+                var newLeft = mainWindow.Left;
+                var newTop = mainWindow.Top;
+                var newWidth = mainWindow.Width;
+                var newHeight = mainWindow.Height;
+
+                // Check which sides are being resized
+                var resizeLeft = senderRect.Name.ToLower().Contains("left");
+                var resizeRight = senderRect.Name.ToLower().Contains("right");
+                var resizeTop = senderRect.Name.ToLower().Contains("top");
+                var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+
+                // Process left resizing: adjust newLeft and newWidth
+                if (resizeLeft)
+                {
+                    // pos.X is the new distance from the left edge
+                    var deltaX = pos.X;
+                    var proposedWidth = mainWindow.Width - deltaX;
+                    if (proposedWidth >= mainWindow.MinWidth)
+                    {
+                        newLeft += deltaX;
+                        newWidth = proposedWidth;
+                    }
+                }
+
+                // Process right resizing: new width based on mouse position
+                if (resizeRight)
+                {
+                    // pos.X gives the new width from the left edge
+                    var proposedWidth = pos.X + 1; // adding a little offset
+                    if (proposedWidth >= mainWindow.MinWidth)
+                    {
+                        newWidth = proposedWidth;
+                    }
+                }
+
+                // Process top resizing: adjust newTop and newHeight
+                if (resizeTop)
+                {
+                    var deltaY = pos.Y;
+                    var proposedHeight = mainWindow.Height - deltaY;
+                    if (proposedHeight >= mainWindow.MinHeight)
+                    {
+                        newTop += deltaY;
+                        newHeight = proposedHeight;
+                    }
+                }
+
+                // Process bottom resizing: new height based on mouse position
+                if (resizeBottom)
+                {
+                    var proposedHeight = pos.Y + 1; // little offset
+                    if (proposedHeight >= mainWindow.MinHeight)
+                    {
+                        newHeight = proposedHeight;
+                    }
+                }
+
+                // Apply the computed values
+                mainWindow.Left = newLeft;
+                mainWindow.Top = newTop;
+                mainWindow.Width = newWidth;
+                mainWindow.Height = newHeight;
+            }
+        }
 	}
 
 	private void ResizeHandle_MouseEnter(object sender, MouseEventArgs e)

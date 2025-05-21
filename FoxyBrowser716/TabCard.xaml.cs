@@ -149,7 +149,7 @@ public partial class TabCard
             _isDragging = false;
             Opacity = 1.0;
             return;
-        };
+        }
         
         if (Parent is not StackPanel stackPanel) return;
         var currentPosition = e.GetPosition(stackPanel);

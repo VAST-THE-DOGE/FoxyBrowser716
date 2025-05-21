@@ -2,13 +2,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
-using Material.Icons;
-using Material.Icons.WPF;
-
 using static FoxyBrowser716.Styling.ColorPalette;
 using static FoxyBrowser716.Styling.Animator;
 

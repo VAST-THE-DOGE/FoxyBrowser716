@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Windows;
 using System.Windows.Threading;
 using FoxyBrowser716.ErrorHandling;

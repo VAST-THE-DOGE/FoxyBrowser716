@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using System.Windows.Media;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 using static FoxyBrowser716.Styling.Animator;
@@ -8,7 +6,7 @@ using static FoxyBrowser716.Styling.ColorPalette;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class SearchWidget : IWidget
+public partial class SearchWidget : Widget
 {
 	public SearchWidget()
 	{

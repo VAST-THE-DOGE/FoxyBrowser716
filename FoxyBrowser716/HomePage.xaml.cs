@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Timers;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FoxyBrowser716.Converters;
@@ -20,7 +15,7 @@ using WpfAnimatedGif;
 
 namespace FoxyBrowser716;
 
-public partial class HomePage : UserControl
+public partial class HomePage
 {
     private const string WidgetsFileName = "homeWidgets.json";
     private const string SettingsFileName = "homeSettings.json";
@@ -30,10 +25,10 @@ public partial class HomePage : UserControl
     private TabManager _manager;
     private InstanceManager _instanceData;
     
-    public event Action<bool> ToggleEditMode;
+    public event Action<bool>? ToggleEditMode;
     public bool InEditMode;
 
-    private static Dictionary<string, Func<IWidget>> WidgetOptions = new()
+    private static Dictionary<string, Func<Widget>> _widgetOptions = new()
     {
         { SearchWidget.StaticWidgetName, () => new SearchWidget() },
         { TitleWidget.StaticWidgetName, () => new TitleWidget() },
@@ -43,7 +38,7 @@ public partial class HomePage : UserControl
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
     };
 
-    private System.Timers.Timer updateTimer;
+    private System.Timers.Timer _updateTimer;
     
     public HomePage()
     {
@@ -69,18 +64,18 @@ public partial class HomePage : UserControl
         await AddWidgetsToGrid();
 
 
-        updateTimer = new System.Timers.Timer(250);
-        updateTimer.Elapsed += async (_,_) => await TimerTick();
-        updateTimer.AutoReset = true;
-        updateTimer.Enabled = true;  
+        _updateTimer = new System.Timers.Timer(250);
+        _updateTimer.Elapsed += async (_,_) => await TimerTick();
+        _updateTimer.AutoReset = true;
+        _updateTimer.Enabled = true;  
         
-        updateTimer.Start();
+        _updateTimer.Start();
     }
 
     private int _imageIndex = -1;
     private Random _random = new();
     private Image _imageControl;
-    private async Task TimerTick()
+    private Task TimerTick()
     {
         if (_settings.DoSlideshow)
         {
@@ -94,29 +89,21 @@ public partial class HomePage : UserControl
                     MessageBox.Show("The specified directory does not exist for slideshow images, turning off slideshow.",
                         "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     _settings.DoSlideshow = false;
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 string[] extensions = [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".avi", ".mov", ".wmv"];
 
                 List<string> images = [];
-                try
-                {
-                    images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
-                        .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"An error occurred while reading slideshow images: {ex.Message}",
-                        "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
+                    .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
 
                 if (images.Count == 0)
                 {
                     MessageBox.Show($"No images found, turning off slideshow.",
                         "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     _settings.DoSlideshow = false;
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 Dispatcher.Invoke(() =>
@@ -133,13 +120,15 @@ public partial class HomePage : UserControl
                         _imageControl.Source = source;
                         ImageBehavior.SetAnimatedSource(_imageControl, source);
                     }
-                    catch (Exception ex)
+                    catch (Exception _)
                     {
-                        Console.WriteLine("e: "+uri??"null");
+                        Console.WriteLine("error: "+uri??"null"); //TODO: look more into  this
                     }
                 });
             }
         }
+
+        return Task.CompletedTask;
     }
 
     private void ApplySettings()
@@ -156,9 +145,9 @@ public partial class HomePage : UserControl
         }
     }
 
-    private static IWidget? GetWidget(string widgetName)
+    private static Widget? GetWidget(string widgetName)
     {
-        return WidgetOptions.TryGetValue(widgetName, out var factory) ? factory() : null;
+        return _widgetOptions.TryGetValue(widgetName, out var factory) ? factory() : null;
     }
 
     private async Task TryLoadWidgets()
@@ -242,36 +231,23 @@ public partial class HomePage : UserControl
         }
 
         HomeSettings GetDefaults() => new() {
-            BackgroundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DefaultBackgroundName),
+            BackgroundPath = Path.Combine(InfoGetter.AppData, DefaultBackgroundName),
         };
     }
 
     private async Task SaveWidgetsToJson()
     {
         var path = Path.Combine(_instanceData.InstanceFolder, WidgetsFileName);
-        try
-        {
-            var jsonData = JsonSerializer.Serialize(_savedWidgets, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(path, jsonData);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Widget Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        var jsonData = JsonSerializer.Serialize(_savedWidgets, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, jsonData);
     }
 
+    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private async Task SaveSettingsToJson()
     {
         var path = Path.Combine(_instanceData.InstanceFolder, SettingsFileName);
-        try
-        {
-            var jsonData = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(path, jsonData);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Setting Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        var jsonData = JsonSerializer.Serialize(_settings, Options);
+        await File.WriteAllTextAsync(path, jsonData);
     }
 
     private async Task AddWidgetsToGrid()
@@ -351,7 +327,7 @@ public partial class HomePage : UserControl
 
         foreach (var c in MainGrid.Children)
         {
-            if (c is not IWidget w) continue;
+            if (c is not Widget w) continue;
             w.InWidgetEditingMode = true;
         }
     }
@@ -365,14 +341,14 @@ public partial class HomePage : UserControl
 
         foreach (var c in MainGrid.Children)
         {
-            if (c is not IWidget w) continue;
+            if (c is not Widget w) continue;
             w.InWidgetEditingMode = false;
         }
     }
 
     public (BitmapSource preview, string name)[] GetWidgetOptions()
     {
-        return WidgetOptions.Values
+        return _widgetOptions.Values
             .Select(v => v())
             .Where(v => v.CanAdd)
             .Select(v => (v.PreviewControl(), v.WidgetName))
@@ -429,7 +405,7 @@ public partial class HomePage : UserControl
             
                 if (adornerLayer != null)
                 {
-                    var settingsAdorner = new SettingsAdorner(_slideshowSettings, $"Slideshow Settings", this);
+                    var settingsAdorner = new SettingsAdorner(SlideshowSettings, $"Slideshow Settings", this);
                     settingsAdorner.CloseRequested += (returnSettings) =>
                     {
                         adornerLayer.Remove(settingsAdorner);
@@ -450,7 +426,7 @@ public partial class HomePage : UserControl
         }
     }
 
-    private Dictionary<int, (IWidgetSetting setting, string title)> _slideshowSettings => new()
+    private Dictionary<int, (IWidgetSetting setting, string title)> SlideshowSettings => new()
     {
         // [-3] = (new WidgetSettingSubTitle("Hello There"),""),
         // [-2] = (new WidgetSettingDescription("Hello there."),""),
@@ -463,14 +439,7 @@ public partial class HomePage : UserControl
     
     public async void AddWidgetClicked(string name)
     {
-        try
-        {
-            await CreateWidget(name);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Widget Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        await CreateWidget(name);
     }
 
     public enum OptionType

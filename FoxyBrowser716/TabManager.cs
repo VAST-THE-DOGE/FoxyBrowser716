@@ -12,15 +12,6 @@ namespace FoxyBrowser716;
 public class TabManager
 {
 	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
-
-	/*private readonly ConcurrentDictionary<int, TabInfo> _pins = [];
-
-	private readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];*/
-
-	private int _pinBookmarkCounter;
-
-	private bool _initialized;
-	
 	public event Action TabsUpdated;
 	/*public event Action PinsUpdated;
 	public event Action BookmarksUpdated;*/
@@ -57,10 +48,7 @@ public class TabManager
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 		};
 		
-		//TODO: User data turns into "{InstanceName}\WebView2Data"
-		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, $@"{InstanceData.InstanceFolder}\WebView2", options);
-
-		_initialized = true; // allow saving pis and bookmarks
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, Path.Combine(InfoGetter.AppData, Path.Combine(InstanceData.InstanceFolder, "WebView2")), options);
 	}
 
 	// getter and setters
@@ -93,7 +81,7 @@ public class TabManager
 	
 	public int AddTab(string url)
 	{
-		var tab = new WebsiteTab(url, WebsiteEnvironment);
+		var tab = new WebsiteTab(url, WebsiteEnvironment, InstanceData);
 		_tabs.TryAdd(tab.TabId, tab);
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
@@ -101,19 +89,19 @@ public class TabManager
 	}
 
 	// tab management
-	private int? nextToSwap;
-	private bool swaping;
+	private int? _nextToSwap;
+	private bool _swaping;
 	public void SwapActiveTabTo(int tabId)
 	{
 		if (ActiveTabId == tabId)
 			return;
 		
-		if (swaping)
+		if (_swaping)
 		{
-			nextToSwap = tabId;
+			_nextToSwap = tabId;
 			return;
 		}
-		swaping = true;
+		_swaping = true;
 		
 		if (tabId != -1 && _tabs.TryGetValue(tabId, out var tab))
 		{
@@ -125,7 +113,7 @@ public class TabManager
 		} else if (tabId != -1)
 		{
 			// should not happen, return.
-			swaping = false;
+			_swaping = false;
 			return;
 		}
 		
@@ -157,10 +145,10 @@ public class TabManager
 		
 		ActiveTabChanged?.Invoke(oldId, ActiveTabId);
 
-		swaping = false;
-		if (nextToSwap is { } next)
+		_swaping = false;
+		if (_nextToSwap is { } next)
 		{
-			nextToSwap = null;
+			_nextToSwap = null;
 			SwapActiveTabTo(next);
 		}
 	}
@@ -169,12 +157,12 @@ public class TabManager
 	/// to be called by another tab manager
 	/// </summary>
 	/// <param name="tab">tab to add</param>
-	public async Task<int> TransferTab(WebsiteTab tab)
+	public Task<int> TransferTab(WebsiteTab tab)
 	{
 		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
 		
-		return tab.TabId;
+		return Task.FromResult(tab.TabId);
 	}
 }

@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace FoxyBrowser716;
 
@@ -20,8 +19,6 @@ namespace FoxyBrowser716;
 public class ServerManager
 {
 	public static ServerManager Context { get; private set; }
-
-	public static readonly string InstanceFolderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Instances");
 	
 	public InstanceManager DefaultBrowserManager { get; private set; }
 	
@@ -54,7 +51,7 @@ public class ServerManager
 		Context = new ServerManager();
 		Task.Run(() => Context.StartPipeServer());
 
-		foreach (var path in Directory.GetDirectories(InstanceFolderPath))
+		foreach (var path in Directory.GetDirectories(InfoGetter.InstanceFolder))
 		{
 			var instanceName = path.Split(@"\")[^1];
 			if (instanceName == "Default") continue;
@@ -84,7 +81,7 @@ public class ServerManager
 			Application.Current.Dispatcher.Invoke(async () => 
 			{ 
 				var newWindow = new MainWindow(Context.DefaultBrowserManager); 
-				await newWindow._initTask; 
+				await newWindow.InitTask; 
 				newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)); 
 				Context.BrowserWindows.Add(newWindow);
 				newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
@@ -108,7 +105,7 @@ public class ServerManager
 					var newWindow = new MainWindow(Context.DefaultBrowserManager);
 					if (!string.IsNullOrWhiteSpace(url))
 					{
-						await newWindow._initTask;
+						await newWindow.InitTask;
 						newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
 					}
 					Context.BrowserWindows.Add(newWindow);
@@ -154,7 +151,7 @@ public class ServerManager
 			newWindow.Width = finalRect.Width;
 		}
 		
-		await newWindow._initTask; 
+		await newWindow.InitTask; 
 		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab)); 
 		Context.BrowserWindows.Add(newWindow);
 		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
@@ -181,7 +178,7 @@ public class ServerManager
 			newWindow.Width = fR2.Width;
 		}
 		
-		await newWindow._initTask; 
+		await newWindow.InitTask; 
 		Context.BrowserWindows.Add(newWindow);
 		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
 		newWindow.Show();

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 
 namespace FoxyBrowser716
@@ -32,19 +31,12 @@ namespace FoxyBrowser716
             MouseLeftButtonUp += OnMouseLeftButtonUp;
         }
 
-        private async void Window_LocationChanged(object sender, EventArgs e)
+        private async void Window_LocationChanged(object? sender, EventArgs e)
         {
-            try
+            if (ServerManager.Context.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await ServerManager.Context.TryTabTransfer(_tab, Left, Top))
             {
-                if (ServerManager.Context.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await ServerManager.Context.TryTabTransfer(_tab, Left, Top))
-                {
-                    _isDragging = false;
-                    Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"{ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _isDragging = false;
+                Close();
             }
         }
 
@@ -55,7 +47,7 @@ namespace FoxyBrowser716
                 if (!_dragInitiated)
                 {
                     _dragInitiated = true;
-                    this.DragMove(); // Initiates system drag with snapping
+                    DragMove(); // Initiates system drag with snapping
                     // After DragMove returns, the drag is complete (mouse button released)
                     OnMouseLeftButtonUp(sender, null);
                 }

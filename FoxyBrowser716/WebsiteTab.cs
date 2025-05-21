@@ -30,12 +30,15 @@ public class WebsiteTab
 	public readonly Task SetupTask;
 		
 	private static int _tabCounter;
+	private InstanceManager _instance;
 
-	public WebsiteTab(string url, CoreWebView2Environment websiteEnvironment)
+	public WebsiteTab(string url, CoreWebView2Environment websiteEnvironment, InstanceManager instance)
 	{
 		var webView = new WebView2();
 		webView.Visibility = Visibility.Collapsed;
-			
+		
+		_instance = instance;
+		
 		TabCore = webView;
 		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
 		TabId = Interlocked.Increment(ref _tabCounter); // thread safe version of _tabCounter++
@@ -98,52 +101,32 @@ public class WebsiteTab
 	
 	private async Task LoadExtensions()
 	{
-	    try
-	    {
-	        var extensionsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "extensions");
-	        
-	        if (!Directory.Exists(extensionsFolder))
+        if (!Directory.Exists(_instance.ExtensionFolder))
+        {
+            Directory.CreateDirectory(_instance.ExtensionFolder);
+        }
+
+        async Task<bool> IsExtension(string path)
+        {
+	        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
+		        .FirstOrDefault();
+
+	        if (manifestFile != null)
 	        {
-	            Directory.CreateDirectory(extensionsFolder);
+		        await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
 	        }
-	
-	        async Task<bool> IsExtension(string path)
-	        {
-		        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
-			        .FirstOrDefault();
-	
-		        if (manifestFile != null)
-		        {
-			        await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
-		        }
-	
-		        return manifestFile != null;
-	        }
-	        
-	        foreach (var subfolder in Directory.GetDirectories(extensionsFolder))
-	        {
-	            try
-	            {
-		            if (await IsExtension(subfolder)) continue;
-		            if (Directory.GetDirectories(subfolder).Length == 1)
-			            await IsExtension(Directory.GetDirectories(subfolder)[0]); //TODO: loop through all + what if empty folder?
-	                else
-		                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
-	            }
-	            catch (Exception ex)
-	            {
-	                MessageBox.Show(
-	                    $"Failed to load extension in folder: {subfolder}\nError: {ex.Message}",
-	                    "Extension Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-	            }
-	        }
-	    }
-	    catch (Exception ex)
-	    {
-	        MessageBox.Show(
-	            $"Failed to initialize extensions loader.\nError: {ex.Message}",
-	            "Extensions Error", MessageBoxButton.OK, MessageBoxImage.Error);
-	    }
+
+	        return manifestFile != null;
+        }
+        
+        foreach (var subfolder in Directory.GetDirectories(_instance.ExtensionFolder))
+        {
+            if (await IsExtension(subfolder)) continue;
+            if (Directory.GetDirectories(subfolder).Length == 1)
+	            await IsExtension(Directory.GetDirectories(subfolder)[0]); //TODO: loop through all + what if empty folder?
+            else
+                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
+        }
 	}
 
 	private async Task RefreshImage()

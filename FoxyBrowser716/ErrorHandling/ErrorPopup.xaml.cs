@@ -1,9 +1,5 @@
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime;
-using System.Runtime.Intrinsics.Arm;
-using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,14 +13,14 @@ namespace FoxyBrowser716.ErrorHandling;
 
 public partial class ErrorPopup : Window
 {
-	private Exception? normEx;
-	private DispatcherUnhandledExceptionEventArgs? dispatcherEx;
-	private UnobservedTaskExceptionEventArgs? unobservedEx;
-	private string details;
+	private Exception? _normEx;
+	private DispatcherUnhandledExceptionEventArgs? _dispatcherEx;
+	private UnobservedTaskExceptionEventArgs? _unobservedEx;
+	private string _details;
 	
 	public ErrorPopup(Exception ex)
 	{
-		normEx = ex;
+		_normEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
@@ -33,7 +29,7 @@ public partial class ErrorPopup : Window
 	
 	public ErrorPopup(DispatcherUnhandledExceptionEventArgs ex)
 	{
-		dispatcherEx = ex;
+		_dispatcherEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
@@ -42,7 +38,7 @@ public partial class ErrorPopup : Window
 	
 	public ErrorPopup(UnobservedTaskExceptionEventArgs ex)
 	{
-		unobservedEx = ex;
+		_unobservedEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
 		// Add this line to enable dragging
@@ -60,7 +56,7 @@ public partial class ErrorPopup : Window
 	
 	private void InitializeErrorDetails()
 	{
-		details = GenerateErrorDetails();
+		_details = GenerateErrorDetails();
 	}
 	
 	private string GenerateErrorDetails()
@@ -74,7 +70,7 @@ public partial class ErrorPopup : Window
 		
 		// Get current UI culture
 		var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
-		var currentUICulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+		var currentUiCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
 		
 		sb.AppendLine("=== ERROR DETAILS ===");
 		sb.AppendLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
@@ -102,20 +98,20 @@ public partial class ErrorPopup : Window
 		
 		Exception? exception = null;
 		
-		if (normEx != null)
+		if (_normEx != null)
 		{
-			exception = normEx;
+			exception = _normEx;
 			sb.AppendLine("Type: Unhandled Exception");
 		}
-		else if (dispatcherEx != null)
+		else if (_dispatcherEx != null)
 		{
-			exception = dispatcherEx.Exception;
+			exception = _dispatcherEx.Exception;
 			sb.AppendLine("Type: Dispatcher Unhandled Exception");
 			//sb.AppendLine($"Handled: {dispatcherEx.Handled}");
 		}
-		else if (unobservedEx != null)
+		else if (_unobservedEx != null)
 		{
-			exception = unobservedEx.Exception;
+			exception = _unobservedEx.Exception;
 			sb.AppendLine("Type: Unobserved Task Exception");
 			//sb.AppendLine($"Observed: {unobservedEx.Observed}");
 		}
@@ -189,7 +185,7 @@ public partial class ErrorPopup : Window
 		sb.AppendLine($".NET Version: {Environment.Version}");
 		sb.AppendLine($"Machine ID: {GetHashedMachineName()}");
 		sb.AppendLine($"Current Culture: {currentCulture}");
-		sb.AppendLine($"Current UI Culture: {currentUICulture}");
+		sb.AppendLine($"Current UI Culture: {currentUiCulture}");
 		sb.AppendLine($"System Boot Time: {GetSystemBootTime()}");
 		
 		// Hardware information
@@ -326,7 +322,7 @@ public partial class ErrorPopup : Window
 		// Get memory information
 		try
 		{
-			var memoryStatus = new NativeMethods.MEMORYSTATUSEX();
+			var memoryStatus = new NativeMethods.Memorystatusex();
 			if (NativeMethods.GlobalMemoryStatusEx(memoryStatus))
 			{
 				var totalPhysicalMem = (double)memoryStatus.ullTotalPhys / (1024 * 1024 * 1024);
@@ -571,7 +567,7 @@ public partial class ErrorPopup : Window
 	private static class NativeMethods
 	{
 		[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-		public class MEMORYSTATUSEX
+		public class Memorystatusex
 		{
 			public uint dwLength;
 			public uint dwMemoryLoad;
@@ -583,15 +579,15 @@ public partial class ErrorPopup : Window
 			public ulong ullAvailVirtual;
 			public ulong ullAvailExtendedVirtual;
 			
-			public MEMORYSTATUSEX()
+			public Memorystatusex()
 			{
-				dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+				dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(Memorystatusex));
 			}
 		}
 		
 		[System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
 		[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-		public static extern bool GlobalMemoryStatusEx([System.Runtime.InteropServices.In, System.Runtime.InteropServices.Out] MEMORYSTATUSEX lpBuffer);
+		public static extern bool GlobalMemoryStatusEx([System.Runtime.InteropServices.In, System.Runtime.InteropServices.Out] Memorystatusex lpBuffer);
 	}
 	
 	private void DetailsClick(object sender, RoutedEventArgs e)
@@ -639,7 +635,7 @@ public partial class ErrorPopup : Window
 		
 		copyButton.Click += (_, _) =>
 		{
-			Clipboard.SetText(details);
+			Clipboard.SetText(_details);
 			// MessageBox.Show("Error details copied to clipboard.", "Copy Successful", MessageBoxButton.OK);
 		};
 		
@@ -669,7 +665,7 @@ public partial class ErrorPopup : Window
 		// Create a text box to display the details with scroll functionality
 		var textBox = new TextBox
 		{
-			Text = details,
+			Text = _details,
 			VerticalContentAlignment = VerticalAlignment.Top,
 			IsReadOnly = true,
 			TextWrapping = TextWrapping.Wrap,
@@ -699,10 +695,10 @@ public partial class ErrorPopup : Window
 	private void ManualReportClick(object sender, RoutedEventArgs e)
 	{
 		// Prepare error details for the GitHub issue
-		var errorText = Uri.EscapeDataString(details);
+		var errorText = Uri.EscapeDataString(_details);
 		
 		// Open the GitHub issue page with prefilled information
-		var issueUrl = $"https://github.com/VAST-THE-DOGE/FoxyBrowser716/issues/new?title=Manual%20Bug%20Report&labels=bug&body=%3D%3D%3D%20USER%20NOTE%20%3D%3D%3D%0D%0DType%20Here...%0D%0D%0D%0D%0D{errorText}";
+		var issueUrl = $"{InfoGetter.GitHubURL}/issues/new?title=Manual%20Bug%20Report&labels=bug&body=%3D%3D%3D%20USER%20NOTE%20%3D%3D%3D%0D%0DType%20Here...%0D%0D%0D%0D%0D{errorText}";
 		
 		try
 		{
@@ -726,15 +722,15 @@ public partial class ErrorPopup : Window
 	private void ContinueClick(object sender, RoutedEventArgs e)
 	{
 		// Mark the exception as handled if it's a dispatcher exception
-		if (dispatcherEx != null)
+		if (_dispatcherEx != null)
 		{
-			dispatcherEx.Handled = true;
+			_dispatcherEx.Handled = true;
 		}
 		
 		// Mark the task exception as observed if it's an unobserved task exception
-		if (unobservedEx != null)
+		if (_unobservedEx != null)
 		{
-			unobservedEx.SetObserved();
+			_unobservedEx.SetObserved();
 		}
 		
 		// Close this window and let the application continue
@@ -745,24 +741,24 @@ public partial class ErrorPopup : Window
 	private void QuitClick(object sender, RoutedEventArgs e)
 	{
 		// Mark exceptions as handled/observed before quitting
-		if (dispatcherEx != null)
+		if (_dispatcherEx != null)
 		{
-			dispatcherEx.Handled = true;
+			_dispatcherEx.Handled = true;
 		}
 		
-		if (unobservedEx != null)
+		if (_unobservedEx != null)
 		{
-			unobservedEx.SetObserved();
+			_unobservedEx.SetObserved();
 		}
 		
 		// Find the window that caused the error
 		Window? sourceWindow = null;
 		
 		// For dispatcher exceptions, try to find the window that caused the exception
-		if (dispatcherEx != null)
+		if (_dispatcherEx != null)
 		{
 			// The sender of the dispatcher exception might be the window
-			var dispatcher = dispatcherEx.Dispatcher;
+			var dispatcher = _dispatcherEx.Dispatcher;
 			foreach (Window window in Application.Current.Windows)
 			{
 				if (window.Dispatcher == dispatcher && window != this)

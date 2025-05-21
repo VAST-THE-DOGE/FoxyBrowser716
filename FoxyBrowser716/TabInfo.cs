@@ -55,29 +55,31 @@ public record TabInfo
     /// <summary>
     /// Saves tabs to a file. Images are saved as a base64 string.
     /// </summary>
+    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     public static async Task SaveTabs(string filePath, IEnumerable<TabInfo> tabs, int retryCount = 0)
     {
+        var tabInfos = tabs as TabInfo[] ?? tabs.ToArray();
         try
         {
             // Prepare a saveable collection of tabs
-            var saveableTabs = tabs.Select(tab => new TabInfo
+            var saveableTabs = tabInfos.Select(tab => new TabInfo
             {
                 Url = tab.Url,
                 Title = tab.Title,
                 Added = tab.Added,
-                Base64Image = tab.Image?.Source is ImageSource source ? ImageSourceToBase64(source) : null
+                Base64Image = tab.Image?.Source is { } source ? ImageSourceToBase64(source) : null
             }).ToList();
 
             // Serialize the tab list to JSON
-            var json = JsonSerializer.Serialize(saveableTabs, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(saveableTabs, Options);
             await File.WriteAllTextAsync(filePath, json);
         }
-        catch (Exception ex)
+        catch (Exception _)
         {
             if (retryCount < 3)
-                await SaveTabs(filePath, tabs, retryCount + 1);
+                await SaveTabs(filePath, tabInfos, retryCount + 1);
             else
-                MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
         }
     }
 
@@ -121,12 +123,12 @@ public record TabInfo
                 return tabs;
             }
         }
-        catch (Exception ex)
+        catch (Exception _)
         {
             if (retryCount < 3)
                 return await TryLoadTabs(filePath, retryCount + 1);
             else
-                MessageBox.Show(ex.Message, $"Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
         }
         return [];
     }

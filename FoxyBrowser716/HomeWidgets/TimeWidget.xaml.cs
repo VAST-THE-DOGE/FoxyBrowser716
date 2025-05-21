@@ -3,7 +3,7 @@ using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class TimeWidget : IWidget
+public partial class TimeWidget : Widget
 {
 	public TimeWidget()
 	{

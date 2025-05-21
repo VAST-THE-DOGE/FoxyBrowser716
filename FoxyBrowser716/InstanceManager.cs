@@ -12,6 +12,8 @@ public class InstanceManager
 	public List<MainWindow> BrowserWindows = [];
 
 	public readonly string InstanceFolder;
+	public readonly string ExtensionFolder;
+	
 	public string InstanceName {get; private set; }
 
 	public readonly bool PrimaryInstance;
@@ -20,7 +22,9 @@ public class InstanceManager
 	{
 		InstanceName = name;
 		PrimaryInstance = name == "Default";
-		InstanceFolder = Path.Combine(ServerManager.InstanceFolderPath, InstanceName);
+		InstanceFolder = Path.Combine(InfoGetter.InstanceFolder, InstanceName);
+		ExtensionFolder = Path.Combine(InstanceFolder, "extensions");
+
 		if (!Directory.Exists(InstanceFolder)) Directory.CreateDirectory(InstanceFolder);
 	}
 		
@@ -31,6 +35,7 @@ public class InstanceManager
 
 	public async Task SaveData()
 	{
+		// note, WebsiteInfoList handles saving on add and remove on its own
 		//TODO
 	}
 
