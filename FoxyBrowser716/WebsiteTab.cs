@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using WpfAnimatedGif;
+using Color = System.Drawing.Color;
 
 namespace FoxyBrowser716;
 
@@ -36,17 +37,17 @@ public class WebsiteTab
 	{
 		var webView = new WebView2();
 		webView.Visibility = Visibility.Collapsed;
-		
+			
 		_instance = instance;
 		
 		TabCore = webView;
-		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
+		TabCore.DefaultBackgroundColor = Color.Black;
 		TabId = Interlocked.Increment(ref _tabCounter); // thread safe version of _tabCounter++
 
 		// Display a loading animation while fetching the favicon
 		var image = new Image();
-		var gifSource = new BitmapImage(new Uri("pack://application:,,,/Resources/NoiceLoadingIconBlack.gif"));
-		ImageBehavior.SetAnimatedSource(image, gifSource);
+		// var gifSource = new BitmapImage(new Uri("pack://application:,,,/Resources/NoiceLoadingIconBlack.gif"));
+		// ImageBehavior.SetAnimatedSource(image, gifSource);
 		Icon = image;
 		Title = "Loading...";
 		
@@ -79,6 +80,7 @@ public class WebsiteTab
 		{
 			Title = TabCore.CoreWebView2.DocumentTitle;
 			TitleChanged?.Invoke();
+			TabCore.DefaultBackgroundColor = Color.White;
 		};
 		
 		TabCore.CoreWebView2.FaviconChanged += async (_, _) => await RefreshImage();

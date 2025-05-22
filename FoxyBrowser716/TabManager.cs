@@ -103,14 +103,14 @@ public class TabManager
 		}
 		_swaping = true;
 		
-		if (tabId != -1 && _tabs.TryGetValue(tabId, out var tab))
+		if (tabId >= 0 && _tabs.TryGetValue(tabId, out var tab))
 		{
 			tab.SetupTask.ContinueWith(_ =>
 			{
 				if (tab.TabCore.CoreWebView2.IsSuspended)
 					tab.TabCore.CoreWebView2.Resume();
 			}, TaskScheduler.FromCurrentSynchronizationContext());
-		} else if (tabId != -1)
+		} else if (tabId >= 0)
 		{
 			// should not happen, return.
 			_swaping = false;

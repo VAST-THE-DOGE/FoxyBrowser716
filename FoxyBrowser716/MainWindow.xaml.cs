@@ -7,6 +7,8 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using FoxyBrowser716.Settings;
+using FoxyBrowser716.Styling;
 using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Web.WebView2.Core;
@@ -22,6 +24,7 @@ namespace FoxyBrowser716;
 public partial class MainWindow
 {
 	private HomePage _homePage;
+	private SettingsPage _settingsPage;
 
 	private bool _inFullscreen;
 
@@ -266,7 +269,7 @@ public partial class MainWindow
 			return;
 		}
 
-		Dictionary<string, Action> menuItems = TabManager.ActiveTabId != -1
+		Dictionary<string, Action> menuItems = TabManager.ActiveTabId >= 0
 			? new()
 			{
 				{ "Settings", OpenSettings },
@@ -319,7 +322,7 @@ public partial class MainWindow
 
 private void OpenSettings()
 {
-	throw new NotImplementedException();
+	TabManager.SwapActiveTabTo(-2);
 }
 
 private void OpenInstances()
@@ -445,17 +448,12 @@ private async Task Initialize()
 
 	TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
 	{
-		StackBookmark.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
-		StackPin.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
-		NavigationGrid.Visibility = newActiveTab == -1 ? Visibility.Collapsed : Visibility.Visible;
+		StackBookmark.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+		StackPin.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+		NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
 		_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
-
-		AddTabStack.Background = newActiveTab == -1
-			? new SolidColorBrush(HighlightColor)
-			: new SolidColorBrush(MainColor);
-		_homePage.Visibility = newActiveTab == -1
-			? Visibility.Visible
-			: Visibility.Collapsed;
+		AddTabStack.Background = newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
+		_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
 
 		foreach (var card in Tabs.Children.OfType<TabCard>())
 		{
@@ -471,6 +469,16 @@ private async Task Initialize()
 	_homePage = new HomePage();
 	await _homePage.Initialize(TabManager, _instanceData);
 	TabHolder.Children.Add(_homePage);
+	
+
+
+	_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
+	TabHolder.Children.Add(_settingsPage);
+	
+	_settingsPage.Loaded += (_,_) => _settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
+	_homePage.Loaded += (_,_) => _homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
+	AddTabStack.Background = TabManager.ActiveTabId == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
+	
 	TabManager.SwapActiveTabTo(-1);
 
 	_homePage.ToggleEditMode += ToggleHomeEdit;
@@ -639,25 +647,18 @@ private void ToggleHomeEdit(bool editing)
 
 private async Task Search_Click(object? s, EventArgs e)
 	{
+		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
+	
+		var tabCore = tab.TabCore;
+		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+
 		try
 		{
-			if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-		
-			var tabCore = tab.TabCore;
-			await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-
-			try
-			{
-				tabCore.CoreWebView2.Navigate(SearchBox.Text);
-			}
-			catch (Exception exception)
-			{
-				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
-			}
+			tabCore.CoreWebView2.Navigate(SearchBox.Text);
 		}
-		catch (Exception ex)
+		catch (Exception exception)
 		{
-			// TODO handle exception
+			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
 		}
 	}
 	
