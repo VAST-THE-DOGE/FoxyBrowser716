@@ -1,5 +1,6 @@
-﻿
+﻿using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,8 +13,10 @@ using FoxyBrowser716.Styling;
 using Material.Icons;
 using Material.Icons.WPF;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 using static FoxyBrowser716.Styling.ColorPalette;
 using static FoxyBrowser716.Styling.Animator;
+using Path = System.IO.Path;
 
 
 namespace FoxyBrowser716;
@@ -28,26 +31,28 @@ public partial class MainWindow
 
 	private bool _inFullscreen;
 
+	private List<ExtensionPopupWindow> _extensionPopups = [];
+
 	private System.Windows.Rect _originalRectangle;
-	
+
 	internal readonly TabManager TabManager;
 
 	private InstanceManager _instanceData;
 
 	internal Task InitTask;
-	
+
 	public MainWindow(InstanceManager instanceData)
 	{
 		_instanceData = instanceData;
-			
+
 		InitializeComponent();
 
 		TabManager = new TabManager(_instanceData);
 		InitTask = Initialize();
-		
+
 		//TODO: find a better way to do all this crazy GUI stuff
-		SearchButton.Click += async (s,e) => await Search_Click(s,e);
-		
+		SearchButton.Click += async (s, e) => await Search_Click(s, e);
+
 		foreach (var button in NormalButtons)
 		{
 			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
@@ -58,7 +63,7 @@ public partial class MainWindow
 				ChangeColorAnimation(button.Foreground, HighlightColor, Colors.White);
 			};
 		}
-		
+
 		SearchBox.GotKeyboardFocus += (_, _) =>
 		{
 			ChangeColorAnimation(SearchBackground.BorderBrush, Colors.White, HighlightColor);
@@ -72,11 +77,17 @@ public partial class MainWindow
 		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor); };
 		StateChanged += Window_StateChanged;
 		Window_StateChanged(null, EventArgs.Empty);
-		
+
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
-		AddTabStack.MouseEnter += (_, _) => { if(TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor); };
-		AddTabStack.MouseLeave += (_, _) => { if(TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor); };
+		AddTabStack.MouseEnter += (_, _) =>
+		{
+			if (TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor);
+		};
+		AddTabStack.MouseLeave += (_, _) =>
+		{
+			if (TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor);
+		};
 		AddTabStack.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			AddTabLabel.Foreground = new SolidColorBrush(HighlightColor);
@@ -88,7 +99,7 @@ public partial class MainWindow
 			ChangeColorAnimation(AddTabLabel.Foreground, HighlightColor, Colors.White);
 			TabManager.SwapActiveTabTo(-1);
 		};
-		
+
 		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
 		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(StackPin.Background, AccentColor, MainColor); };
 		StackPin.PreviewMouseLeftButtonDown += (_, _) =>
@@ -100,12 +111,13 @@ public partial class MainWindow
 		{
 			ChangeColorAnimation(ButtonPin.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelPin.Foreground, HighlightColor, Colors.White);
-			
+
 			var tab = TabManager.GetTab(TabManager.ActiveTabId);
-			
+
 			if (tab is null) return;
 
-			if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (_instanceData.PinInfo.GetAllTabInfos()
+			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
@@ -119,9 +131,15 @@ public partial class MainWindow
 				_instanceData.PinInfo.AddTabInfo(tab);
 			}
 		};
-		
-		StackBookmark.MouseEnter += (_, _) => { ChangeColorAnimation(StackBookmark.Background, MainColor, AccentColor); };
-		StackBookmark.MouseLeave += (_, _) => { ChangeColorAnimation(StackBookmark.Background, AccentColor, MainColor); };
+
+		StackBookmark.MouseEnter += (_, _) =>
+		{
+			ChangeColorAnimation(StackBookmark.Background, MainColor, AccentColor);
+		};
+		StackBookmark.MouseLeave += (_, _) =>
+		{
+			ChangeColorAnimation(StackBookmark.Background, AccentColor, MainColor);
+		};
 		StackBookmark.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			LabelBookmark.Foreground = new SolidColorBrush(HighlightColor);
@@ -131,12 +149,13 @@ public partial class MainWindow
 		{
 			ChangeColorAnimation(ButtonBookmark.Foreground, HighlightColor, Colors.White);
 			ChangeColorAnimation(LabelBookmark.Foreground, HighlightColor, Colors.White);
-			
+
 			var tab = TabManager.GetTab(TabManager.ActiveTabId);
-			
+
 			if (tab is null) return;
 
-			if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString()??"__NULL__")))
+			if (_instanceData.BookmarkInfo.GetAllTabInfos()
+			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
 				LabelBookmark.Content = "Add Bookmark";
@@ -164,6 +183,7 @@ public partial class MainWindow
 	}
 
 	private bool _mouseOverSideBar;
+
 	private void LeftBarMouseEnter(object sender, MouseEventArgs e)
 	{
 		_mouseOverSideBar = true;
@@ -173,7 +193,7 @@ public partial class MainWindow
 				Dispatcher.Invoke(OpenSideBar);
 		});
 	}
-	
+
 	private void LeftBarMouseLeave(object sender, MouseEventArgs e)
 	{
 		_mouseOverSideBar = false;
@@ -185,10 +205,11 @@ public partial class MainWindow
 	}
 
 	internal bool SideOpen;
+
 	internal void OpenSideBar()
 	{
 		if (SideOpen) return;
-		
+
 		SideOpen = true;
 		var animation = new DoubleAnimation
 		{
@@ -202,11 +223,11 @@ public partial class MainWindow
 
 		LeftBar.BeginAnimation(WidthProperty, animation);
 	}
-	
+
 	internal void CloseSideBar()
 	{
 		if (!SideOpen) return;
-		
+
 		SideOpen = false;
 		var animation = new DoubleAnimation
 		{
@@ -237,24 +258,25 @@ public partial class MainWindow
 		BackButton, //TODO: need custom animation logic.
 		ForwardButton
 	];
-	
+
 	private ContextMenu _menu = new()
 	{
 		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
 		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
 		BorderThickness = new Thickness(1),
-		Padding = new Thickness(0),    
+		Padding = new Thickness(0),
 		Margin = new Thickness(0),
 		StaysOpen = true,
 		Focusable = true,
 		HorizontalOffset = 30,
 	};
+
 	private ContextMenu _secondaryMenu = new()
 	{
 		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
 		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
 		BorderThickness = new Thickness(1),
-		Padding = new Thickness(0),    
+		Padding = new Thickness(0),
 		Margin = new Thickness(0),
 		StaysOpen = true,
 		Focusable = true,
@@ -286,9 +308,9 @@ public partial class MainWindow
 				{ "History", OpenHistory },
 				{ "Instances", OpenInstances },
 			};
-		
+
 		ApplyMenuItems(_menu, menuItems);
-		
+
 		_menu.PlacementTarget = (Button)sender;
 		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
 		_menu.IsOpen = true;
@@ -320,191 +342,332 @@ public partial class MainWindow
 		}
 	}
 
-private void OpenSettings()
-{
-	TabManager.SwapActiveTabTo(-2);
-}
+	private void OpenSettings()
+	{
+		TabManager.SwapActiveTabTo(-2);
+	}
 
-private void OpenInstances()
-{
-	var openNewWindow = TabManager.GetAllTabs().Count > 0;
-	var instanceOptions = ServerManager.Context.AllBrowserManagers
-		.Where(i => i.InstanceName != _instanceData.InstanceName)
-		.ToDictionary<InstanceManager, string, Action>(i => $"{(openNewWindow ? "Open" : "Swap To")} {i.InstanceName}",
-			i => async () =>
-			{
-				if (openNewWindow)
-					await ServerManager.Context.CreateWindow(null, null, i);
-				else
+	private void OpenInstances()
+	{
+		var openNewWindow = TabManager.GetAllTabs().Count > 0;
+		var instanceOptions = ServerManager.Context.AllBrowserManagers
+			.Where(i => i.InstanceName != _instanceData.InstanceName)
+			.ToDictionary<InstanceManager, string, Action>(
+				i => $"{(openNewWindow ? "Open" : "Swap To")} {i.InstanceName}",
+				i => async () =>
 				{
-					await ServerManager.Context.CreateWindow(new System.Windows.Rect(Left, Top, Width, Height), _inFullscreen, i);
-					Close();
-				}
-			});
-	instanceOptions.Add("Manage Instances", () =>
-	{
-		throw new NotImplementedException();
-	});
-	ApplyMenuItems(_secondaryMenu, instanceOptions);
-	_secondaryMenu.PlacementTarget = ButtonMenu;
-	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-	_secondaryMenu.IsOpen = true;
-}
-
-private void OpenBookmark(string url)
-{
-	TabManager.SwapActiveTabTo(TabManager.AddTab(url));
-}
-
-private void OpenBookmarks()
-{
-	ApplyMenuItems(_secondaryMenu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
-		.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
-	);
-	_secondaryMenu.PlacementTarget = ButtonMenu;
-	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-	_secondaryMenu.IsOpen = true;
-}
-
-private void OpenHistory()
-{
-}
-
-private void OpenDownloads()
-{
-	var tabCoreRaw = TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.CoreWebView2;
-	if (tabCoreRaw is not { } tabCore) return;
-	
-	if (tabCore.IsDefaultDownloadDialogOpen) tabCore.CloseDefaultDownloadDialog();
-	else tabCore.OpenDefaultDownloadDialog();
-}
-
-private async Task OpenExtensions()
-{
-	if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-
-	var extensions = await tab.TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-	ApplyMenuItems(_secondaryMenu, extensions
-		.ToDictionary<CoreWebView2BrowserExtension, string, Action>(k => $"{ k.Id } - { k.Name }",
-			k => () => throw new NotImplementedException())
-	);
-	_secondaryMenu.PlacementTarget = ButtonMenu;
-	_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-	_secondaryMenu.IsOpen = true;
-}
-
-private async Task OnTabCardDragChanged(TabCard sender, int? relativeMove)
-{
-	if (relativeMove == null)
-	{
-		await BuildNewWindow(sender);
-	}
-	else
-	{
-		await UpdateTabOrder(sender, relativeMove.Value);
-	}
-}
-
-private async Task UpdateTabOrder(TabCard tabCard, int moveTo)
-{
-	if (moveTo < 1 || moveTo >= Tabs.Children.Count)
-	{
-		if (moveTo > Tabs.Children.Count + 5)
-			await BuildNewWindow(tabCard);
-		return;
+					if (openNewWindow)
+						await ServerManager.Context.CreateWindow(null, null, i);
+					else
+					{
+						await ServerManager.Context.CreateWindow(new System.Windows.Rect(Left, Top, Width, Height),
+							_inFullscreen, i);
+						Close();
+					}
+				});
+		instanceOptions.Add("Manage Instances", () => { throw new NotImplementedException(); });
+		ApplyMenuItems(_secondaryMenu, instanceOptions);
+		_secondaryMenu.PlacementTarget = ButtonMenu;
+		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_secondaryMenu.IsOpen = true;
 	}
 
-	Tabs.Children.Remove(tabCard);
-	Tabs.Children.Insert(moveTo, tabCard);
-}
-
-private bool _buildingWindow;
-private int _createdFor = -1;
-private async Task BuildNewWindow(TabCard tabCard)
-{
-	if (_buildingWindow || _createdFor == tabCard.Key) return;
-	_buildingWindow = true;
-
-	if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
-	
-	var point = PointToScreen(Mouse.GetPosition(null));
-	var tabCardWindow = new TabMoveWindowCard(tab)
+	private void OpenBookmark(string url)
 	{
-		Top = point.Y - 15,
-		Left = point.X - 75
-	};
-	tabCardWindow.Show();
-	TabManager.RemoveTab(tabCard.Key, true);
-	
-	_createdFor = tabCard.Key;
-	_buildingWindow = false;
-}
+		TabManager.SwapActiveTabTo(TabManager.AddTab(url));
+	}
 
-private async Task Initialize()
-{
-	StackBookmark.Visibility = Visibility.Collapsed;
-	StackPin.Visibility = Visibility.Collapsed;
-	NavigationGrid.Visibility = Visibility.Collapsed;
-
-	TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
+	private void OpenBookmarks()
 	{
-		StackBookmark.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
-		StackPin.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
-		NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
-		_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
-		AddTabStack.Background = newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
-		_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
+		ApplyMenuItems(_secondaryMenu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
+			.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
+		);
+		_secondaryMenu.PlacementTarget = ButtonMenu;
+		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_secondaryMenu.IsOpen = true;
+	}
 
-		foreach (var card in Tabs.Children.OfType<TabCard>())
+	private void OpenHistory()
+	{
+	}
+
+	private void OpenDownloads()
+	{
+		var tabCoreRaw = TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.CoreWebView2;
+		if (tabCoreRaw is not { } tabCore) return;
+
+		if (tabCore.IsDefaultDownloadDialogOpen) tabCore.CloseDefaultDownloadDialog();
+		else tabCore.OpenDefaultDownloadDialog();
+	}
+
+	private static string FindPopupHtml(string manifest, string extensionPath)
+	{
+		try
 		{
-			if (card.Key == oldActiveTab)
-				card.ToggleActiveTo(false);
-			else if (card.Key == newActiveTab)
-				card.ToggleActiveTo(true);
-		}
-	};
+			var manifestContent = File.ReadAllText(manifest);
 
-	await TabManager.InitializeData();
+			var doc = JsonDocument.Parse(manifestContent);
+			var root = doc.RootElement;
 
-	_homePage = new HomePage();
-	await _homePage.Initialize(TabManager, _instanceData);
-	TabHolder.Children.Add(_homePage);
-	
+			string popupRelativePath = null;
 
-
-	_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
-	TabHolder.Children.Add(_settingsPage);
-	
-	_settingsPage.Loaded += (_,_) => _settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
-	_homePage.Loaded += (_,_) => _homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
-	AddTabStack.Background = TabManager.ActiveTabId == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
-	
-	TabManager.SwapActiveTabTo(-1);
-
-	_homePage.ToggleEditMode += ToggleHomeEdit;
-
-	TabManager.TabCreated += tab =>
-	{
-		var tabCard = new TabCard(tab);
-
-		TabHolder.Children.Add(tab.TabCore);
-
-		tabCard.DragPositionChanged += async (s, e) => await OnTabCardDragChanged(s, e);
-
-		tab.UrlChanged += () =>
-		{
-			if (tab.TabId == TabManager.ActiveTabId)
+			if (root.TryGetProperty("browser_action", out var browserAction))
 			{
-				SearchBox.Text = tab.TabCore.Source.ToString();
-				BackButton.Foreground = tab.TabCore.CanGoBack
-					? new SolidColorBrush(Colors.White)
-					: new SolidColorBrush(Color.FromRgb(100, 100, 100));
-				ForwardButton.Foreground = tab.TabCore.CanGoForward
-					? new SolidColorBrush(Colors.White)
-					: new SolidColorBrush(Color.FromRgb(100, 100, 100));
+				if (browserAction.TryGetProperty("default_popup", out var popup))
+				{
+					popupRelativePath = popup.GetString();
+				}
+			}
+			else if (root.TryGetProperty("page_action", out var pageAction))
+			{
+				if (pageAction.TryGetProperty("default_popup", out var popup))
+				{
+					popupRelativePath = popup.GetString();
+				}
+			}
+			else if (root.TryGetProperty("action", out var action))
+			{
+				if (action.TryGetProperty("default_popup", out var popup))
+				{
+					popupRelativePath = popup.GetString();
+				}
 			}
 
-			if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+
+			if (!string.IsNullOrEmpty(popupRelativePath))
+			{
+				var fullPath = Path.Combine(extensionPath, popupRelativePath);
+
+				if (File.Exists(fullPath))
+				{
+					return popupRelativePath;
+				}
+			}
+
+			return null;
+		}
+		catch (Exception ex)
+		{
+			return null;
+		}
+	}
+
+	private async Task OpenExtensions()
+	{
+		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
+
+		var extensions = await tab.TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+		ApplyMenuItems(_secondaryMenu, extensions
+			.ToDictionary<CoreWebView2BrowserExtension, string, Action>(k => $"{k.Name} ({k.Id})",
+				k => () =>
+				{
+					if (!tab.Extensions.TryGetValue(k.Id, out var extension)) return;
+					if (Directory.GetFiles(extension.Path, "manifest.json", SearchOption.TopDirectoryOnly)
+						    .FirstOrDefault() is not { } manifest) return;
+					if (FindPopupHtml(manifest, extension.Path) is not { } popup) return;
+
+					var popupUrl = $"chrome-extension://{k.Id}/{popup}";
+
+					var environment = tab.TabCore.CoreWebView2.Environment;
+					var popupWindow = new ExtensionPopupWindow(popupUrl, environment);
+					_extensionPopups.Add(popupWindow);
+					popupWindow.Show();
+				})
+		);
+		_secondaryMenu.PlacementTarget = ButtonMenu;
+		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_secondaryMenu.IsOpen = true;
+	}
+
+	private async Task OnTabCardDragChanged(TabCard sender, int? relativeMove)
+	{
+		if (relativeMove == null)
+		{
+			await BuildNewWindow(sender);
+		}
+		else
+		{
+			await UpdateTabOrder(sender, relativeMove.Value);
+		}
+	}
+
+	private async Task UpdateTabOrder(TabCard tabCard, int moveTo)
+	{
+		if (moveTo < 1 || moveTo >= Tabs.Children.Count)
+		{
+			if (moveTo > Tabs.Children.Count + 5)
+				await BuildNewWindow(tabCard);
+			return;
+		}
+
+		Tabs.Children.Remove(tabCard);
+		Tabs.Children.Insert(moveTo, tabCard);
+	}
+
+	private bool _buildingWindow;
+	private int _createdFor = -1;
+
+	private async Task BuildNewWindow(TabCard tabCard)
+	{
+		if (_buildingWindow || _createdFor == tabCard.Key) return;
+		_buildingWindow = true;
+
+		if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
+
+		var point = PointToScreen(Mouse.GetPosition(null));
+		var tabCardWindow = new TabMoveWindowCard(tab)
+		{
+			Top = point.Y - 15,
+			Left = point.X - 75
+		};
+		tabCardWindow.Show();
+		TabManager.RemoveTab(tabCard.Key, true);
+
+		_createdFor = tabCard.Key;
+		_buildingWindow = false;
+	}
+
+	private async Task Initialize()
+	{
+		StackBookmark.Visibility = Visibility.Collapsed;
+		StackPin.Visibility = Visibility.Collapsed;
+		NavigationGrid.Visibility = Visibility.Collapsed;
+
+		TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
+		{
+			StackBookmark.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+			StackPin.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+			NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+			_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
+			AddTabStack.Background =
+				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
+			_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
+
+			foreach (var card in Tabs.Children.OfType<TabCard>())
+			{
+				if (card.Key == oldActiveTab)
+					card.ToggleActiveTo(false);
+				else if (card.Key == newActiveTab)
+					card.ToggleActiveTo(true);
+			}
+
+			if (newActiveTab > 0)
+			{
+				var tab = TabManager.GetTab(newActiveTab);
+				SearchBox.Text = tab?.TabCore?.Source?.ToString() ?? "";
+			}
+
+			foreach (var popup in _extensionPopups)
+			{
+				popup.Close();
+			}
+			_extensionPopups.Clear();
+		};
+
+		await TabManager.InitializeData();
+
+		_homePage = new HomePage();
+		await _homePage.Initialize(TabManager, _instanceData);
+		TabHolder.Children.Add(_homePage);
+
+
+		_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
+		TabHolder.Children.Add(_settingsPage);
+
+		_settingsPage.Loaded += (_, _) =>
+			_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
+		_homePage.Loaded += (_, _) =>
+			_homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
+		AddTabStack.Background = TabManager.ActiveTabId == -1
+			? new SolidColorBrush(HighlightColor)
+			: new SolidColorBrush(MainColor);
+
+		TabManager.SwapActiveTabTo(-1);
+
+		_homePage.ToggleEditMode += ToggleHomeEdit;
+
+		TabManager.TabCreated += tab =>
+		{
+			var tabCard = new TabCard(tab);
+
+			TabHolder.Children.Add(tab.TabCore);
+
+			tabCard.DragPositionChanged += async (s, e) => await OnTabCardDragChanged(s, e);
+
+			tab.UrlChanged += () =>
+			{
+				if (tab.TabId == TabManager.ActiveTabId)
+				{
+					SearchBox.Text = tab.TabCore.Source.ToString();
+				}
+
+				if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+				{
+					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+					LabelPin.Content = "Unpin Tab";
+				}
+				else
+				{
+					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+					LabelPin.Content = "Pin Tab";
+				}
+
+				if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
+				{
+					ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+					LabelBookmark.Content = "Remove Bookmark";
+				}
+				else
+				{
+					ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+					LabelBookmark.Content = "Add Bookmark";
+				}
+			};
+
+			tab.TitleChanged += () => { tabCard.TitleLabel.Content = tab.Title; };
+
+			tab.ImageChanged += () => { tabCard.TabIcon.Child = tab.Icon; };
+
+			tab.NewTabRequested += (uri) => { TabManager.AddTab(uri); };
+
+			tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);
+			tabCard.RemoveRequested += () => TabManager.RemoveTab(tab.TabId);
+			tabCard.DuplicateRequested += () =>
+			{
+				TabManager.SwapActiveTabTo(TabManager.AddTab(tab.TabCore.Source.ToString()));
+			};
+
+			Tabs.Children.Add(tabCard);
+		};
+
+		TabManager.TabRemoved += id =>
+		{
+			var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+			if (card != null)
+				Tabs.Children.Remove(card);
+		};
+
+		_instanceData.PinInfo.TabInfoAdded += (key, pin) =>
+		{
+			var tabCard = new TabCard(key, pin);
+
+			tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
+			tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(key);
+
+			PinnedTabs.Children.Add(tabCard);
+		};
+
+		_instanceData.PinInfo.TabInfoRemoved += (id, _) =>
+		{
+			var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
+
+			if (card != null)
+				PinnedTabs.Children.Remove(card);
+
+			var tab = TabManager.GetTab(TabManager.ActiveTabId);
+
+			if (_instanceData.PinInfo.GetAllTabInfos()
+			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
 				LabelPin.Content = "Unpin Tab";
@@ -514,141 +677,75 @@ private async Task Initialize()
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
 				LabelPin.Content = "Pin Tab";
 			}
-
-			if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
-			{
-				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
-				LabelBookmark.Content = "Remove Bookmark";
-			}
-			else
-			{
-				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
-				LabelBookmark.Content = "Add Bookmark";
-			}
 		};
 
-		tab.TitleChanged += () => { tabCard.TitleLabel.Content = tab.Title; };
-
-		tab.ImageChanged += () => { tabCard.TabIcon.Child = tab.Icon; };
-
-		tab.NewTabRequested += (uri) => { TabManager.AddTab(uri); };
-
-		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(tab.TabId);
-		tabCard.RemoveRequested += () => TabManager.RemoveTab(tab.TabId);
-		tabCard.DuplicateRequested += () =>
+		var e = _instanceData.PinInfo.GetAllTabInfos();
+		PinnedTabs.Children.Clear();
+		foreach (var pinKeyValue in _instanceData.PinInfo.GetAllTabInfos())
 		{
-			TabManager.SwapActiveTabTo(TabManager.AddTab(tab.TabCore.Source.ToString()));
-		};
+			var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
 
-		Tabs.Children.Add(tabCard);
-	};
+			tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
+			tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
 
-	TabManager.TabRemoved += id =>
+			PinnedTabs.Children.Add(tabCard);
+		}
+	}
+
+	private List<UIElement> _prevTopLPanelControls = [];
+	private List<UIElement> _prevBottomLPanelControls = [];
+
+	private void ToggleHomeEdit(bool editing)
 	{
-		var card = Tabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
-		if (card != null)
-			Tabs.Children.Remove(card);
-	};
-
-	_instanceData.PinInfo.TabInfoAdded += (key, pin) =>
-	{
-		var tabCard = new TabCard(key, pin);
-
-		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pin.Url));
-		tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(key);
-
-		PinnedTabs.Children.Add(tabCard);
-	};
-
-	_instanceData.PinInfo.TabInfoRemoved += (id, _) =>
-	{
-		var card = PinnedTabs.Children.OfType<TabCard>().FirstOrDefault(tc => tc.Key == id);
-
-		if (card != null)
-			PinnedTabs.Children.Remove(card);
-
-		var tab = TabManager.GetTab(TabManager.ActiveTabId);
-
-		if (_instanceData.PinInfo.GetAllTabInfos()
-		    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
+		if (editing)
 		{
-			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
-			LabelPin.Content = "Unpin Tab";
+			_prevTopLPanelControls.Clear();
+			_prevTopLPanelControls.AddRange(Tabs.Children.Cast<UIElement>());
+			_prevBottomLPanelControls.Clear();
+			_prevBottomLPanelControls.AddRange(PinnedTabs.Children.Cast<UIElement>());
+
+			Tabs.Children.Clear();
+			PinnedTabs.Children.Clear();
+
+			var widgetOptions = _homePage.GetWidgetOptions();
+			var homeOptions = _homePage.GetHomeOptions();
+
+			foreach (var wo in widgetOptions)
+			{
+				var card = new TabCard(wo.preview, wo.name);
+				card.CardClicked += () => _homePage.AddWidgetClicked(wo.name);
+				Tabs.Children.Add(card);
+			}
+
+			PinnedTabs.Children.Add(new Border
+			{
+				Height = 1,
+				Margin = new Thickness(5, 0, 5, 0),
+				Background = Brushes.White,
+				HorizontalAlignment = HorizontalAlignment.Stretch
+			});
+			foreach (var ho in homeOptions)
+			{
+				var card = new TabCard(ho.icon, ho.name);
+				card.CardClicked += async () => await _homePage.OptionClicked(ho.type);
+				PinnedTabs.Children.Add(card);
+			}
 		}
 		else
 		{
-			ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
-			LabelPin.Content = "Pin Tab";
-		}
-	};
-
-	var e = _instanceData.PinInfo.GetAllTabInfos();
-	PinnedTabs.Children.Clear();
-	foreach (var pinKeyValue in _instanceData.PinInfo.GetAllTabInfos())
-	{
-		var tabCard = new TabCard(pinKeyValue.Key, pinKeyValue.Value);
-
-		tabCard.CardClicked += () => TabManager.SwapActiveTabTo(TabManager.AddTab(pinKeyValue.Value.Url));
-		tabCard.RemoveRequested += () => _instanceData.PinInfo.RemoveTabInfo(pinKeyValue.Key);
-
-		PinnedTabs.Children.Add(tabCard);
-	}
-}
-
-private List<UIElement> _prevTopLPanelControls = [];
-private List<UIElement> _prevBottomLPanelControls = [];
-
-private void ToggleHomeEdit(bool editing)
-{
-	if (editing)
-	{
-		_prevTopLPanelControls.Clear();
-		_prevTopLPanelControls.AddRange(Tabs.Children.Cast<UIElement>());
-		_prevBottomLPanelControls.Clear();
-		_prevBottomLPanelControls.AddRange(PinnedTabs.Children.Cast<UIElement>());
-
-		Tabs.Children.Clear();
-		PinnedTabs.Children.Clear();
-
-		var widgetOptions = _homePage.GetWidgetOptions();
-		var homeOptions = _homePage.GetHomeOptions();
-
-		foreach (var wo in widgetOptions)
-		{
-			var card = new TabCard(wo.preview, wo.name);
-			card.CardClicked += () => _homePage.AddWidgetClicked(wo.name);
-			Tabs.Children.Add(card);
-		}
-
-		PinnedTabs.Children.Add(new Border
-		{
-			Height = 1,
-			Margin = new Thickness(5,0,5,0),
-			Background = Brushes.White,
-			HorizontalAlignment = HorizontalAlignment.Stretch
-		});
-		foreach (var ho in homeOptions)
-		{
-			var card = new TabCard(ho.icon, ho.name);
-			card.CardClicked += async () => await _homePage.OptionClicked(ho.type);
-			PinnedTabs.Children.Add(card);
+			Tabs.Children.Clear();
+			foreach (var c in _prevTopLPanelControls)
+				Tabs.Children.Add(c);
+			PinnedTabs.Children.Clear();
+			foreach (var c in _prevBottomLPanelControls)
+				PinnedTabs.Children.Add(c);
 		}
 	}
-	else
-	{
-		Tabs.Children.Clear();
-		foreach (var c in _prevTopLPanelControls)
-			Tabs.Children.Add(c);
-		PinnedTabs.Children.Clear();
-		foreach (var c in _prevBottomLPanelControls)
-			PinnedTabs.Children.Add(c);	
-	}
-}
 
-private async Task Search_Click(object? s, EventArgs e)
+	private async Task Search_Click(object? s, EventArgs e)
 	{
 		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-	
+
 		var tabCore = tab.TabCore;
 		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 
@@ -656,12 +753,12 @@ private async Task Search_Click(object? s, EventArgs e)
 		{
 			tabCore.CoreWebView2.Navigate(SearchBox.Text);
 		}
-		catch (Exception exception)
+		catch
 		{
-			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={SearchBox.Text}");
+			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
 		}
 	}
-	
+
 	private void Window_StateChanged(object? sender, EventArgs e)
 	{
 		if (WindowState == WindowState.Maximized)
@@ -670,6 +767,7 @@ private async Task Search_Click(object? s, EventArgs e)
 			EnterFullscreen();
 		}
 	}
+
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
 		if (e.ClickCount == 2)
@@ -747,7 +845,7 @@ private async Task Search_Click(object? s, EventArgs e)
 
 			// Convert from device pixels to DIPs using our presentation source magic
 			var source = PresentationSource.FromVisual(this);
-			mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos)?? mousePos;
+			mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos) ?? mousePos;
 
 			// Calculate the mouse's relative position within the current window
 			var relX = (mousePos.X - this.Left) / this.Width;
@@ -781,7 +879,7 @@ private async Task Search_Click(object? s, EventArgs e)
 		var monitorInfo = new Monitorinfo
 		{
 			cbSize = Marshal.SizeOf<Monitorinfo>()
-        };
+		};
 
 		if (GetMonitorInfo(hMonitor, ref monitorInfo))
 		{
@@ -800,6 +898,7 @@ private async Task Search_Click(object? s, EventArgs e)
 				var dipRect = transform.TransformBounds(rawRect);
 				return dipRect;
 			}
+
 			return rawRect;
 		}
 
@@ -807,7 +906,7 @@ private async Task Search_Click(object? s, EventArgs e)
 		return SystemParameters.WorkArea with { X = 0, Y = 0 };
 	}
 
-	
+
 	#region Windows API Methods
 
 	// Get the monitor's handle from a window handle
@@ -851,10 +950,11 @@ private async Task Search_Click(object? s, EventArgs e)
 	#region ResizeWindows
 
 	private bool _resizeInProcess;
+
 	private void Resize_Init(object sender, MouseButtonEventArgs e)
 	{
 		var senderRect = sender as Rectangle;
-		if (senderRect != null && !_inFullscreen)//TODO: verify that this works
+		if (senderRect != null && !_inFullscreen) //TODO: verify that this works
 		{
 			_resizeInProcess = true;
 			senderRect.CaptureMouse();
@@ -873,80 +973,80 @@ private async Task Search_Click(object? s, EventArgs e)
 
 	private void Resizeing_Form(object sender, MouseEventArgs e)
 	{
-        if (_resizeInProcess)
-        {
-            var senderRect = sender as Rectangle;
-            var mainWindow = senderRect?.Tag as Window;
-            if (senderRect != null && mainWindow != null)
-            {
-                // Get the current mouse position relative to the main window
-                var pos = e.GetPosition(mainWindow);
+		if (_resizeInProcess)
+		{
+			var senderRect = sender as Rectangle;
+			var mainWindow = senderRect?.Tag as Window;
+			if (senderRect != null && mainWindow != null)
+			{
+				// Get the current mouse position relative to the main window
+				var pos = e.GetPosition(mainWindow);
 
-                // Start with current window values
-                var newLeft = mainWindow.Left;
-                var newTop = mainWindow.Top;
-                var newWidth = mainWindow.Width;
-                var newHeight = mainWindow.Height;
+				// Start with current window values
+				var newLeft = mainWindow.Left;
+				var newTop = mainWindow.Top;
+				var newWidth = mainWindow.Width;
+				var newHeight = mainWindow.Height;
 
-                // Check which sides are being resized
-                var resizeLeft = senderRect.Name.ToLower().Contains("left");
-                var resizeRight = senderRect.Name.ToLower().Contains("right");
-                var resizeTop = senderRect.Name.ToLower().Contains("top");
-                var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+				// Check which sides are being resized
+				var resizeLeft = senderRect.Name.ToLower().Contains("left");
+				var resizeRight = senderRect.Name.ToLower().Contains("right");
+				var resizeTop = senderRect.Name.ToLower().Contains("top");
+				var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
 
-                // Process left resizing: adjust newLeft and newWidth
-                if (resizeLeft)
-                {
-                    // pos.X is the new distance from the left edge
-                    var deltaX = pos.X;
-                    var proposedWidth = mainWindow.Width - deltaX;
-                    if (proposedWidth >= mainWindow.MinWidth)
-                    {
-                        newLeft += deltaX;
-                        newWidth = proposedWidth;
-                    }
-                }
+				// Process left resizing: adjust newLeft and newWidth
+				if (resizeLeft)
+				{
+					// pos.X is the new distance from the left edge
+					var deltaX = pos.X;
+					var proposedWidth = mainWindow.Width - deltaX;
+					if (proposedWidth >= mainWindow.MinWidth)
+					{
+						newLeft += deltaX;
+						newWidth = proposedWidth;
+					}
+				}
 
-                // Process right resizing: new width based on mouse position
-                if (resizeRight)
-                {
-                    // pos.X gives the new width from the left edge
-                    var proposedWidth = pos.X + 1; // adding a little offset
-                    if (proposedWidth >= mainWindow.MinWidth)
-                    {
-                        newWidth = proposedWidth;
-                    }
-                }
+				// Process right resizing: new width based on mouse position
+				if (resizeRight)
+				{
+					// pos.X gives the new width from the left edge
+					var proposedWidth = pos.X + 1; // adding a little offset
+					if (proposedWidth >= mainWindow.MinWidth)
+					{
+						newWidth = proposedWidth;
+					}
+				}
 
-                // Process top resizing: adjust newTop and newHeight
-                if (resizeTop)
-                {
-                    var deltaY = pos.Y;
-                    var proposedHeight = mainWindow.Height - deltaY;
-                    if (proposedHeight >= mainWindow.MinHeight)
-                    {
-                        newTop += deltaY;
-                        newHeight = proposedHeight;
-                    }
-                }
+				// Process top resizing: adjust newTop and newHeight
+				if (resizeTop)
+				{
+					var deltaY = pos.Y;
+					var proposedHeight = mainWindow.Height - deltaY;
+					if (proposedHeight >= mainWindow.MinHeight)
+					{
+						newTop += deltaY;
+						newHeight = proposedHeight;
+					}
+				}
 
-                // Process bottom resizing: new height based on mouse position
-                if (resizeBottom)
-                {
-                    var proposedHeight = pos.Y + 1; // little offset
-                    if (proposedHeight >= mainWindow.MinHeight)
-                    {
-                        newHeight = proposedHeight;
-                    }
-                }
+				// Process bottom resizing: new height based on mouse position
+				if (resizeBottom)
+				{
+					var proposedHeight = pos.Y + 1; // little offset
+					if (proposedHeight >= mainWindow.MinHeight)
+					{
+						newHeight = proposedHeight;
+					}
+				}
 
-                // Apply the computed values
-                mainWindow.Left = newLeft;
-                mainWindow.Top = newTop;
-                mainWindow.Width = newWidth;
-                mainWindow.Height = newHeight;
-            }
-        }
+				// Apply the computed values
+				mainWindow.Left = newLeft;
+				mainWindow.Top = newTop;
+				mainWindow.Width = newWidth;
+				mainWindow.Height = newHeight;
+			}
+		}
 	}
 
 	private void ResizeHandle_MouseEnter(object sender, MouseEventArgs e)
@@ -978,5 +1078,26 @@ private async Task Search_Click(object? s, EventArgs e)
 		else
 			handle.Cursor = Cursors.Arrow;
 	}
+
 	#endregion
+}
+
+public class ExtensionPopupWindow : Window
+{
+	private readonly WebView2 webView2;
+
+	public ExtensionPopupWindow(string popupUrl, CoreWebView2Environment environment)
+	{
+		Width = 400;
+		Height = 300;
+		WindowStyle = WindowStyle.ToolWindow;
+		webView2 = new WebView2();
+		Content = webView2;
+
+		Loaded += async (_, _) =>
+		{
+			await webView2.EnsureCoreWebView2Async(environment);
+			webView2.Source = new Uri(popupUrl);
+		};
+	}
 }

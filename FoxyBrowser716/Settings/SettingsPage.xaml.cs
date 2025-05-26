@@ -363,7 +363,7 @@ public class StringSetting : Setting<string>
             OnValueChanged(textBox.Text);
         };
             
-        int descriptionOffset = 0;
+        var descriptionOffset = 0;
             
         if (!string.IsNullOrEmpty(Description))
         {
@@ -683,7 +683,7 @@ public partial class SettingsPage : UserControl
                 
         // Find the category that should be active based on scroll position
         var verticalOffset = e.VerticalOffset;
-        string newActiveCategory = _categoryPositions
+        var newActiveCategory = _categoryPositions
             .OrderBy(kv => kv.Value)
             .Last(kv => kv.Value <= verticalOffset + 10).Key;
             
