@@ -87,7 +87,11 @@ public class ServerManager
 	{
 		while (true)
 		{
+#if DEBUG
+			using var server = new NamedPipeServerStream("DEBUG_FoxyBrowser716_Pipe");
+#else
 			using var server = new NamedPipeServerStream("FoxyBrowser716_Pipe");
+#endif
 			server.WaitForConnection();
 			using var reader = new StreamReader(server);
 			var message = reader.ReadLine();

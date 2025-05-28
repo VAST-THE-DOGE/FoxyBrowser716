@@ -213,11 +213,12 @@ public partial class MainWindow
 		SideOpen = true;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.2),
+			Duration = TimeSpan.FromSeconds(0.6),
 			To = 260,
-			EasingFunction = new CubicEase
+			EasingFunction = new ExponentialEase
 			{
-				EasingMode = EasingMode.EaseOut
+				EasingMode = EasingMode.EaseOut,
+				Exponent = 8
 			}
 		};
 
@@ -231,11 +232,12 @@ public partial class MainWindow
 		SideOpen = false;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.3),
+			Duration = TimeSpan.FromSeconds(0.6),
 			To = 30,
-			EasingFunction = new CubicEase
+			EasingFunction = new ExponentialEase
 			{
-				EasingMode = EasingMode.EaseOut
+				EasingMode = EasingMode.EaseIn,
+				Exponent = 6
 			}
 		};
 
@@ -365,7 +367,7 @@ public partial class MainWindow
 						Close();
 					}
 				});
-		instanceOptions.Add("Manage Instances", () => { throw new NotImplementedException(); });
+		instanceOptions.Add("Manage Instances", () => throw new NotImplementedException());
 		ApplyMenuItems(_secondaryMenu, instanceOptions);
 		_secondaryMenu.PlacementTarget = ButtonMenu;
 		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
@@ -469,7 +471,7 @@ public partial class MainWindow
 					var popupUrl = $"chrome-extension://{k.Id}/{popup}";
 
 					var environment = tab.TabCore.CoreWebView2.Environment;
-					var popupWindow = new ExtensionPopupWindow(popupUrl, environment);
+					var popupWindow = new ExtensionPopupWindow(popupUrl, environment, tab, TabManager);
 					_extensionPopups.Add(popupWindow);
 					popupWindow.Show();
 				})
@@ -1080,24 +1082,36 @@ public partial class MainWindow
 	}
 
 	#endregion
-}
-
-public class ExtensionPopupWindow : Window
-{
-	private readonly WebView2 webView2;
-
-	public ExtensionPopupWindow(string popupUrl, CoreWebView2Environment environment)
+	
+	public class ExtensionPopupWindow : Window
 	{
-		Width = 400;
-		Height = 300;
-		WindowStyle = WindowStyle.ToolWindow;
-		webView2 = new WebView2();
-		Content = webView2;
+		private readonly WebView2 _webView2;
+		private readonly WebsiteTab _parentTab;
+		private readonly TabManager _tabManager;
 
-		Loaded += async (_, _) =>
+		public ExtensionPopupWindow(string popupUrl, CoreWebView2Environment environment, WebsiteTab parentTab, TabManager tabManager)
 		{
-			await webView2.EnsureCoreWebView2Async(environment);
-			webView2.Source = new Uri(popupUrl);
-		};
+			_parentTab = parentTab;
+			_tabManager = tabManager;
+			Width = 400;
+			Height = 300;
+			WindowStyle = WindowStyle.ToolWindow;
+			_webView2 = new WebView2();
+			Content = _webView2;
+
+			Loaded += async (_, _) =>
+			{
+				await _webView2.EnsureCoreWebView2Async(environment);
+				
+				_webView2.CoreWebView2.NewWindowRequested += (_, e) =>
+				{
+					_tabManager.SwapActiveTabTo(_tabManager.AddTab(e.Uri));
+					e.Handled = true;
+				};
+
+				_webView2.Source = new Uri(popupUrl);
+			};
+		}
 	}
+
 }

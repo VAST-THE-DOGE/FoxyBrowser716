@@ -10,6 +10,7 @@
         mc:Ignorable="d"
         SizeToContent="Height"
         Topmost="True"
+        WindowStartupLocation="CenterScreen"
         Title="Error" Width="650" HorizontalAlignment="Center" VerticalAlignment="Center">
     <Border BorderBrush="#FF910F" BorderThickness="3" Background="#28283C">
         <StackPanel>
