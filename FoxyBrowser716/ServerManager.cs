@@ -62,10 +62,12 @@ public class ServerManager
 		{
 			Application.Current.Dispatcher.Invoke(() => 
 			{
-				var firstWindow = new MainWindow(Context.DefaultBrowserManager);
-				Context.BrowserWindows.Add(firstWindow);
-				firstWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
+				var firstWindow = new BrowserApplicationWindow(Context.DefaultBrowserManager);
 				firstWindow.Show();
+				// var firstWindow = new MainWindow(Context.DefaultBrowserManager);
+				// Context.BrowserWindows.Add(firstWindow);
+				// firstWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
+				// firstWindow.Show();
 			});
 		}
 		else

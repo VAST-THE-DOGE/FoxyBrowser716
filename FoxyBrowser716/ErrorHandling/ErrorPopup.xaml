@@ -15,6 +15,7 @@
     <Border BorderBrush="#FF910F" BorderThickness="3" Background="#28283C">
         <StackPanel>
             <Label Foreground="#FF910F" FontSize="30" FontWeight="SemiBold" Margin="10,3" Content=":( An Error Has Occurred..."/>
+            <TextBlock Name="LabelException" Foreground="#CCCCCC" FontSize="16" FontWeight="SemiBold" Margin="10,3" Text="Exception Message: NA" TextWrapping="Wrap"/>
             <Button Foreground="White" FontWeight="SemiBold" Background="#38384C" Margin="10,3" FontSize="14" BorderBrush="#FF910F"  HorizontalAlignment="Left" Content="&#160;
 view technical details&#160;
 " Click="DetailsClick"/>

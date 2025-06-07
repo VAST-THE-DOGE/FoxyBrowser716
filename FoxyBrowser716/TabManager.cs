@@ -31,6 +31,29 @@ public class TabManager
 	public event Action<int> TabRemoved;
 
 	public InstanceManager InstanceData;
+
+	/// <summary>
+	/// DO NOT USE, use `PreloadTab`
+	/// </summary>
+	private WebsiteTab? _preloadTab;
+
+	public event Action<WebsiteTab> PreloadCreated;
+	
+	/// <summary>
+	/// IMPORTANT: creates a new tab on each access, only call once and save the reference.
+	/// </summary>
+	private WebsiteTab? PreloadTab
+	{
+		get
+		{
+			var preloadTab = _preloadTab;
+			_preloadTab = null;
+			var newPreload = new WebsiteTab("about:blank", WebsiteEnvironment, InstanceData);
+			PreloadCreated?.Invoke(newPreload);
+			newPreload.SetupTask.ContinueWith(_ => _preloadTab = newPreload, TaskScheduler.FromCurrentSynchronizationContext() );
+			return preloadTab;
+		}
+	}
 	
 	public TabManager(InstanceManager instanceData)
 	{
@@ -47,7 +70,6 @@ public class TabManager
 			AreBrowserExtensionsEnabled = true,
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 		};
-		
 		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, Path.Combine(InfoGetter.AppData, Path.Combine(InstanceData.InstanceFolder, "WebView2")), options);
 	}
 
@@ -81,10 +103,28 @@ public class TabManager
 	
 	public int AddTab(string url)
 	{
-		var tab = new WebsiteTab(url, WebsiteEnvironment, InstanceData);
+		WebsiteTab? tab = null;//PreloadTab;
+		if (tab is null)
+		{
+			tab = new WebsiteTab(url, WebsiteEnvironment, InstanceData);
+			PreloadCreated?.Invoke(tab);
+		}
+		else
+		{
+			try
+			{
+				tab.TabCore.Source = new Uri(url);
+			}
+			catch
+			{
+				tab.TabCore.Source = new Uri($"https://www.google.com/search?q={Uri.EscapeDataString(url)}");
+			}
+		}
+		
 		_tabs.TryAdd(tab.TabId, tab);
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
+		
 		return tab.TabId;
 	}
 

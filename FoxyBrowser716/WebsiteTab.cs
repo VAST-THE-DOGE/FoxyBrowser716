@@ -29,7 +29,7 @@ public class WebsiteTab
 		private set => _image = value;
 	}
 	
-	public readonly WebView2 TabCore;
+	public readonly WebView2CompositionControl TabCore;
 	public readonly int TabId;
 	public string Title { get; private set; }
 
@@ -42,9 +42,17 @@ public class WebsiteTab
 
 	public WebsiteTab(string url, CoreWebView2Environment websiteEnvironment, InstanceManager instance)
 	{
-		TabCore = new WebView2();
+		TabCore = new WebView2CompositionControl();
 		TabCore.Visibility = Visibility.Collapsed;
 			
+		TabCore.CreationProperties = new CoreWebView2CreationProperties()
+		{
+			BrowserExecutableFolder = null,
+			UserDataFolder = null,
+			AdditionalBrowserArguments = "--disable-gpu --disable-gpu-compositing"
+		};
+
+		
 		_instance = instance;
 		
 		TabCore.DefaultBackgroundColor = Color.Black;
@@ -67,8 +75,11 @@ public class WebsiteTab
 	private async Task Initialize(string url, CoreWebView2Environment websiteEnvironment)
 	{
 		await TabCore.EnsureCoreWebView2Async(websiteEnvironment);
-		var extensionLoadTask = LoadExtensions();
 		
+		var extensionLoadTask = LoadExtensions();
+		TabCore.AllowExternalDrop = true;
+		TabCore.AllowDrop = true;
+		TabCore.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		TabCore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
 		TabCore.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
 		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = true;
@@ -89,11 +100,11 @@ public class WebsiteTab
 		
 		TabCore.CoreWebView2.FaviconChanged += async (_, _) => await RefreshImage();
 
-		TabCore.CoreWebView2.NewWindowRequested += (_,e) =>
+		/*TabCore.CoreWebView2.NewWindowRequested += (_,e) =>
 		{
 			e.Handled = true;
 			NewTabRequested?.Invoke(e.Uri);
-		};
+		};*/
 
 		TabCore.CoreWebView2.DownloadStarting +=
 			async (_, e) =>

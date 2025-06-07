@@ -23,7 +23,6 @@ public partial class ErrorPopup : Window
 		_normEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
-		// Add this line to enable dragging
 		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 	
@@ -32,7 +31,6 @@ public partial class ErrorPopup : Window
 		_dispatcherEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
-		// Add this line to enable dragging
 		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 	
@@ -41,11 +39,9 @@ public partial class ErrorPopup : Window
 		_unobservedEx = ex;
 		InitializeComponent();
 		InitializeErrorDetails();
-		// Add this line to enable dragging
 		MouseLeftButtonDown += Window_MouseLeftButtonDown;
 	}
 
-    // Event handler for dragging the window
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed)
@@ -63,12 +59,10 @@ public partial class ErrorPopup : Window
 	{
 		var sb = new StringBuilder();
 		
-		// Get application version
 		var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 		var version = assembly.GetName().Version;
 		var appVersion = version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "Unknown";
 		
-		// Get current UI culture
 		var currentCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
 		var currentUiCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
 		
@@ -76,7 +70,6 @@ public partial class ErrorPopup : Window
 		sb.AppendLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
 		sb.AppendLine($"Version: v{appVersion}");
 		
-		// Add current window information if available
 		try
 		{
 			if (Application.Current.MainWindow != null)
@@ -84,7 +77,6 @@ public partial class ErrorPopup : Window
 				sb.AppendLine($"Active Window: {Application.Current.MainWindow.GetType().Name}");
 			}
 			
-			// Count open windows
 			var windowCount = Application.Current.Windows.Count;
 			sb.AppendLine($"All Windows Count (includes error dialog): {windowCount}");
 			sb.AppendLine($"BrowserWindows Count: {ServerManager.Context.BrowserWindows.Count}");
@@ -118,7 +110,6 @@ public partial class ErrorPopup : Window
 		
 		if (exception != null)
 		{
-			// Add more specific info based on exception type
 			if (exception is IOException)
 			{
 				sb.AppendLine("Subtype: I/O Error");
@@ -142,6 +133,7 @@ public partial class ErrorPopup : Window
 			sb.AppendLine();
 			sb.AppendLine($"Exception: {exception.GetType().FullName}");
 			sb.AppendLine($"Message: {exception.Message}");
+			LabelException.Text = $"Exception Message: {exception.Message}";
 			
 			sb.AppendLine();
 			sb.AppendLine("Stack Trace:");
@@ -158,7 +150,6 @@ public partial class ErrorPopup : Window
 			// 	}
 			// }
 			
-			// Include inner exception details if available
 			var innerException = exception.InnerException;
 			while (innerException != null)
 			{
@@ -188,7 +179,6 @@ public partial class ErrorPopup : Window
 		sb.AppendLine($"Current UI Culture: {currentUiCulture}");
 		sb.AppendLine($"System Boot Time: {GetSystemBootTime()}");
 		
-		// Hardware information
 		try
 		{
 			AddHardwareInfo(sb);
@@ -201,7 +191,6 @@ public partial class ErrorPopup : Window
 		sb.AppendLine();
 		sb.AppendLine("=== RUNTIME INFORMATION ===");
 		
-		// Process information
 		var process = Process.GetCurrentProcess();
 		sb.AppendLine($"Process ID: {process.Id}");
 		sb.AppendLine($"Process Name: {process.ProcessName}");
@@ -213,7 +202,6 @@ public partial class ErrorPopup : Window
 		sb.AppendLine($"Handle Count: {process.HandleCount}");
 		sb.AppendLine($"Thread Count: {process.Threads.Count}");
 		
-		// Garbage Collection information
 		sb.AppendLine();
 		sb.AppendLine($"GC Total Memory: {GC.GetTotalMemory(false) / (1024 * 1024)} MB");
 		sb.AppendLine($"GC Mode: {(IsServerGC ? "Server" : "Workstation")}");

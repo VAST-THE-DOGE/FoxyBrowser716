@@ -1,5 +1,5 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -8,25 +8,21 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Shapes;
-using System.Windows.Shell;
 using FoxyBrowser716.Settings;
-using FoxyBrowser716.Styling;
 using Material.Icons;
 using Material.Icons.WPF;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using static FoxyBrowser716.Styling.ColorPalette;
 using static FoxyBrowser716.Styling.Animator;
 using Path = System.IO.Path;
 
-
 namespace FoxyBrowser716;
 
-/// <summary>
-///     Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow
+public partial class BrowserApplicationWindow : Window
 {
 	private HomePage _homePage;
 	private SettingsPage _settingsPage;
@@ -42,43 +38,27 @@ public partial class MainWindow
 	private InstanceManager _instanceData;
 
 	internal Task InitTask;
-
-	public MainWindow(InstanceManager instanceData)
+	
+	private Timer _blurUpdateTimer;
+	
+	public BrowserApplicationWindow(InstanceManager instanceData)
 	{
-		_instanceData = instanceData;
-
 		InitializeComponent();
-
+		SetupAnimationsAndColors();
+		
+		_instanceData = instanceData;
 		TabManager = new TabManager(_instanceData);
 		InitTask = Initialize();
 
-		//TODO: find a better way to do all this crazy GUI stuff
+		_blurUpdateTimer = new Timer((_) =>
+		{
+			Dispatcher.Invoke(UpdateBlurredBackground);
+		}, null, 0, 100);
+
 		SearchButton.Click += async (s, e) => await Search_Click(s, e);
 
-		foreach (var button in NormalButtons)
-		{
-			button.MouseEnter += (_, _) => { ChangeColorAnimation(button.Background, MainColor, AccentColor); };
-			button.MouseLeave += (_, _) => { ChangeColorAnimation(button.Background, AccentColor, MainColor); };
-			button.PreviewMouseLeftButtonDown += (_, _) => { button.Foreground = new SolidColorBrush(HighlightColor); };
-			button.PreviewMouseLeftButtonUp += (_, _) =>
-			{
-				ChangeColorAnimation(button.Foreground, HighlightColor, Colors.White);
-			};
-		}
-
-		SearchBox.GotKeyboardFocus += (_, _) =>
-		{
-			ChangeColorAnimation(SearchBackground.BorderBrush, Colors.White, HighlightColor);
-		};
-		SearchBox.LostKeyboardFocus += (_, _) =>
-		{
-			ChangeColorAnimation(SearchBackground.BorderBrush, HighlightColor, Colors.White);
-		};
-
-		ButtonClose.MouseEnter += (_, _) => { ChangeColorAnimation(ButtonClose.Background, MainColor, Colors.Red); };
-		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Red, MainColor); };
-		StateChanged += Window_StateChanged;
-		Window_StateChanged(null, EventArgs.Empty);
+		//StateChanged += Window_StateChanged;
+		//Window_StateChanged(null, EventArgs.Empty);
 
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
@@ -192,7 +172,225 @@ public partial class MainWindow
 			}
 		};
 	}
+	
+	private void UpdateBlurredBackground()
+	{
+		if (TabHolder.ActualWidth > 0 && TabHolder.ActualHeight > 0)
+		{
+			var visualBrush = new VisualBrush(TabHolder)
+			{
+				Stretch = Stretch.UniformToFill,
+				TileMode = TileMode.None,
+				Transform = new ScaleTransform(1.2, 1.2, 0.5, 0.5)
+			};
+        
+			BlurredBackground.Background = visualBrush;
+			BlurredBackground.Effect = new BlurEffect { Radius = 25 };
+			BlurredBackground.Opacity = 0.5;
+		}
+	}
 
+	
+	private async Task Search_Click(object? s, EventArgs e)
+	{
+		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
+
+		var tabCore = tab.TabCore;
+		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+
+		try
+		{
+			tabCore.CoreWebView2.Navigate(SearchBox.Text);
+		}
+		catch
+		{
+			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
+		}
+	}
+	
+	private void SetupAnimationsAndColors(/*TODO*/)
+	{
+		var hoverColor = Color.FromArgb(50,255,255,255);
+		var closehover = Color.FromArgb(100,255,0,0);
+		
+		ButtonClose.MouseEnter += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Transparent, closehover); };
+		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, closehover, Colors.Transparent); };
+
+		foreach (var b in (Button[])
+		         [
+			         ButtonMaximize, ButtonMinimize, ButtonMenu,
+			         BackButton, ForwardButton, RefreshButton,
+			         SearchButton,
+		         ])
+		{
+			b.MouseEnter += (_, _) => { ChangeColorAnimation(b.Background, Colors.Transparent, hoverColor); };
+			b.MouseLeave += (_, _) => { ChangeColorAnimation(b.Background, hoverColor, Colors.Transparent); };
+			
+			b.PreviewMouseUp += (_, _) => { ChangeColorAnimation(b.Foreground, HighlightColor, Colors.White); };
+			b.PreviewMouseDown += (_, _) => { ChangeColorAnimation(b.Foreground, Colors.White, HighlightColor); };
+		}
+	}
+	
+	private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+	{
+		UpdatePlaceholderVisibility();
+	}
+    
+	private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+	{
+		UpdatePlaceholderVisibility();
+	}
+    
+	private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+	{
+		UpdatePlaceholderVisibility();
+	}
+	
+	private void UpdatePlaceholderVisibility()
+	{
+		placeholderText.Visibility = string.IsNullOrEmpty(SearchBox.Text) && !SearchBox.IsFocused 
+			? Visibility.Visible 
+			: Visibility.Collapsed;
+	}
+
+	
+	#region ResizeWindows
+
+	private bool _resizeInProcess;
+
+	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+	{
+		if (e.ClickCount == 2)
+		{
+			// MaximizeRestore_Click(null, EventArgs.Empty);
+		}
+		else
+		{
+			// if (_inFullscreen)
+			// 	ExitFullscreen(true);
+			//
+			// _originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
+			DragMove();
+		}
+	}
+	
+	private void Resize_Init(object sender, MouseButtonEventArgs e)
+	{
+		var senderRect = sender as Rectangle;
+		if (senderRect != null /*&& !_inFullscreen*/) //TODO: verify that this works
+		{
+			_resizeInProcess = true;
+			senderRect.CaptureMouse();
+		}
+	}
+
+	private void Resize_End(object sender, MouseButtonEventArgs e)
+	{
+		var senderRect = sender as Rectangle;
+		if (senderRect != null)
+		{
+			_resizeInProcess = false;
+			senderRect.ReleaseMouseCapture();
+		}
+	}
+
+	private void Resizeing_Form(object sender, MouseEventArgs e)
+	{
+		if (_resizeInProcess)
+		{
+			var senderRect = sender as Rectangle;
+			var mainWindow = senderRect?.Tag as Window;
+			if (senderRect != null && mainWindow != null)
+			{
+				var pos = e.GetPosition(mainWindow);
+
+				var newLeft = mainWindow.Left;
+				var newTop = mainWindow.Top;
+				var newWidth = mainWindow.Width;
+				var newHeight = mainWindow.Height;
+
+				var resizeLeft = senderRect.Name.ToLower().Contains("left");
+				var resizeRight = senderRect.Name.ToLower().Contains("right");
+				var resizeTop = senderRect.Name.ToLower().Contains("top");
+				var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
+
+				if (resizeLeft)
+				{
+					var deltaX = pos.X;
+					var proposedWidth = mainWindow.Width - deltaX;
+					if (proposedWidth >= mainWindow.MinWidth)
+					{
+						newLeft += deltaX;
+						newWidth = proposedWidth;
+					}
+				}
+
+				if (resizeRight)
+				{
+					var proposedWidth = pos.X + 1;
+					if (proposedWidth >= mainWindow.MinWidth)
+					{
+						newWidth = proposedWidth;
+					}
+				}
+
+				if (resizeTop)
+				{
+					var deltaY = pos.Y;
+					var proposedHeight = mainWindow.Height - deltaY;
+					if (proposedHeight >= mainWindow.MinHeight)
+					{
+						newTop += deltaY;
+						newHeight = proposedHeight;
+					}
+				}
+
+				if (resizeBottom)
+				{
+					var proposedHeight = pos.Y + 1;
+					if (proposedHeight >= mainWindow.MinHeight)
+					{
+						newHeight = proposedHeight;
+					}
+				}
+
+				mainWindow.Left = newLeft;
+				mainWindow.Top = newTop;
+				mainWindow.Width = newWidth;
+				mainWindow.Height = newHeight;
+			}
+		}
+	}
+
+	private void ResizeHandle_MouseEnter(object sender, MouseEventArgs e)
+	{
+		if (sender is Rectangle handle)
+		{
+			// if (_inFullscreen)
+			// {
+			// 	handle.Cursor = Cursors.Arrow;
+			// }
+		}
+	}
+
+	private void ResizeHandle_MouseLeave(object sender, MouseEventArgs e)
+	{
+		// if (sender is not Rectangle handle) return;
+		// var name = handle.Name.ToLower();
+		// if (name.Contains("left") || name.Contains("right"))
+		// 	handle.Cursor = Cursors.SizeWE;
+		// else if (name.Contains("top") || name.Contains("bottom"))
+		// 	handle.Cursor = Cursors.SizeNS;
+		// else if (name.Contains("topleft") || name.Contains("bottomright"))
+		// 	handle.Cursor = Cursors.SizeNWSE;
+		// else if (name.Contains("topright") || name.Contains("bottomleft"))
+		// 	handle.Cursor = Cursors.SizeNESW;
+		// else
+		// 	handle.Cursor = Cursors.Arrow;
+	}
+
+	#endregion
+	
 	private bool _mouseOverSideBar;
 
 	private void LeftBarMouseEnter(object sender, MouseEventArgs e)
@@ -244,7 +442,7 @@ public partial class MainWindow
 		var animation = new DoubleAnimation
 		{
 			Duration = TimeSpan.FromSeconds(0.6),
-			To = 30,
+			To = 35,
 			EasingFunction = new ExponentialEase
 			{
 				EasingMode = EasingMode.EaseIn,
@@ -260,17 +458,6 @@ public partial class MainWindow
 		var p = PointToScreen(new Point(0, 30));
 		return new System.Windows.Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
 	}
-
-	private Control[] NormalButtons =>
-	[
-		ButtonMaximize,
-		ButtonMinimize,
-		ButtonMenu,
-		SearchButton,
-		RefreshButton,
-		BackButton, //TODO: need custom animation logic.
-		ForwardButton
-	];
 
 	private ContextMenu _menu = new()
 	{
@@ -402,7 +589,20 @@ public partial class MainWindow
 
 	private void OpenHistory()
 	{
-		throw new NotImplementedException();
+		var tier = RenderCapability.Tier >> 16;
+		switch (tier)
+		{
+			case 0:
+				Console.WriteLine("No hardware acceleration (rendering tier 0).");
+				break;
+			case 1:
+				Console.WriteLine("Partial hardware acceleration (rendering tier 1).");
+				break;
+			case 2:
+				Console.WriteLine("Full hardware acceleration (rendering tier 2).");
+				break;
+		}
+		//throw new NotImplementedException();
 	}
 
 	private void OpenDownloads()
@@ -546,13 +746,13 @@ public partial class MainWindow
 	{
 		StackBookmark.Visibility = Visibility.Collapsed;
 		StackPin.Visibility = Visibility.Collapsed;
-		NavigationGrid.Visibility = Visibility.Collapsed;
+		//NavigationGrid.Visibility = Visibility.Collapsed;
 
 		TabManager.ActiveTabChanged += (oldActiveTab, newActiveTab) =>
 		{
 			StackBookmark.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
 			StackPin.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
-			NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
+			//NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
 			_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
 			AddTabStack.Background =
 				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
@@ -781,349 +981,11 @@ public partial class MainWindow
 				PinnedTabs.Children.Add(c);
 		}
 	}
-
-	private async Task Search_Click(object? s, EventArgs e)
-	{
-		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-
-		var tabCore = tab.TabCore;
-		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-
-		try
-		{
-			tabCore.CoreWebView2.Navigate(SearchBox.Text);
-		}
-		catch
-		{
-			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
-		}
-	}
-
-	private void Window_StateChanged(object? sender, EventArgs e)
-	{
-		if (WindowState == WindowState.Maximized)
-		{
-			WindowState = WindowState.Normal;
-			EnterFullscreen();
-		}
-	}
-
-	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-	{
-		if (e.ClickCount == 2)
-		{
-			MaximizeRestore_Click(null, EventArgs.Empty);
-		}
-		else
-		{
-			if (_inFullscreen)
-				ExitFullscreen(true);
-
-			_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
-			DragMove();
-		}
-	}
-
-	private void Minimize_Click(object? sender, EventArgs e)
-	{
-		WindowState = WindowState.Minimized;
-	}
-
-	private void MaximizeRestore_Click(object? sender, EventArgs e)
-	{
-		if (_inFullscreen)
-			ExitFullscreen();
-		else
-			EnterFullscreen();
-	}
-
-	private void Close_Click(object sender, RoutedEventArgs e)
-	{
-		Close();
-	}
-
-	private void RefreshButton_OnClick_Click(object sender, RoutedEventArgs e)
-	{
-		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.Reload();
-	}
-
-	private void BackButton_OnClick(object sender, RoutedEventArgs e)
-	{
-		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.GoBack();
-	}
-
-	private void ForwardButton_OnClick(object sender, RoutedEventArgs e)
-	{
-		TabManager.GetTab(TabManager.ActiveTabId)?.TabCore.GoForward();
-	}
-
-	#region FullscreenStuff
-
-	private void EnterFullscreen()
-	{
-		_inFullscreen = true;
-		_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
-
-		var screen = GetCurrentScreen();
-
-		Left = screen.Left;
-		Top = screen.Top;
-		Width = screen.Width;
-		Height = screen.Height;
-		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.FullscreenExit };
-	}
-
-	private void ExitFullscreen(bool moveToMouse = false)
-	{
-		_inFullscreen = false;
-
-		if (moveToMouse)
-		{
-			// Get mouse position relative to this window, then convert to screen coordinates
-			var mousePos = Mouse.GetPosition(this);
-			mousePos = PointToScreen(mousePos);
-
-			// Convert from device pixels to DIPs using our presentation source magic
-			var source = PresentationSource.FromVisual(this);
-			mousePos = source?.CompositionTarget?.TransformFromDevice.Transform(mousePos) ?? mousePos;
-
-			// Calculate the mouse's relative position within the current window
-			var relX = (mousePos.X - this.Left) / this.Width;
-			var relY = (mousePos.Y - this.Top) / this.Height;
-
-			// Restore original window size
-			Width = _originalRectangle.Width;
-			Height = _originalRectangle.Height;
-
-			// Reposition so the mouse is at the same spot on the window
-			Left = mousePos.X - (relX * this.Width);
-			Top = mousePos.Y - (relY * this.Height);
-		}
-		else
-		{
-			// Normal restore without the flirty mouse magic
-			Left = _originalRectangle.Left;
-			Top = _originalRectangle.Top;
-			Width = _originalRectangle.Width;
-			Height = _originalRectangle.Height;
-		}
-
-		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
-	}
-
-	private System.Windows.Rect GetCurrentScreen()
-	{
-		var hWnd = new WindowInteropHelper(this).Handle;
-		var hMonitor = MonitorFromWindow(hWnd, MonitorDefaulttonearest);
-
-		var monitorInfo = new Monitorinfo
-		{
-			cbSize = Marshal.SizeOf<Monitorinfo>()
-		};
-
-		if (GetMonitorInfo(hMonitor, ref monitorInfo))
-		{
-			// Get raw bounds in device pixels
-			var rawRect = new System.Windows.Rect(
-				monitorInfo.rcMonitor.Left,
-				monitorInfo.rcMonitor.Top,
-				monitorInfo.rcMonitor.Width,
-				monitorInfo.rcMonitor.Height);
-
-			// Convert to DIPs so everything stays in sync
-			var source = PresentationSource.FromVisual(this);
-			if (source?.CompositionTarget != null)
-			{
-				var transform = new MatrixTransform(source.CompositionTarget.TransformFromDevice);
-				var dipRect = transform.TransformBounds(rawRect);
-				return dipRect;
-			}
-
-			return rawRect;
-		}
-
-		// Fallback: if monitor info fails, use the primary monitor's work area
-		return SystemParameters.WorkArea with { X = 0, Y = 0 };
-	}
-
-
-	#region Windows API Methods
-
-	// Get the monitor's handle from a window handle
-	[DllImport("user32.dll")]
-	private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
-
-	// Get information about a monitor
-	[DllImport("user32.dll")]
-	private static extern bool GetMonitorInfo(IntPtr hMonitor, ref Monitorinfo lpmi);
-
-	// Monitor Info Struct
-	[StructLayout(LayoutKind.Sequential)]
-	public struct Monitorinfo
-	{
-		public int cbSize;
-		public Rect rcMonitor;
-		public Rect rcWork;
-		public uint dwFlags;
-	}
-
-	// Rect struct to define monitor size
-	[StructLayout(LayoutKind.Sequential)]
-	public struct Rect
-	{
-		public int Left;
-		public int Top;
-		public int Right;
-		public int Bottom;
-
-		public int Width => Right - Left;
-		public int Height => Bottom - Top;
-	}
-
-	// Constants
-	private const uint MonitorDefaulttonearest = 0x00000002;
-
-	#endregion
-
-	#endregion
-
-	#region ResizeWindows
-
-	private bool _resizeInProcess;
-
-	private void Resize_Init(object sender, MouseButtonEventArgs e)
-	{
-		var senderRect = sender as Rectangle;
-		if (senderRect != null && !_inFullscreen) //TODO: verify that this works
-		{
-			_resizeInProcess = true;
-			senderRect.CaptureMouse();
-		}
-	}
-
-	private void Resize_End(object sender, MouseButtonEventArgs e)
-	{
-		var senderRect = sender as Rectangle;
-		if (senderRect != null)
-		{
-			_resizeInProcess = false;
-			senderRect.ReleaseMouseCapture();
-		}
-	}
-
-	private void Resizeing_Form(object sender, MouseEventArgs e)
-	{
-		if (_resizeInProcess)
-		{
-			var senderRect = sender as Rectangle;
-			var mainWindow = senderRect?.Tag as Window;
-			if (senderRect != null && mainWindow != null)
-			{
-				// Get the current mouse position relative to the main window
-				var pos = e.GetPosition(mainWindow);
-
-				// Start with current window values
-				var newLeft = mainWindow.Left;
-				var newTop = mainWindow.Top;
-				var newWidth = mainWindow.Width;
-				var newHeight = mainWindow.Height;
-
-				// Check which sides are being resized
-				var resizeLeft = senderRect.Name.ToLower().Contains("left");
-				var resizeRight = senderRect.Name.ToLower().Contains("right");
-				var resizeTop = senderRect.Name.ToLower().Contains("top");
-				var resizeBottom = senderRect.Name.ToLower().Contains("bottom");
-
-				// Process left resizing: adjust newLeft and newWidth
-				if (resizeLeft)
-				{
-					// pos.X is the new distance from the left edge
-					var deltaX = pos.X;
-					var proposedWidth = mainWindow.Width - deltaX;
-					if (proposedWidth >= mainWindow.MinWidth)
-					{
-						newLeft += deltaX;
-						newWidth = proposedWidth;
-					}
-				}
-
-				// Process right resizing: new width based on mouse position
-				if (resizeRight)
-				{
-					// pos.X gives the new width from the left edge
-					var proposedWidth = pos.X + 1; // adding a little offset
-					if (proposedWidth >= mainWindow.MinWidth)
-					{
-						newWidth = proposedWidth;
-					}
-				}
-
-				// Process top resizing: adjust newTop and newHeight
-				if (resizeTop)
-				{
-					var deltaY = pos.Y;
-					var proposedHeight = mainWindow.Height - deltaY;
-					if (proposedHeight >= mainWindow.MinHeight)
-					{
-						newTop += deltaY;
-						newHeight = proposedHeight;
-					}
-				}
-
-				// Process bottom resizing: new height based on mouse position
-				if (resizeBottom)
-				{
-					var proposedHeight = pos.Y + 1; // little offset
-					if (proposedHeight >= mainWindow.MinHeight)
-					{
-						newHeight = proposedHeight;
-					}
-				}
-
-				// Apply the computed values
-				mainWindow.Left = newLeft;
-				mainWindow.Top = newTop;
-				mainWindow.Width = newWidth;
-				mainWindow.Height = newHeight;
-			}
-		}
-	}
-
-	private void ResizeHandle_MouseEnter(object sender, MouseEventArgs e)
-	{
-		if (sender is Rectangle handle)
-		{
-			// If we're in fullscreen, override the cursor to the default arrow
-			if (_inFullscreen)
-			{
-				handle.Cursor = Cursors.Arrow;
-			}
-			// Otherwise, you can optionally re-set the cursor based on the handle's original intent.
-		}
-	}
-
-	private void ResizeHandle_MouseLeave(object sender, MouseEventArgs e)
-	{
-		if (sender is not Rectangle handle) return;
-		// Reset the cursor to its original value based on the handle's name
-		var name = handle.Name.ToLower();
-		if (name.Contains("topright") || name.Contains("bottomleft"))
-			handle.Cursor = Cursors.SizeNESW;
-		else if (name.Contains("topleft") || name.Contains("bottomright"))
-			handle.Cursor = Cursors.SizeNWSE;
-		else if (name.Contains("left") || name.Contains("right"))
-			handle.Cursor = Cursors.SizeWE;
-		else if (name.Contains("top") || name.Contains("bottom"))
-			handle.Cursor = Cursors.SizeNS;
-		else
-			handle.Cursor = Cursors.Arrow;
-	}
-
-	#endregion
-
+	
+	#region Extension Popup stuff
 	public class ExtensionPopupWindow : Window
 	{
-		public readonly WebView2 _webView2;
+		public readonly WebView2CompositionControl _webView2;
 		private readonly WebsiteTab _parentTab;
 		private readonly TabManager _tabManager;
 		// private static int _popupCounter = 1000000000; //TODO: probably not an issue, but fix this later
@@ -1136,7 +998,7 @@ public partial class MainWindow
 			Width = 400;
 			Height = 300;
 			WindowStyle = WindowStyle.ToolWindow;
-			_webView2 = new WebView2();
+			_webView2 = new WebView2CompositionControl();
 			Content = _webView2;
 
 			Closed += (_, _) =>
@@ -1144,99 +1006,101 @@ public partial class MainWindow
 				_webView2?.Dispose();
 			};
 			
-			Loaded += async (_, _) =>
+			SourceInitialized  += async (_, _) =>
 			{
+				var hwnd = new WindowInteropHelper(this).Handle;
+				Debug.Assert(hwnd != IntPtr.Zero);
 				await _webView2.EnsureCoreWebView2Async(environment);
+				// // await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+				// // 	"""
+				// // 	(function() {
+				// // 	  // 1) Keep a reference to the real one
+				// // 	  const realGetCurrent = chrome.windows.getCurrent.bind(chrome.windows);
+				// // 	
+				// // 	  // 2) Override it
+				// // 	  chrome.windows.getCurrent = function(getInfoOrCallback, maybeCallback) {
+				// // 	    // Signature allows two styles: getCurrent(callback)  OR  getCurrent({populate:bool}, callback)
+				// // 	    let getInfo = {};
+				// // 	    let callback;
+				// // 	
+				// // 	    if (typeof getInfoOrCallback === "function") {
+				// // 	      callback = getInfoOrCallback;
+				// // 	    } else {
+				// // 	      getInfo = getInfoOrCallback || {};
+				// // 	      callback = maybeCallback;
+				// // 	    }
+				// // 	
+				// // 	    // 3) Call the real one to get a Window object (ChromeWindowModel)
+				// // 	    realGetCurrent(getInfo, (windowObj) => {
+				// // 	      // Push it up to C#
+				// // 	      window.chrome.webview.postMessage({
+				// // 	        type: "windowsGetCurrent",
+				// // 	        payload: windowObj
+				// // 	      });
+				// // 	
+				// // 	      // 4) Wait for C# to send back a "windowsGetCurrentResponse"
+				// // 	      function onHostMessage(ev) {
+				// // 	        let msg = ev.data;
+				// // 	        if (msg.type === "windowsGetCurrentResponse") {
+				// // 	          window.chrome.webview.removeEventListener("message", onHostMessage);
+				// // 	          // Invoke the original callback with the patched window object
+				// // 	          callback(msg.payload);
+				// // 	        }
+				// // 	      }
+				// // 	      window.chrome.webview.addEventListener("message", onHostMessage);
+				// // 	    });
+				// // 	  };
+				// // 	})();
+				// // 	""");
 				// await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-				// 	"""
-				// 	(function() {
-				// 	  // 1) Keep a reference to the real one
-				// 	  const realGetCurrent = chrome.windows.getCurrent.bind(chrome.windows);
-				// 	
-				// 	  // 2) Override it
-				// 	  chrome.windows.getCurrent = function(getInfoOrCallback, maybeCallback) {
-				// 	    // Signature allows two styles: getCurrent(callback)  OR  getCurrent({populate:bool}, callback)
-				// 	    let getInfo = {};
-				// 	    let callback;
-				// 	
-				// 	    if (typeof getInfoOrCallback === "function") {
-				// 	      callback = getInfoOrCallback;
-				// 	    } else {
-				// 	      getInfo = getInfoOrCallback || {};
-				// 	      callback = maybeCallback;
-				// 	    }
-				// 	
-				// 	    // 3) Call the real one to get a Window object (ChromeWindowModel)
-				// 	    realGetCurrent(getInfo, (windowObj) => {
-				// 	      // Push it up to C#
-				// 	      window.chrome.webview.postMessage({
-				// 	        type: "windowsGetCurrent",
-				// 	        payload: windowObj
-				// 	      });
-				// 	
-				// 	      // 4) Wait for C# to send back a "windowsGetCurrentResponse"
-				// 	      function onHostMessage(ev) {
-				// 	        let msg = ev.data;
-				// 	        if (msg.type === "windowsGetCurrentResponse") {
-				// 	          window.chrome.webview.removeEventListener("message", onHostMessage);
-				// 	          // Invoke the original callback with the patched window object
-				// 	          callback(msg.payload);
-				// 	        }
-				// 	      }
-				// 	      window.chrome.webview.addEventListener("message", onHostMessage);
-				// 	    });
-				// 	  };
-				// 	})();
-				// 	""");
-				await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-					"(function() {\n  // Keep a reference to the real chrome.tabs.query\n  const realQuery = chrome.tabs.query.bind(chrome.tabs);\n\n  chrome.tabs.query = function(queryInfo, maybeCallback) {\n    // Determine if the caller passed a callback or expects a Promise\n    const isCallbackStyle = typeof maybeCallback === \"function\";\n    const userCallback = isCallbackStyle ? maybeCallback : null;\n\n    // Helper to do the real query + postMessage → wait for response\n    function doQueryWithHost(queryInfo, resolver) {\n      // 1) Call the real (Chromium) tabs.query(queryInfo, ...)\n      realQuery(queryInfo, (tabsArray) => {\n        // 2) Send raw list + queryInfo to C# so it can filter 'active' (etc.)\n        window.chrome.webview.postMessage({\n          type: \"tabsQuery\",\n          payload: {\n            tabs: tabsArray,\n            queryInfo: queryInfo\n          }\n        });\n\n        // 3) Listen for a single \"tabsQueryResponse\" from C#\n        function handleHostMessage(ev) {\n          const msg = ev.data;\n          if (msg.type === \"tabsQueryResponse\") {\n            window.chrome.webview.removeEventListener(\"message\", handleHostMessage);\n            // Now we have the filtered/fixed array\n            resolver(msg.payload);\n          }\n        }\n        window.chrome.webview.addEventListener(\"message\", handleHostMessage);\n      });\n    }\n\n    if (isCallbackStyle) {\n      // Old callback style: we need to pass queryInfo and a callback\n      doQueryWithHost(queryInfo, (fixedTabs) => {\n        // just call the original callback with the fixed array\n        userCallback(fixedTabs);\n      });\n      return; // no return value in callback style\n    } else {\n      // Promise style: return a Promise that resolves with the fixed array\n      return new Promise((resolve) => {\n        doQueryWithHost(queryInfo, resolve);\n      });\n    }\n  };\n})();\n");
-				_webView2.CoreWebView2.NewWindowRequested += (_, e) =>
-				{
-					_tabManager.SwapActiveTabTo(_tabManager.AddTab(e.Uri));
-					e.Handled = true;
-				};
-				_webView2.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
-				
+				// 	"(function() {\n  // Keep a reference to the real chrome.tabs.query\n  const realQuery = chrome.tabs.query.bind(chrome.tabs);\n\n  chrome.tabs.query = function(queryInfo, maybeCallback) {\n    // Determine if the caller passed a callback or expects a Promise\n    const isCallbackStyle = typeof maybeCallback === \"function\";\n    const userCallback = isCallbackStyle ? maybeCallback : null;\n\n    // Helper to do the real query + postMessage → wait for response\n    function doQueryWithHost(queryInfo, resolver) {\n      // 1) Call the real (Chromium) tabs.query(queryInfo, ...)\n      realQuery(queryInfo, (tabsArray) => {\n        // 2) Send raw list + queryInfo to C# so it can filter 'active' (etc.)\n        window.chrome.webview.postMessage({\n          type: \"tabsQuery\",\n          payload: {\n            tabs: tabsArray,\n            queryInfo: queryInfo\n          }\n        });\n\n        // 3) Listen for a single \"tabsQueryResponse\" from C#\n        function handleHostMessage(ev) {\n          const msg = ev.data;\n          if (msg.type === \"tabsQueryResponse\") {\n            window.chrome.webview.removeEventListener(\"message\", handleHostMessage);\n            // Now we have the filtered/fixed array\n            resolver(msg.payload);\n          }\n        }\n        window.chrome.webview.addEventListener(\"message\", handleHostMessage);\n      });\n    }\n\n    if (isCallbackStyle) {\n      // Old callback style: we need to pass queryInfo and a callback\n      doQueryWithHost(queryInfo, (fixedTabs) => {\n        // just call the original callback with the fixed array\n        userCallback(fixedTabs);\n      });\n      return; // no return value in callback style\n    } else {\n      // Promise style: return a Promise that resolves with the fixed array\n      return new Promise((resolve) => {\n        doQueryWithHost(queryInfo, resolve);\n      });\n    }\n  };\n})();\n");
+				// _webView2.CoreWebView2.NewWindowRequested += (_, e) =>
+				// {
+				// 	_tabManager.SwapActiveTabTo(_tabManager.AddTab(e.Uri));
+				// 	e.Handled = true;
+				// };
+				// _webView2.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
+				//
 				_webView2.Source = new Uri(popupUrl/*+"#586966453"*/);
 			};
 		}
 		
-		private async void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
-		{
-			var json = e.WebMessageAsJson;
-
-			using var doc = JsonDocument.Parse(json);
-			var root = doc.RootElement;
-			if (root.GetProperty("type").GetString() == "tabsQuery")
-			{
-				var payload = root.GetProperty("payload");
-				var tabsJson = payload.GetProperty("tabs").GetRawText();
-				var allTabs = JsonSerializer.Deserialize<List<TabModel>>(tabsJson);
-				
-				var activeUrl = _tabManager.GetTab(_tabManager.ActiveTabId)!.TabCore.Source.ToString();
-				foreach (var t in allTabs!)
-				{
-					t.Active = t.Url == activeUrl;
-				}
-
-				var queryInfoJson = payload.GetProperty("queryInfo").GetRawText();
-				var queryInfo = JsonSerializer.Deserialize<QueryInfoModel>(queryInfoJson);
-				if (queryInfo?.active??false)
-				{
-					allTabs = allTabs.Where(t => t.Active).ToList();
-				}
-				
-				
-				// Send it back:
-				var replyObj = new
-				{
-					type = "tabsQueryResponse",
-					payload = allTabs
-				};
-				string replyJson = JsonSerializer.Serialize(replyObj);
-				_webView2.CoreWebView2.PostWebMessageAsJson(replyJson);
-			}
-		}
+		// private async void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+		// {
+		// 	var json = e.WebMessageAsJson;
+		//
+		// 	using var doc = JsonDocument.Parse(json);
+		// 	var root = doc.RootElement;
+		// 	if (root.GetProperty("type").GetString() == "tabsQuery")
+		// 	{
+		// 		var payload = root.GetProperty("payload");
+		// 		var tabsJson = payload.GetProperty("tabs").GetRawText();
+		// 		var allTabs = JsonSerializer.Deserialize<List<TabModel>>(tabsJson);
+		// 		
+		// 		var activeUrl = _tabManager.GetTab(_tabManager.ActiveTabId)!.TabCore.Source.ToString();
+		// 		foreach (var t in allTabs!)
+		// 		{
+		// 			t.Active = t.Url == activeUrl;
+		// 		}
+		//
+		// 		var queryInfoJson = payload.GetProperty("queryInfo").GetRawText();
+		// 		var queryInfo = JsonSerializer.Deserialize<QueryInfoModel>(queryInfoJson);
+		// 		if (queryInfo?.active??false)
+		// 		{
+		// 			allTabs = allTabs.Where(t => t.Active).ToList();
+		// 		}
+		// 		
+		// 		
+		// 		// Send it back:
+		// 		var replyObj = new
+		// 		{
+		// 			type = "tabsQueryResponse",
+		// 			payload = allTabs
+		// 		};
+		// 		string replyJson = JsonSerializer.Serialize(replyObj);
+		// 		_webView2.CoreWebView2.PostWebMessageAsJson(replyJson);
+		// 	}
+		// }
 	}
 	
 	public class QueryInfoModel
@@ -1332,4 +1196,5 @@ public partial class MainWindow
 	    [JsonPropertyName("disabled")]
 	    public bool Disabled { get; set; }        // true if the tab is forced unmuted even if “muted” is true
 	}
+	#endregion
 }
