@@ -57,13 +57,15 @@ public partial class HomePage
             Stretch = Stretch.UniformToFill
         };
         ApplySettings();
+        Grid.SetRowSpan(_imageControl, 9999);
+        Grid.SetColumnSpan(_imageControl, 9999);
         Panel.SetZIndex(_imageControl, -1);
         MainGrid.Children.Add(_imageControl);
 
         await TryLoadWidgets();
         await AddWidgetsToGrid();
         
-        _updateTimer = new System.Timers.Timer(250);
+        _updateTimer = new System.Timers.Timer(50);
         _updateTimer.Elapsed += async (_,_) => await TimerTick();
         _updateTimer.AutoReset = true;
         _updateTimer.Enabled = true;  
@@ -78,7 +80,7 @@ public partial class HomePage
     {
         if (_settings.DoSlideshow)
         {
-            var i = (DateTime.Now.Hour * 3600 + DateTime.Now.Minute * 60 + DateTime.Now.Second) / (_settings.DisplayTime == 0 ? 1 : _settings.DisplayTime);
+            var i = (int)Math.Ceiling((DateTime.Now.Hour * 3600d + DateTime.Now.Minute * 60 + DateTime.Now.Second + (DateTime.Now.Millisecond / 1000d)) / (_settings.DisplayTime <= 0d ? 0.01d : _settings.DisplayTime));
             if (_imageIndex != i)
             {
                 _imageIndex = i;
@@ -145,9 +147,6 @@ public partial class HomePage
         {
             _imageControl.Source = null;
         }
-        Grid.SetRowSpan(_imageControl, 9999);
-        Grid.SetColumnSpan(_imageControl, 9999);
-        Panel.SetZIndex(_imageControl, -1);
     }
 
     private static Widget? GetWidget(string widgetName)
@@ -418,7 +417,7 @@ public partial class HomePage
                             _settings.DoSlideshow = boolSetting1.Value;
                         if (returnSettings.TryGetValue(1, out var valueRaw2) && valueRaw2.setting is WidgetSettingBool boolSetting2)
                             _settings.RandomPicking = boolSetting2.Value;
-                        if (returnSettings.TryGetValue(2, out var valueRaw3) && valueRaw3.setting is WidgetSettingInt intSetting)
+                        if (returnSettings.TryGetValue(2, out var valueRaw3) && valueRaw3.setting is WidgetSettingDouble intSetting)
                             _settings.DisplayTime = intSetting.Value;
                         if (returnSettings.TryGetValue(3, out var valueRaw4) && valueRaw4.setting is WidgetSettingFolderPicker folderSetting)
                             _settings.FolderPath = folderSetting.Value;
@@ -438,7 +437,7 @@ public partial class HomePage
         // [-1] = (new WidgetSettingDiv(),""),
         [0] = (new WidgetSettingBool(_settings.DoSlideshow), "Enable Slideshow"),
         [1] = (new WidgetSettingBool(_settings.RandomPicking), "Pick Random Images (will pick in alphabetical order when off)"),
-        [2] = (new WidgetSettingInt(_settings.DisplayTime), "Display Interval (in seconds)"),
+        [2] = (new WidgetSettingDouble(_settings.DisplayTime), "Display Interval (in seconds)"),
         [3] = (new WidgetSettingFolderPicker(_settings.FolderPath), "FolderPath (can have nested folders)"),
     };
     
@@ -476,5 +475,5 @@ internal record HomeSettings
     public bool DoSlideshow { get; set; }
     public bool RandomPicking { get; set; }
     public string FolderPath { get; set; } = "";
-    public int DisplayTime { get; set; } = 60;
+    public double DisplayTime { get; set; } = 60;
 }

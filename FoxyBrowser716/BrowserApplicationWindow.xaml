@@ -213,7 +213,7 @@
                 </Border>
                 <Border  Name="LeftBar" Background="#7730323A" BorderBrush="#77363840" 
                          BorderThickness="2" CornerRadius="0,10,10,10"
-                         Width="35" VerticalAlignment="Stretch" HorizontalAlignment="Left"
+                         Width="30" VerticalAlignment="Stretch" HorizontalAlignment="Left"
                          Margin="0,25,0,0"
                          Panel.ZIndex="99999">
                 <DockPanel  Background="Transparent" HorizontalAlignment="Stretch">
@@ -231,42 +231,68 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="1" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
-                            <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="StackPin"
-                                        VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="260">
-                                <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin" Width="30"
-                                        Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
-                                        Content="{wpf:MaterialIconExt Kind=PinOutline}" />
-                                <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelPin" Width="230"
-                                       Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
-                                    Pin Tab
-                                </Label>
-                            </StackPanel>
-                            <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="StackBookmark"
-                                        VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="260">
-                                <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark" Width="30"
-                                        Height="30" BorderThickness="0" Background="#002D2D30" Foreground="#FFFFFFFF"
-                                        Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" />
-                                <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="LabelBookmark" Width="230"
-                                       Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
-                                    Bookmark Tab
-                                </Label>
-                            </StackPanel>
+                            <Border Name="StackPin" Background="#7730323A" BorderBrush="#00000000"
+                                    BorderThickness="2" CornerRadius="5"
+                                    Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                    Margin="0" Padding="0"
+                                    ClipToBounds="True">
+                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin"
+                                            Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                            Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=PinOutline}" Margin="0" Padding="0"/>
+                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelPin"
+                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                        Pin Tab
+                                    </Label>
+                                </Grid>
+                            </Border>
+                            <Border Name="StackBookmark" Background="#7730323A" BorderBrush="#00000000"
+                                    BorderThickness="2" CornerRadius="5"
+                                    Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                    Margin="0" Padding="0"
+                                    ClipToBounds="True">
+                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark"
+                                            Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                            Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" Margin="0" Padding="0"/>
+                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelBookmark"
+                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                        Bookmark Tab
+                                    </Label>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </Grid>
     
-                    <!-- Tabs Section (Fills remaining space) -->
                     <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" MinHeight="150">
                         <StackPanel Name="Tabs" Orientation="Vertical">
-                            <StackPanel Background="#002D2D30" Orientation="Horizontal" Name="AddTabStack"
-                                        VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30" Width="290">
-                                <Button VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="AddTabButton"
-                                        Width="30" Height="30" BorderThickness="0" Background="#002D2D30"
-                                        Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=House}" />
-                                <Label VerticalAlignment="Stretch" HorizontalAlignment="Right" Name="AddTabLabel"
-                                       Width="260" Height="30" Background="#002D2D30" Foreground="#FFFFFFFF">
-                                    Home Tab
-                                </Label>
-                            </StackPanel>
+                            <Border Name="AddTabStack" Background="#7730323A" BorderBrush="#00000000"
+                                BorderThickness="2" CornerRadius="5"
+                                Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                Margin="0" Padding="0"
+                                ClipToBounds="True">
+                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="AddTabButton"
+                                                           Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                                           Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=House}" Margin="0" Padding="0"/>
+                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="AddTabLabel"
+                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                        Home Tab
+                                    </Label>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </DockPanel>

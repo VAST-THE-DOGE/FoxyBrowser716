@@ -59,16 +59,16 @@ public partial class BrowserApplicationWindow : Window
 
 		//StateChanged += Window_StateChanged;
 		//Window_StateChanged(null, EventArgs.Empty);
-
+		
 		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
 
 		AddTabStack.MouseEnter += (_, _) =>
 		{
-			if (TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, MainColor, AccentColor);
+			ChangeColorAnimation(AddTabStack.Background, _transparentBack, _transparentAccent);
 		};
 		AddTabStack.MouseLeave += (_, _) =>
 		{
-			if (TabManager.ActiveTabId != -1) ChangeColorAnimation(AddTabStack.Background, AccentColor, MainColor);
+			ChangeColorAnimation(AddTabStack.Background, _transparentAccent, _transparentBack);
 		};
 		AddTabStack.PreviewMouseLeftButtonDown += (_, _) =>
 		{
@@ -82,8 +82,8 @@ public partial class BrowserApplicationWindow : Window
 			TabManager.SwapActiveTabTo(-1);
 		};
 
-		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, MainColor, AccentColor); };
-		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(StackPin.Background, AccentColor, MainColor); };
+		StackPin.MouseEnter += (_, _) => { ChangeColorAnimation(StackPin.Background, _transparentBack, _transparentAccent); };
+		StackPin.MouseLeave += (_, _) => { ChangeColorAnimation(StackPin.Background, _transparentAccent, _transparentBack); };
 		StackPin.PreviewMouseLeftButtonDown += (_, _) =>
 		{
 			LabelPin.Foreground = new SolidColorBrush(HighlightColor);
@@ -102,6 +102,7 @@ public partial class BrowserApplicationWindow : Window
 			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+				StackPin.BorderBrush = Brushes.White;
 				LabelPin.Content = "Pin Tab";
 				_instanceData.PinInfo.RemoveTabInfo(_instanceData.PinInfo.GetAllTabInfos()
 					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
@@ -109,6 +110,7 @@ public partial class BrowserApplicationWindow : Window
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+				StackPin.BorderBrush = Brushes.White;
 				LabelPin.Content = "Unpin Tab";
 				_instanceData.PinInfo.AddTabInfo(tab);
 			}
@@ -116,11 +118,11 @@ public partial class BrowserApplicationWindow : Window
 
 		StackBookmark.MouseEnter += (_, _) =>
 		{
-			ChangeColorAnimation(StackBookmark.Background, MainColor, AccentColor);
+			ChangeColorAnimation(StackBookmark.Background, _transparentBack, _transparentAccent);
 		};
 		StackBookmark.MouseLeave += (_, _) =>
 		{
-			ChangeColorAnimation(StackBookmark.Background, AccentColor, MainColor);
+			ChangeColorAnimation(StackBookmark.Background, _transparentAccent, _transparentBack);
 		};
 		StackBookmark.PreviewMouseLeftButtonDown += (_, _) =>
 		{
@@ -140,6 +142,7 @@ public partial class BrowserApplicationWindow : Window
 			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+				StackBookmark.BorderBrush = new SolidColorBrush(MainColor);
 				LabelBookmark.Content = "Add Bookmark";
 				_instanceData.BookmarkInfo.RemoveTabInfo(_instanceData.BookmarkInfo.GetAllTabInfos()
 					.FirstOrDefault(p => p.Value.Url == tab.TabCore.Source.ToString()).Key);
@@ -147,6 +150,7 @@ public partial class BrowserApplicationWindow : Window
 			else
 			{
 				ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+				StackBookmark.BorderBrush = Brushes.White;
 				LabelBookmark.Content = "Remove bookmark";
 				_instanceData.BookmarkInfo.AddTabInfo(tab);
 			}
@@ -208,10 +212,16 @@ public partial class BrowserApplicationWindow : Window
 		}
 	}
 	
+	private readonly Color _transparentBack = Color.FromArgb(175, 48, 50, 58);
+	private readonly Color _transparentAccent = Color.FromArgb(200, AccentColor.R, AccentColor.G, AccentColor.B);
 	private void SetupAnimationsAndColors(/*TODO*/)
 	{
 		var hoverColor = Color.FromArgb(50,255,255,255);
-		var closehover = Color.FromArgb(100,255,0,0);
+		var closehover = Color.FromArgb(150,255,0,0);
+		
+		AddTabStack.BorderBrush = new SolidColorBrush(MainColor);
+		StackPin.BorderBrush = new SolidColorBrush(MainColor);
+		StackBookmark.BorderBrush = new SolidColorBrush(MainColor);
 		
 		ButtonClose.MouseEnter += (_, _) => { ChangeColorAnimation(ButtonClose.Background, Colors.Transparent, closehover); };
 		ButtonClose.MouseLeave += (_, _) => { ChangeColorAnimation(ButtonClose.Background, closehover, Colors.Transparent); };
@@ -396,9 +406,18 @@ public partial class BrowserApplicationWindow : Window
 	private void LeftBarMouseEnter(object sender, MouseEventArgs e)
 	{
 		_mouseOverSideBar = true;
-		Task.Delay(150).ContinueWith(_ =>
+		var click = false;
+
+		void LeftDown(object sender, MouseButtonEventArgs e)
 		{
-			if (_mouseOverSideBar && !SideOpen)
+			click = true;
+		}
+		PreviewMouseLeftButtonDown += LeftDown;
+		
+		Task.Delay(250).ContinueWith(_ =>
+		{
+			PreviewMouseLeftButtonDown -= LeftDown;
+			if (_mouseOverSideBar && !SideOpen && !click)
 				Dispatcher.Invoke(OpenSideBar);
 		});
 	}
@@ -406,7 +425,7 @@ public partial class BrowserApplicationWindow : Window
 	private void LeftBarMouseLeave(object sender, MouseEventArgs e)
 	{
 		_mouseOverSideBar = false;
-		Task.Delay(350).ContinueWith(_ =>
+		Task.Delay(300).ContinueWith(_ =>
 		{
 			if (!_mouseOverSideBar && SideOpen)
 				Dispatcher.Invoke(CloseSideBar);
@@ -422,7 +441,7 @@ public partial class BrowserApplicationWindow : Window
 		SideOpen = true;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.6),
+			Duration = TimeSpan.FromSeconds(0.4),
 			To = 260,
 			EasingFunction = new ExponentialEase
 			{
@@ -441,8 +460,8 @@ public partial class BrowserApplicationWindow : Window
 		SideOpen = false;
 		var animation = new DoubleAnimation
 		{
-			Duration = TimeSpan.FromSeconds(0.6),
-			To = 35,
+			Duration = TimeSpan.FromSeconds(0.4),
+			To = 30,
 			EasingFunction = new ExponentialEase
 			{
 				EasingMode = EasingMode.EaseIn,
@@ -754,7 +773,7 @@ public partial class BrowserApplicationWindow : Window
 			StackPin.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
 			//NavigationGrid.Visibility = newActiveTab <= 0 ? Visibility.Collapsed : Visibility.Visible;
 			_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
-			AddTabStack.Background =
+			AddTabStack.BorderBrush =
 				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
 			_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -794,7 +813,7 @@ public partial class BrowserApplicationWindow : Window
 			_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
 		_homePage.Loaded += (_, _) =>
 			_homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
-		AddTabStack.Background = TabManager.ActiveTabId == -1
+		AddTabStack.BorderBrush = TabManager.ActiveTabId == -1
 			? new SolidColorBrush(HighlightColor)
 			: new SolidColorBrush(MainColor);
 
@@ -816,22 +835,26 @@ public partial class BrowserApplicationWindow : Window
 				if (_instanceData.PinInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 				{
 					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+					StackPin.BorderBrush = Brushes.White;
 					LabelPin.Content = "Unpin Tab";
 				}
 				else
 				{
 					ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+					StackPin.BorderBrush = new SolidColorBrush(MainColor);
 					LabelPin.Content = "Pin Tab";
 				}
 
 				if (_instanceData.BookmarkInfo.GetAllTabInfos().Any(t => t.Value.Url == tab.TabCore.Source.ToString()))
 				{
 					ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.Bookmark };
+					StackBookmark.BorderBrush = Brushes.White;
 					LabelBookmark.Content = "Remove Bookmark";
 				}
 				else
 				{
 					ButtonBookmark.Content = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
+					StackBookmark.BorderBrush = new SolidColorBrush(MainColor);
 					LabelBookmark.Content = "Add Bookmark";
 				}
 			};
@@ -910,11 +933,13 @@ public partial class BrowserApplicationWindow : Window
 			    .Any(t => t.Value.Url == (tab?.TabCore?.Source?.ToString() ?? "__NULL__")))
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.Pin };
+				StackPin.BorderBrush = Brushes.White;
 				LabelPin.Content = "Unpin Tab";
 			}
 			else
 			{
 				ButtonPin.Content = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+				StackPin.BorderBrush = new SolidColorBrush(MainColor);
 				LabelPin.Content = "Pin Tab";
 			}
 		};
