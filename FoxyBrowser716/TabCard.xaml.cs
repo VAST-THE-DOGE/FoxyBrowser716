@@ -119,7 +119,7 @@ public partial class TabCard
         
     private readonly Color _transparentBack = Color.FromArgb(175, 48, 50, 58);
     private readonly Color _transparentAccent = Color.FromArgb(200, AccentColor.R, AccentColor.G, AccentColor.B);
-    private readonly Color _transparentHighlight = Color.FromArgb(200, HighlightColor.R, HighlightColor.G, HighlightColor.B);
+    private readonly Color _transparentHighlight = Color.FromArgb(255, HighlightColor.R, HighlightColor.G, HighlightColor.B);
     public void ToggleActiveTo(bool active)
     {
         _active = active;
