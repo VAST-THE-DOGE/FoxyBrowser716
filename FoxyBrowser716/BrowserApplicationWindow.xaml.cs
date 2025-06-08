@@ -1008,8 +1008,6 @@ public partial class BrowserApplicationWindow : Window
 			
 			SourceInitialized  += async (_, _) =>
 			{
-				var hwnd = new WindowInteropHelper(this).Handle;
-				Debug.Assert(hwnd != IntPtr.Zero);
 				await _webView2.EnsureCoreWebView2Async(environment);
 				// // await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
 				// // 	"""
