@@ -44,15 +44,10 @@ public class WebsiteTab
 	{
 		TabCore = new WebView2CompositionControl();
 		TabCore.Visibility = Visibility.Collapsed;
-			
-		TabCore.CreationProperties = new CoreWebView2CreationProperties()
-		{
-			BrowserExecutableFolder = null,
-			UserDataFolder = null,
-			AdditionalBrowserArguments = "--disable-gpu --disable-gpu-compositing"
-		};
-
 		
+		TabCore.AllowExternalDrop = true;
+		TabCore.AllowDrop = true;
+		TabCore.UseLayoutRounding = true;
 		_instance = instance;
 		
 		TabCore.DefaultBackgroundColor = Color.Black;

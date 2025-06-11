@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -39,21 +41,33 @@ public partial class BrowserApplicationWindow : Window
 
 	internal Task InitTask;
 	
-	private Timer _blurUpdateTimer;
-	
 	public BrowserApplicationWindow(InstanceManager instanceData)
 	{
 		InitializeComponent();
+		
 		SetupAnimationsAndColors();
+
+		StateChanged += (s, e) =>
+		{
+			Background = new SolidColorBrush(WindowState == WindowState.Maximized ? HighlightColor : Colors.Transparent);
+		};
+
+		ButtonClose.Click += (s, e) => { Close(); };
+		ButtonMinimize.Click += (s, e) => { WindowState = WindowState.Minimized; };
 		
 		_instanceData = instanceData;
 		TabManager = new TabManager(_instanceData);
 		InitTask = Initialize();
 
-		_blurUpdateTimer = new Timer((_) =>
+		BlurredBackground.Effect = new BlurEffect { Radius = 25 };
+		BlurredBackground.Opacity = 0.5;
+		var visualBrush = new VisualBrush(TabHolder)
 		{
-			Dispatcher.Invoke(UpdateBlurredBackground);
-		}, null, 0, 100);
+			Stretch = Stretch.UniformToFill,
+			TileMode = TileMode.None,
+			Transform = new ScaleTransform(1.3, 1.3, 0.5, 0.5)
+		};
+		BlurredBackground.Background = visualBrush;
 
 		SearchButton.Click += async (s, e) => await Search_Click(s, e);
 
@@ -177,24 +191,6 @@ public partial class BrowserApplicationWindow : Window
 		};
 	}
 	
-	private void UpdateBlurredBackground()
-	{
-		if (TabHolder.ActualWidth > 0 && TabHolder.ActualHeight > 0)
-		{
-			var visualBrush = new VisualBrush(TabHolder)
-			{
-				Stretch = Stretch.UniformToFill,
-				TileMode = TileMode.None,
-				Transform = new ScaleTransform(1.2, 1.2, 0.5, 0.5)
-			};
-        
-			BlurredBackground.Background = visualBrush;
-			BlurredBackground.Effect = new BlurEffect { Radius = 25 };
-			BlurredBackground.Opacity = 0.5;
-		}
-	}
-
-	
 	private async Task Search_Click(object? s, EventArgs e)
 	{
 		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
@@ -212,8 +208,8 @@ public partial class BrowserApplicationWindow : Window
 		}
 	}
 	
-	private readonly Color _transparentBack = Color.FromArgb(175, 48, 50, 58);
-	private readonly Color _transparentAccent = Color.FromArgb(200, AccentColor.R, AccentColor.G, AccentColor.B);
+	private readonly Color _transparentBack = Color.FromArgb(225, 48, 50, 58);
+	private readonly Color _transparentAccent = Color.FromArgb(255, AccentColor.R, AccentColor.G, AccentColor.B);
 	private void SetupAnimationsAndColors(/*TODO*/)
 	{
 		var hoverColor = Color.FromArgb(50,255,255,255);
@@ -228,7 +224,7 @@ public partial class BrowserApplicationWindow : Window
 
 		foreach (var b in (Button[])
 		         [
-			         ButtonMaximize, ButtonMinimize, ButtonMenu,
+			         ButtonFullscreen, ButtonMaximize, ButtonMinimize, ButtonMenu,
 			         BackButton, ForwardButton, RefreshButton,
 			         SearchButton,
 		         ])
@@ -262,10 +258,179 @@ public partial class BrowserApplicationWindow : Window
 			? Visibility.Visible 
 			: Visibility.Collapsed;
 	}
-
 	
 	#region ResizeWindows
+	public bool BorderlessFullscreen { get; set; } = false;
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var hwnd = new WindowInteropHelper(this).Handle;
+        HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
+    }
+
+    private IntPtr WndProc(
+        IntPtr hwnd,
+        int msg,
+        IntPtr wParam,
+        IntPtr lParam,
+        ref bool handled)
+    {
+        const int WM_GETMINMAXINFO      = 0x0024;
+        const int WM_WINDOWPOSCHANGING  = 0x0046;
+
+        if (msg == WM_WINDOWPOSCHANGING)
+        {
+            HandleWindowPosChanging(hwnd, lParam);
+            // don’t mark handled = true here, let default still apply
+        }
+        else if (msg == WM_GETMINMAXINFO)
+        {
+            WmGetMinMaxInfo(hwnd, lParam);
+            handled = true;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private void HandleWindowPosChanging(IntPtr hwnd, IntPtr lParam)
+    {
+        // only care if we’re “maximized”
+        if (WindowState != WindowState.Maximized) return;
+
+        // pull in the proposed new pos/size
+        var wp = Marshal.PtrToStructure<WINDOWPOS>(lParam);
+
+        // build a RECT of that
+        var proposed = new RECT
+        {
+            left   = wp.x,
+            top    = wp.y,
+            right  = wp.x + wp.cx,
+            bottom = wp.y + wp.cy
+        };
+
+        // figure out which monitor THAT rect is on
+        IntPtr hMon = MonitorFromRect(ref proposed, MONITOR_DEFAULTTONEAREST);
+        if (hMon == IntPtr.Zero) return;
+
+        var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        GetMonitorInfo(hMon, ref mi);
+
+        RECT rcMon  = mi.rcMonitor;  // full
+        RECT rcWork = mi.rcWork;     // work area
+
+        if (BorderlessFullscreen)
+        {
+            wp.x  = rcMon.left;
+            wp.y  = rcMon.top;
+            wp.cx = rcMon.right  - rcMon.left;
+            wp.cy = rcMon.bottom - rcMon.top;
+        }
+        else
+        {
+            wp.x  = rcWork.left;
+            wp.y  = rcWork.top;
+            wp.cx = rcWork.right  - rcWork.left;
+            wp.cy = rcWork.bottom - rcWork.top;
+        }
+
+        // write it back
+        Marshal.StructureToPtr(wp, lParam, true);
+    }
+
+    private void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
+    {
+        // fallback when WM_WINDOWPOSCHANGING isn’t enough
+        var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+        GetWindowRect(hwnd, out RECT winRect);
+
+        IntPtr hMon = MonitorFromRect(ref winRect, MONITOR_DEFAULTTONEAREST);
+        if (hMon != IntPtr.Zero)
+        {
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            GetMonitorInfo(hMon, ref mi);
+
+            RECT rcMon  = mi.rcMonitor;
+            RECT rcWork = mi.rcWork;
+
+            if (BorderlessFullscreen)
+            {
+                mmi.ptMaxPosition.x = 0;
+                mmi.ptMaxPosition.y = 0;
+                mmi.ptMaxSize.x     = rcMon.right  - rcMon.left;
+                mmi.ptMaxSize.y     = rcMon.bottom - rcMon.top;
+            }
+            else
+            {
+                mmi.ptMaxPosition.x = rcWork.left - rcMon.left;
+                mmi.ptMaxPosition.y = rcWork.top  - rcMon.top;
+                mmi.ptMaxSize.x     = rcWork.right  - rcWork.left;
+                mmi.ptMaxSize.y     = rcWork.bottom - rcWork.top;
+            }
+        }
+
+        Marshal.StructureToPtr(mmi, lParam, true);
+    }
+
+    #region Interop
+
+    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [DllImport("user32.dll")]
+    static extern bool GetMonitorInfo(
+        IntPtr hMonitor,
+        ref MONITORINFO lpmi);
+
+    [DllImport("user32.dll")]
+    static extern IntPtr MonitorFromRect(
+        [In] ref RECT lprc,
+        uint dwFlags);
+
+    [DllImport("user32.dll")]
+    static extern bool GetWindowRect(
+        IntPtr hWnd,
+        out RECT lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct WINDOWPOS
+    {
+        public IntPtr hwnd;
+        public IntPtr hwndInsertAfter;
+        public int x, y, cx, cy;
+        public uint flags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct POINT { public int x, y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct RECT
+    {
+        public int left, top, right, bottom;
+    }
+
+    #endregion
+	
 	private bool _resizeInProcess;
 
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -608,20 +773,20 @@ public partial class BrowserApplicationWindow : Window
 
 	private void OpenHistory()
 	{
-		var tier = RenderCapability.Tier >> 16;
-		switch (tier)
-		{
-			case 0:
-				Console.WriteLine("No hardware acceleration (rendering tier 0).");
-				break;
-			case 1:
-				Console.WriteLine("Partial hardware acceleration (rendering tier 1).");
-				break;
-			case 2:
-				Console.WriteLine("Full hardware acceleration (rendering tier 2).");
-				break;
-		}
-		//throw new NotImplementedException();
+		// var tier = RenderCapability.Tier >> 16;
+		// switch (tier)
+		// {
+		// 	case 0:
+		// 		Console.WriteLine("No hardware acceleration (rendering tier 0).");
+		// 		break;
+		// 	case 1:
+		// 		Console.WriteLine("Partial hardware acceleration (rendering tier 1).");
+		// 		break;
+		// 	case 2:
+		// 		Console.WriteLine("Full hardware acceleration (rendering tier 2).");
+		// 		break;
+		// }
+		throw new NotImplementedException();
 	}
 
 	private void OpenDownloads()

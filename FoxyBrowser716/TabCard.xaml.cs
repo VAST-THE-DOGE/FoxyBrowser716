@@ -117,8 +117,8 @@ public partial class TabCard
         RootPanel.MouseLeave += (_, _) => { ChangeColorAnimation(RootBorder.Background, ((SolidColorBrush)RootBorder.Background).Color, _transparentBack); };
     }
         
-    private readonly Color _transparentBack = Color.FromArgb(175, 48, 50, 58);
-    private readonly Color _transparentAccent = Color.FromArgb(200, AccentColor.R, AccentColor.G, AccentColor.B);
+    private readonly Color _transparentBack = Color.FromArgb(225, 48, 50, 58);
+    private readonly Color _transparentAccent = Color.FromArgb(255, AccentColor.R, AccentColor.G, AccentColor.B);
     private readonly Color _transparentHighlight = Color.FromArgb(255, HighlightColor.R, HighlightColor.G, HighlightColor.B);
     public void ToggleActiveTo(bool active)
     {

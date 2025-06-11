@@ -121,20 +121,20 @@
                 <Border Background="#000000" BorderBrush="#363840"
                         BorderThickness="2" CornerRadius="10,10,10,10"
                         VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                        Margin="35,25,0,0" ClipToBounds="True">
-                    <Grid Name="TabHolder" ClipToBounds="True">
-                        <Grid.OpacityMask>
-                            <VisualBrush>
-                                <VisualBrush.Visual>
-                                    <Border Background="Black" CornerRadius="10,10,10,10" 
-                                            Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}"
-                                            Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"/>
-                                </VisualBrush.Visual>
-                            </VisualBrush>
-                        </Grid.OpacityMask>
-                    </Grid>
+                        Margin="30,25,0,0" ClipToBounds="True">
+                <Grid Name="TabHolder" ClipToBounds="True">
+                    <Grid.OpacityMask>
+                        <VisualBrush>
+                            <VisualBrush.Visual>
+                                <Border Background="Black" CornerRadius="10,10,10,10" 
+                                        Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}"
+                                        Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"/>
+                            </VisualBrush.Visual>
+                        </VisualBrush>
+                    </Grid.OpacityMask>
+                </Grid>
                 </Border>
-                <Border Background="#7730323A" BorderBrush="#77363840"
+                <Border Background="#7730323A" BorderBrush="#363840"
                         BorderThickness="2" CornerRadius="10,10,10,0"
                         Height="25" VerticalAlignment="Top"
                         Margin="0"
@@ -169,15 +169,15 @@
                                     <Button Grid.Column="0" Name="RefreshButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=Refresh}"
-                                            Style="{StaticResource CircularButtonStyle}"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
                                     <Button Grid.Column="1" Name="BackButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=ArrowLeft}"
-                                            Style="{StaticResource CircularButtonStyle}"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
                                     <Button Grid.Column="2" Name="ForwardButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=ArrowRight}"
-                                            Style="{StaticResource CircularButtonStyle}"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
                     
                     
                                     <Grid Grid.Column="3" Height="20">
@@ -194,7 +194,7 @@
                                     <Button Grid.Column="4" Name="SearchButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000" Foreground="#ffffff"
                                             Content="{wpf:MaterialIconExt Kind=Search}"
-                                            Style="{StaticResource CircularButtonStyle}"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,-4,0"/>
                                 </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
@@ -205,14 +205,17 @@
                             <Button Name="ButtonMaximize" Width="20" Height="20" BorderThickness="0" Background="#00000000" BorderBrush="#00000000" Margin="5,0,0,0"
                                     Foreground="#ffffff"
                                     Style="{StaticResource CircularButtonStyle}"/>
+                            <Button Name="ButtonFullscreen" Width="20" Height="20" BorderThickness="0" Background="#00000000" BorderBrush="#00000000" Margin="5,0,0,0"
+                                    Foreground="#ffffff"
+                                    Style="{StaticResource CircularButtonStyle}"/>
                             <Button Name="ButtonClose" Width="20" Height="20" BorderThickness="0" Background="#00000000" BorderBrush="#00000000" Margin="5,0,0,0"
                                     Foreground="#ffffff"  Content="{wpf:MaterialIconExt Kind=Close}" 
                                     Style="{StaticResource CircularButtonStyle}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
-                <Border  Name="LeftBar" Background="#7730323A" BorderBrush="#77363840" 
-                         BorderThickness="2" CornerRadius="0,10,10,10"
+                <Border  Name="LeftBar" Background="#7730323A" BorderBrush="#363840" 
+                         BorderThickness="2" CornerRadius="0,5,7,10"
                          Width="30" VerticalAlignment="Stretch" HorizontalAlignment="Left"
                          Margin="0,25,0,0"
                          Panel.ZIndex="99999">
