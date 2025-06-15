@@ -1378,13 +1378,14 @@ public partial class BrowserApplicationWindow : Window
 		}
 	}
 	
+	
+	
 	#region Extension Popup stuff
 	public class ExtensionPopupWindow : Window
 	{
 		public readonly WebView2CompositionControl _webView2;
 		private readonly WebsiteTab _parentTab;
 		private readonly TabManager _tabManager;
-		// private static int _popupCounter = 1000000000; //TODO: probably not an issue, but fix this later
 
 		public ExtensionPopupWindow(string popupUrl, CoreWebView2Environment environment, WebsiteTab parentTab,
 			TabManager tabManager)
@@ -1405,190 +1406,10 @@ public partial class BrowserApplicationWindow : Window
 			SourceInitialized  += async (_, _) =>
 			{
 				await _webView2.EnsureCoreWebView2Async(environment);
-				// // await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-				// // 	"""
-				// // 	(function() {
-				// // 	  // 1) Keep a reference to the real one
-				// // 	  const realGetCurrent = chrome.windows.getCurrent.bind(chrome.windows);
-				// // 	
-				// // 	  // 2) Override it
-				// // 	  chrome.windows.getCurrent = function(getInfoOrCallback, maybeCallback) {
-				// // 	    // Signature allows two styles: getCurrent(callback)  OR  getCurrent({populate:bool}, callback)
-				// // 	    let getInfo = {};
-				// // 	    let callback;
-				// // 	
-				// // 	    if (typeof getInfoOrCallback === "function") {
-				// // 	      callback = getInfoOrCallback;
-				// // 	    } else {
-				// // 	      getInfo = getInfoOrCallback || {};
-				// // 	      callback = maybeCallback;
-				// // 	    }
-				// // 	
-				// // 	    // 3) Call the real one to get a Window object (ChromeWindowModel)
-				// // 	    realGetCurrent(getInfo, (windowObj) => {
-				// // 	      // Push it up to C#
-				// // 	      window.chrome.webview.postMessage({
-				// // 	        type: "windowsGetCurrent",
-				// // 	        payload: windowObj
-				// // 	      });
-				// // 	
-				// // 	      // 4) Wait for C# to send back a "windowsGetCurrentResponse"
-				// // 	      function onHostMessage(ev) {
-				// // 	        let msg = ev.data;
-				// // 	        if (msg.type === "windowsGetCurrentResponse") {
-				// // 	          window.chrome.webview.removeEventListener("message", onHostMessage);
-				// // 	          // Invoke the original callback with the patched window object
-				// // 	          callback(msg.payload);
-				// // 	        }
-				// // 	      }
-				// // 	      window.chrome.webview.addEventListener("message", onHostMessage);
-				// // 	    });
-				// // 	  };
-				// // 	})();
-				// // 	""");
-				// await _webView2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
-				// 	"(function() {\n  // Keep a reference to the real chrome.tabs.query\n  const realQuery = chrome.tabs.query.bind(chrome.tabs);\n\n  chrome.tabs.query = function(queryInfo, maybeCallback) {\n    // Determine if the caller passed a callback or expects a Promise\n    const isCallbackStyle = typeof maybeCallback === \"function\";\n    const userCallback = isCallbackStyle ? maybeCallback : null;\n\n    // Helper to do the real query + postMessage → wait for response\n    function doQueryWithHost(queryInfo, resolver) {\n      // 1) Call the real (Chromium) tabs.query(queryInfo, ...)\n      realQuery(queryInfo, (tabsArray) => {\n        // 2) Send raw list + queryInfo to C# so it can filter 'active' (etc.)\n        window.chrome.webview.postMessage({\n          type: \"tabsQuery\",\n          payload: {\n            tabs: tabsArray,\n            queryInfo: queryInfo\n          }\n        });\n\n        // 3) Listen for a single \"tabsQueryResponse\" from C#\n        function handleHostMessage(ev) {\n          const msg = ev.data;\n          if (msg.type === \"tabsQueryResponse\") {\n            window.chrome.webview.removeEventListener(\"message\", handleHostMessage);\n            // Now we have the filtered/fixed array\n            resolver(msg.payload);\n          }\n        }\n        window.chrome.webview.addEventListener(\"message\", handleHostMessage);\n      });\n    }\n\n    if (isCallbackStyle) {\n      // Old callback style: we need to pass queryInfo and a callback\n      doQueryWithHost(queryInfo, (fixedTabs) => {\n        // just call the original callback with the fixed array\n        userCallback(fixedTabs);\n      });\n      return; // no return value in callback style\n    } else {\n      // Promise style: return a Promise that resolves with the fixed array\n      return new Promise((resolve) => {\n        doQueryWithHost(queryInfo, resolve);\n      });\n    }\n  };\n})();\n");
-				// _webView2.CoreWebView2.NewWindowRequested += (_, e) =>
-				// {
-				// 	_tabManager.SwapActiveTabTo(_tabManager.AddTab(e.Uri));
-				// 	e.Handled = true;
-				// };
-				// _webView2.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
-				//
 				_webView2.Source = new Uri(popupUrl/*+"#586966453"*/);
 			};
 		}
-		
-		// private async void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
-		// {
-		// 	var json = e.WebMessageAsJson;
-		//
-		// 	using var doc = JsonDocument.Parse(json);
-		// 	var root = doc.RootElement;
-		// 	if (root.GetProperty("type").GetString() == "tabsQuery")
-		// 	{
-		// 		var payload = root.GetProperty("payload");
-		// 		var tabsJson = payload.GetProperty("tabs").GetRawText();
-		// 		var allTabs = JsonSerializer.Deserialize<List<TabModel>>(tabsJson);
-		// 		
-		// 		var activeUrl = _tabManager.GetTab(_tabManager.ActiveTabId)!.TabCore.Source.ToString();
-		// 		foreach (var t in allTabs!)
-		// 		{
-		// 			t.Active = t.Url == activeUrl;
-		// 		}
-		//
-		// 		var queryInfoJson = payload.GetProperty("queryInfo").GetRawText();
-		// 		var queryInfo = JsonSerializer.Deserialize<QueryInfoModel>(queryInfoJson);
-		// 		if (queryInfo?.active??false)
-		// 		{
-		// 			allTabs = allTabs.Where(t => t.Active).ToList();
-		// 		}
-		// 		
-		// 		
-		// 		// Send it back:
-		// 		var replyObj = new
-		// 		{
-		// 			type = "tabsQueryResponse",
-		// 			payload = allTabs
-		// 		};
-		// 		string replyJson = JsonSerializer.Serialize(replyObj);
-		// 		_webView2.CoreWebView2.PostWebMessageAsJson(replyJson);
-		// 	}
-		// }
 	}
 	
-	public class QueryInfoModel
-	{
-		public bool active { get; set; }
-		public bool lastFocusedWindow { get; set; } //TODO
-	}
-	
-	public class TabModel
-{
-    [JsonPropertyName("id")]
-    public int? Id { get; set; }            // Tab ID (null if not yet created)
-
-    [JsonPropertyName("index")]
-    public int Index { get; set; }          // Position within the window's tab strip
-
-    [JsonPropertyName("windowId")]
-    public int WindowId { get; set; }       // ID of the window this tab belongs to
-
-    [JsonPropertyName("openerTabId")]
-    public int? OpenerTabId { get; set; }   // If this tab was opened via window.open or browser.tabs.create from another tab
-
-    [JsonPropertyName("highlighted")]
-    public bool Highlighted { get; set; }   // True if the tab is highlighted
-
-    [JsonPropertyName("active")]
-    public bool Active { get; set; }        // True if this is the active (focused) tab in its window
-
-    [JsonPropertyName("pinned")]
-    public bool Pinned { get; set; }        // True if the tab is pinned
-
-    [JsonPropertyName("audible")]
-    public bool? Audible { get; set; }      // True if tab is producing sound (optional)
-
-    [JsonPropertyName("discarded")]
-    public bool Discarded { get; set; }     // True if the tab was automatically discarded
-
-    [JsonPropertyName("autoDiscardable")]
-    public bool AutoDiscardable { get; set; } // True if the tab can be discarded automatically
-
-    [JsonPropertyName("mutedInfo")]
-    public MutedInfoModel MutedInfo { get; set; }  // Information about mute state
-
-    [JsonPropertyName("status")]
-    public string Status { get; set; }      // "loading" or "complete"
-
-    [JsonPropertyName("title")]
-    public string Title { get; set; }       // Page title of the tab
-
-    [JsonPropertyName("url")]
-    public string Url { get; set; }         // URL of the tab
-
-    [JsonPropertyName("favIconUrl")]
-    public string FavIconUrl { get; set; }  // URL of the tab's favicon (if any)
-
-    [JsonPropertyName("incognito")]
-    public bool Incognito { get; set; }     // True if the tab is in incognito mode
-
-    [JsonPropertyName("width")]
-    public int? Width { get; set; }         // Width (px) of the rendered tab (optional)
-
-    [JsonPropertyName("height")]
-    public int? Height { get; set; }        // Height (px) of the rendered tab (optional)
-
-    [JsonPropertyName("sessionId")]
-    public string SessionId { get; set; }   // A unique session ID for the tab (if session restore is on)
-
-    [JsonPropertyName("discardReason")]
-    public string DiscardReason { get; set; } // Reason why the tab was discarded (optional)
-
-    [JsonPropertyName("mutedReason")]
-    public string MutedReason { get; set; }   // Why the tab was muted (e.g. "user", "capture", "extension") (optional)
-
-    [JsonPropertyName("audibleState")]
-    public string AudibleState { get; set; } // E.g. "audible", "silent", or "unknown" (in newer Chrome versions)
-
-    // If an extension or content script has inserted its own “highlighted” field or other custom properties,
-    // you may need to add those here, but for vanilla Chrome/Edge these cover the official spec.
-}
-
-	// Model for the “mutedInfo” sub‐object:
-	public class MutedInfoModel
-	{
-	    [JsonPropertyName("muted")]
-	    public bool Muted { get; set; }           // true if the tab is currently muted
-
-	    [JsonPropertyName("extensionId")]
-	    public string ExtensionId { get; set; }   // Which extension muted it (optional)
-
-	    [JsonPropertyName("reason")]
-	    public string Reason { get; set; }        // e.g. "user", "capture", "extension", or "system" (optional)
-
-	    [JsonPropertyName("disabled")]
-	    public bool Disabled { get; set; }        // true if the tab is forced unmuted even if “muted” is true
-	}
 	#endregion
 }

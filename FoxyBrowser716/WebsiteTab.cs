@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Web;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,6 +38,8 @@ public class WebsiteTab
 		
 	private static int _tabCounter;
 	private InstanceManager _instance;
+
+	public int ChromeTabId { get; private set; }
 
 	public Dictionary<string, (string Name, string Path)> Extensions = [];
 

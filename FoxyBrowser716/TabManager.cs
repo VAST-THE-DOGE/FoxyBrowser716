@@ -149,6 +149,7 @@ public class TabManager
 			{
 				if (tab.TabCore.CoreWebView2.IsSuspended)
 					tab.TabCore.CoreWebView2.Resume();
+				tab.TabCore.Focus();
 			}, TaskScheduler.FromCurrentSynchronizationContext());
 		} else if (tabId >= 0)
 		{
