@@ -206,4 +206,5 @@ public class TabManager
 		
 		return Task.FromResult(tab.TabId);
 	}
+	
 }
