@@ -79,7 +79,7 @@ public partial class ErrorPopup : Window
 			
 			var windowCount = Application.Current.Windows.Count;
 			sb.AppendLine($"All Windows Count (includes error dialog): {windowCount}");
-			sb.AppendLine($"BrowserWindows Count: {ServerManager.Context.BrowserWindows.Count}");
+			sb.AppendLine($"BrowserWindows Count: {ServerManager.Context.AllBrowserWindows.Count}");
 		}
 		catch (Exception ex)
 		{

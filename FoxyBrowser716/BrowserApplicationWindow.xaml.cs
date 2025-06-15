@@ -28,39 +28,133 @@ public partial class BrowserApplicationWindow : Window
 {
 	private HomePage _homePage;
 	private SettingsPage _settingsPage;
-
-	private bool _inFullscreen;
-
+	
 	private List<ExtensionPopupWindow> _extensionPopups = [];
 
-	private System.Windows.Rect _originalRectangle;
+	private System.Windows.Rect _originalRectangle = new(0,0,350,200);
 
 	internal readonly TabManager TabManager;
 
 	private InstanceManager _instanceData;
 
 	internal Task InitTask;
+
+	private WindowState _prevWindowState = WindowState.Normal;
+	private WindowState _curWindowState = WindowState.Normal;
+	
+	private IntPtr _hwnd;
+
+	private bool ignoreNextStateChange;
 	
 	public BrowserApplicationWindow(InstanceManager instanceData)
 	{
 		InitializeComponent();
 		
 		SetupAnimationsAndColors();
-
-		StateChanged += (s, e) =>
+		
+		SourceInitialized += (_, _) =>
 		{
-			Background = new SolidColorBrush(WindowState == WindowState.Maximized ? HighlightColor : Colors.Transparent);
+			_hwnd = new WindowInteropHelper(this).Handle;
 		};
 
+		Loaded += (_, _) =>
+		{
+			_originalRectangle = new Rect(Left, Top, Width, Height);
+		};
+		
+		StateChanged += (_, _) =>
+		{
+			_prevWindowState = _curWindowState;
+			_curWindowState = WindowState;
+			
+			if (_curWindowState == WindowState.Maximized)
+			{
+				ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.WindowRestore };
+				ButtonFullscreen.Content = BorderlessFullscreen 
+					? new MaterialIcon { Kind = MaterialIconKind.ArrowCollapse } 
+					: new MaterialIcon { Kind = MaterialIconKind.ArrowExpand };
+			}
+			else
+			{
+				ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Maximize };
+				ButtonFullscreen.Content = new MaterialIcon { Kind = MaterialIconKind.ArrowExpand };
+			}
+			
+			if (_curWindowState == WindowState.Normal)
+			{
+				if (!ignoreNextStateChange)
+				{
+					#region WindowResizingStuff
+					var oldRect = new RECT {
+						left   = (int)_originalRectangle.X, top    = (int)_originalRectangle.Y,
+						right  = (int)(_originalRectangle.X + _originalRectangle.Width),
+						bottom = (int)(_originalRectangle.Y + _originalRectangle.Height)
+					};
+					var oldMon = MonitorFromRect(ref oldRect, MONITOR_DEFAULTTONEAREST);
+					var miOld = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+					GetMonitorInfo(oldMon, ref miOld);
+					var waOld = miOld.rcWork;
+					var oldWorkArea = new Rect(waOld.left, waOld.top,
+						waOld.right - waOld.left, waOld.bottom - waOld.top);
+					
+					var relX = (_originalRectangle.X - oldWorkArea.Left) / oldWorkArea.Width;
+					var relY = (_originalRectangle.Y - oldWorkArea.Top) / oldWorkArea.Height;
+
+					var hMonNew = MonitorFromWindow(_hwnd, MONITOR_DEFAULTTONEAREST);
+					var miNew = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+					GetMonitorInfo(hMonNew, ref miNew);
+					var waNew = miNew.rcWork;
+
+					Left   = waNew.left + relX * (waNew.right - waNew.left);
+					Top    = waNew.top  + relY * (waNew.bottom - waNew.top);
+					Width  = _originalRectangle.Width;
+					Height = _originalRectangle.Height;
+					#endregion
+				}
+			}
+			
+			Background = new SolidColorBrush(WindowState == WindowState.Maximized ? HighlightColor : Colors.Transparent);
+			ignoreNextStateChange = false;
+		};
+		
+		ForwardButton.Visibility = Visibility.Collapsed;
+		BackButton.Visibility = Visibility.Collapsed;
+		RefreshButton.Visibility = Visibility.Collapsed;
+		
+		ForwardButton.Click += (_, _) =>
+		{
+			if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
+			{
+				tab.TabCore.GoForward();
+			}
+		};
+		BackButton.Click += (_, _) =>
+		{
+			if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
+			{
+				tab.TabCore.GoBack();
+			}
+		};
+		RefreshButton.Click += (_, _) =>
+		{
+			if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
+			{
+				tab.TabCore.Reload();
+			}
+		};
+		
 		ButtonClose.Click += (s, e) => { Close(); };
 		ButtonMinimize.Click += (s, e) => { WindowState = WindowState.Minimized; };
+		
+		ButtonMaximize.Click += MaximizeRestore_Click;
+		ButtonFullscreen.Click += FullscreenRestore_Click;
 		
 		_instanceData = instanceData;
 		TabManager = new TabManager(_instanceData);
 		InitTask = Initialize();
 
 		BlurredBackground.Effect = new BlurEffect { Radius = 25 };
-		BlurredBackground.Opacity = 0.5;
+		BlurredBackground.Opacity = 1;
 		var visualBrush = new VisualBrush(TabHolder)
 		{
 			Stretch = Stretch.UniformToFill,
@@ -74,8 +168,9 @@ public partial class BrowserApplicationWindow : Window
 		//StateChanged += Window_StateChanged;
 		//Window_StateChanged(null, EventArgs.Empty);
 		
-		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Fullscreen };
-
+		ButtonMaximize.Content = new MaterialIcon { Kind = MaterialIconKind.Maximize };
+		ButtonFullscreen.Content = new MaterialIcon { Kind = MaterialIconKind.ArrowExpand };
+		
 		AddTabStack.MouseEnter += (_, _) =>
 		{
 			ChangeColorAnimation(AddTabStack.Background, _transparentBack, _transparentAccent);
@@ -173,11 +268,11 @@ public partial class BrowserApplicationWindow : Window
 		LeftBar.MouseEnter += LeftBarMouseEnter;
 		LeftBar.MouseLeave += LeftBarMouseLeave;
 
-		SearchBox.KeyDown += (_, e) =>
+		SearchBox.KeyDown += async (_, e) =>
 		{
 			if (e.Key == Key.Enter)
 			{
-				Search_Click(null, EventArgs.Empty);
+				await Search_Click(null, EventArgs.Empty);
 			}
 		};
 
@@ -193,23 +288,28 @@ public partial class BrowserApplicationWindow : Window
 	
 	private async Task Search_Click(object? s, EventArgs e)
 	{
-		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
-
-		var tabCore = tab.TabCore;
-		await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-
-		try
+		if (TabManager.GetTab(TabManager.ActiveTabId) is { } tab)
 		{
-			tabCore.CoreWebView2.Navigate(SearchBox.Text);
+			var tabCore = tab.TabCore;
+			await tabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+
+			try
+			{
+				tabCore.CoreWebView2.Navigate(SearchBox.Text);
+			}
+			catch
+			{
+				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
+			}
 		}
-		catch
+		else
 		{
-			tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
+			TabManager.SwapActiveTabTo(TabManager.AddTab(Uri.EscapeDataString(SearchBox.Text)));
 		}
 	}
 	
-	private readonly Color _transparentBack = Color.FromArgb(225, 48, 50, 58);
-	private readonly Color _transparentAccent = Color.FromArgb(255, AccentColor.R, AccentColor.G, AccentColor.B);
+	private static readonly Color _transparentBack = Color.FromArgb(225, 48, 50, 58);
+	private static readonly Color _transparentAccent = Color.FromArgb(255, AccentColor.R, AccentColor.G, AccentColor.B);
 	private void SetupAnimationsAndColors(/*TODO*/)
 	{
 		var hoverColor = Color.FromArgb(50,255,255,255);
@@ -241,7 +341,7 @@ public partial class BrowserApplicationWindow : Window
 	{
 		UpdatePlaceholderVisibility();
 	}
-    
+	
 	private void TextBox_GotFocus(object sender, RoutedEventArgs e)
 	{
 		UpdatePlaceholderVisibility();
@@ -378,6 +478,9 @@ public partial class BrowserApplicationWindow : Window
     private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
 
     [DllImport("user32.dll")]
+    static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+    
+    [DllImport("user32.dll")]
     static extern bool GetMonitorInfo(
         IntPtr hMonitor,
         ref MONITORINFO lpmi);
@@ -432,20 +535,112 @@ public partial class BrowserApplicationWindow : Window
     #endregion
 	
 	private bool _resizeInProcess;
+	private bool wasMaximizedBeforeFullscreen;
 
+	private bool _potentialDrag;
+	private Point _mouseDownPos;
+
+	private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+	{
+		_potentialDrag = false;
+	}
+	
+	private void TitleBar_MouseMove(object sender, MouseEventArgs e)
+	{
+		if (!_potentialDrag || e.LeftButton != MouseButtonState.Pressed)
+			return;
+
+		var currentPos = e.GetPosition(this);
+		var dx = Math.Abs(currentPos.X - _mouseDownPos.X);
+		var dy = Math.Abs(currentPos.Y - _mouseDownPos.Y);
+
+		if (dx >= SystemParameters.MinimumHorizontalDragDistance * 3 ||
+		    dy >= SystemParameters.MinimumVerticalDragDistance * 3)
+		{
+			_potentialDrag = false;
+			#region WindowResizeStuff
+			var click = e.GetPosition(this);
+			var screenClick = PointToScreen(click);
+
+			var hMon = MonitorFromWindow(_hwnd, MONITOR_DEFAULTTONEAREST);
+			var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+			GetMonitorInfo(hMon, ref mi);
+			var wa = mi.rcWork;
+			double maxW = wa.right - wa.left;
+			double maxH = wa.bottom - wa.top;
+
+			var scaleX = _originalRectangle.Width  / maxW;
+			var scaleY = _originalRectangle.Height / maxH;
+
+			var offsetX = click.X * scaleX;
+			var offsetY = click.Y * scaleY;
+
+			ignoreNextStateChange = true;
+			WindowState = WindowState.Normal;
+
+			Width  = _originalRectangle.Width;
+			Height = _originalRectangle.Height;
+			Left   = screenClick.X - offsetX;
+			Top    = screenClick.Y - offsetY;
+			#endregion
+			DragMove();
+		}
+	}
+	
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
 		if (e.ClickCount == 2)
 		{
-			// MaximizeRestore_Click(null, EventArgs.Empty);
+			MaximizeRestore_Click(null, EventArgs.Empty);
+			return;
+		}
+		
+		if (WindowState != WindowState.Normal)
+		{
+			_potentialDrag = true;
 		}
 		else
 		{
-			// if (_inFullscreen)
-			// 	ExitFullscreen(true);
-			//
-			// _originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
 			DragMove();
+		}
+	}
+	
+	private void FullscreenRestore_Click(object? sender, EventArgs e)
+	{
+		if (BorderlessFullscreen)
+		{
+			BorderlessFullscreen = false;
+			if (!wasMaximizedBeforeFullscreen)
+				WindowState = WindowState.Normal;
+			else
+			{
+				WindowState = WindowState.Normal;
+				WindowState = WindowState.Maximized;
+			}
+		}
+		else
+		{
+			wasMaximizedBeforeFullscreen = WindowState == WindowState.Maximized;
+			if (!wasMaximizedBeforeFullscreen)
+				_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
+			else
+				WindowState = WindowState.Normal;
+			BorderlessFullscreen = true;
+			WindowState = WindowState.Maximized;
+		}
+	}
+	
+	private void MaximizeRestore_Click(object? sender, EventArgs e)
+	{
+		if (WindowState == WindowState.Maximized)
+		{
+			BorderlessFullscreen = false;
+			WindowState = WindowState.Normal;
+		}
+		else
+		{
+			_originalRectangle = new System.Windows.Rect(Left, Top, Width, Height);
+			WindowState = WindowState.Maximized;
 		}
 	}
 	
@@ -645,21 +840,10 @@ public partial class BrowserApplicationWindow : Window
 
 	private ContextMenu _menu = new()
 	{
-		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
-		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
-		BorderThickness = new Thickness(1),
-		Padding = new Thickness(0),
-		Margin = new Thickness(0),
-		StaysOpen = true,
-		Focusable = true,
-		HorizontalOffset = 30,
-	};
-
-	private ContextMenu _secondaryMenu = new()
-	{
-		Background = new SolidColorBrush(Color.FromRgb(30, 30, 45)),
-		BorderBrush = new SolidColorBrush(Color.FromRgb(255, 145, 15)),
-		BorderThickness = new Thickness(1),
+		Background = new SolidColorBrush(_transparentBack),
+		BorderBrush = new SolidColorBrush(_transparentAccent),
+		BorderThickness = new Thickness(2), 
+		HasDropShadow = true, 
 		Padding = new Thickness(0),
 		Margin = new Thickness(0),
 		StaysOpen = true,
@@ -741,19 +925,19 @@ public partial class BrowserApplicationWindow : Window
 				i => async () =>
 				{
 					if (openNewWindow)
-						await ServerManager.Context.CreateWindow(null, null, i);
+						await i.CreateWindow();
 					else
 					{
-						await ServerManager.Context.CreateWindow(new System.Windows.Rect(Left, Top, Width, Height),
-							_inFullscreen, i);
+						await i.CreateWindow(null, new System.Windows.Rect(Left, Top, Width, Height),
+							InstanceManager.StateFromWindow(this));
 						Close();
 					}
 				});
 		instanceOptions.Add("Manage Instances", () => throw new NotImplementedException());
-		ApplyMenuItems(_secondaryMenu, instanceOptions);
-		_secondaryMenu.PlacementTarget = ButtonMenu;
-		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-		_secondaryMenu.IsOpen = true;
+		ApplyMenuItems(_menu, instanceOptions);
+		_menu.PlacementTarget = ButtonMenu;
+		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_menu.IsOpen = true;
 	}
 
 	private void OpenBookmark(string url)
@@ -763,12 +947,12 @@ public partial class BrowserApplicationWindow : Window
 
 	private void OpenBookmarks()
 	{
-		ApplyMenuItems(_secondaryMenu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
+		ApplyMenuItems(_menu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
 			.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
 		);
-		_secondaryMenu.PlacementTarget = ButtonMenu;
-		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-		_secondaryMenu.IsOpen = true;
+		_menu.PlacementTarget = ButtonMenu;
+		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_menu.IsOpen = true;
 	}
 
 	private void OpenHistory()
@@ -855,7 +1039,7 @@ public partial class BrowserApplicationWindow : Window
 		if (TabManager.GetTab(TabManager.ActiveTabId) is not { } tab) return;
 
 		var extensions = await tab.TabCore.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-		ApplyMenuItems(_secondaryMenu, extensions
+		ApplyMenuItems(_menu, extensions
 			.ToDictionary<CoreWebView2BrowserExtension, string, Action>(k => $"{k.Name} ({k.Id})",
 				k => async () =>
 				{
@@ -873,9 +1057,9 @@ public partial class BrowserApplicationWindow : Window
 					popupWindow.Show();
 				})
 		);
-		_secondaryMenu.PlacementTarget = ButtonMenu;
-		_secondaryMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-		_secondaryMenu.IsOpen = true;
+		_menu.PlacementTarget = ButtonMenu;
+		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+		_menu.IsOpen = true;
 	}
 
 	private async Task OnTabCardDragChanged(TabCard sender, int? relativeMove)
@@ -914,7 +1098,7 @@ public partial class BrowserApplicationWindow : Window
 		if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
 
 		var point = PointToScreen(Mouse.GetPosition(null));
-		var tabCardWindow = new TabMoveWindowCard(tab)
+		var tabCardWindow = new TabMoveWindowCard(tab, _instanceData)
 		{
 			Top = point.Y - 15,
 			Left = point.X - 75
@@ -941,7 +1125,7 @@ public partial class BrowserApplicationWindow : Window
 			AddTabStack.BorderBrush =
 				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
 			_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
-
+			
 			foreach (var card in Tabs.Children.OfType<TabCard>())
 			{
 				if (card.Key == oldActiveTab)
@@ -949,12 +1133,18 @@ public partial class BrowserApplicationWindow : Window
 				else if (card.Key == newActiveTab)
 					card.ToggleActiveTo(true);
 			}
-
+			
+			var tab = TabManager.GetTab(newActiveTab);
+			SearchBox.Text = tab?.TabCore?.Source?.ToString() ?? "";
+				
+			ForwardButton.Visibility = tab?.TabCore?.CanGoForward?? false ? Visibility.Visible : Visibility.Collapsed;
+			BackButton.Visibility = tab?.TabCore?.CanGoBack?? false ? Visibility.Visible : Visibility.Collapsed;
+			
 			if (newActiveTab > 0)
 			{
-				var tab = TabManager.GetTab(newActiveTab);
-				SearchBox.Text = tab?.TabCore?.Source?.ToString() ?? "";
+				RefreshButton.Visibility = Visibility.Visible;
 			}
+			
 
 			foreach (var popup in _extensionPopups)
 			{
@@ -1066,6 +1256,22 @@ public partial class BrowserApplicationWindow : Window
 			};
 
 			Tabs.Children.Add(tabCard);
+
+			if (tab.TabCore.CoreWebView2 is null)
+				tab.TabCore.CoreWebView2InitializationCompleted += (_, _) =>
+					CoreWebView2EventHandlersSetup();
+			else
+				CoreWebView2EventHandlersSetup();
+			
+
+			void CoreWebView2EventHandlersSetup()
+			{
+				tab.TabCore.CoreWebView2.HistoryChanged += (_, _) =>
+				{
+					ForwardButton.Visibility = tab.TabCore.CanGoForward ? Visibility.Visible : Visibility.Collapsed;
+					BackButton.Visibility = tab.TabCore.CanGoBack ? Visibility.Visible : Visibility.Collapsed;
+				};
+			}
 		};
 
 		TabManager.TabRemoved += id =>

@@ -24,6 +24,20 @@ public class ActualHeightToFontSizeConverter : IValueConverter
     }
 }
 
+public class PercentageConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is double actual && double.TryParse((string)parameter, out var pct))
+            return actual * pct;
+        return DependencyProperty.UnsetValue;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+
 public static class ControlExtensions
 {
     public static BitmapSource PreviewControl(this Control control, double width=128, double height=128)

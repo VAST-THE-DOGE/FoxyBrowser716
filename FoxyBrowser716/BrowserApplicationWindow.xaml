@@ -12,8 +12,8 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        MinWidth="300"
-        MinHeight="120"
+        MinWidth="360"
+        MinHeight="200"
         Icon="Foxybrowser716.ico">
     <Window.Resources>
         <Style x:Key="RectBorderStyle" TargetType="Rectangle">
@@ -25,7 +25,7 @@
             <EventSetter Event="MouseMove" Handler="Resizeing_Form" />
         </Style>
         
-        <!--<Style TargetType="MenuItem">
+        <Style TargetType="MenuItem">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="FontSize" Value="14" />
@@ -34,44 +34,44 @@
             <Setter Property="Foreground" Value="White" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" /> ~1~ Disable focus highlight @1@
-            ~1~ Completely override the default template @1@
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" /> <!-- Disable focus highlight -->
+            <!-- Completely override the default template -->
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
                         <Grid Background="{TemplateBinding Background}">
-                            ~1~ Menu Item Border @1@
+                            <!-- Menu Item Border -->
                             <Border
                                 Name="Border"
                                 Background="Transparent"
                                 BorderBrush="Transparent"
                                 BorderThickness="0">
-                                ~1~ Text/Content of the MenuItem @1@
+                                <!-- Text/Content of the MenuItem -->
                                 <ContentPresenter
                                     ContentSource="Header"
                                     HorizontalAlignment="Stretch"
                                     Margin="8,2,8,2" />
                             </Border>
                         </Grid>
-                        ~1~ Hover Effect (Triggers) @1@
+                        <!-- Hover Effect (Triggers) -->
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#28283C" /> ~1~ Custom hover effect @1@
+                                <Setter TargetName="Border" Property="Background" Value="#28283C" /> <!-- Custom hover effect -->
                                 <Setter TargetName="Border" Property="BorderBrush" Value="#FF910F" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>-->
-        <!--<Style TargetType="ContextMenu">
-            <Setter Property="Background" Value="#1E1E2D" /> ~1~ Dark background @1@
-            <Setter Property="BorderBrush" Value="#FF910F" /> ~1~ Accent border @1@
-            <Setter Property="BorderThickness" Value="1" /> ~1~ Thin border @1@
-            <Setter Property="Padding" Value="0" /> ~1~ Remove internal padding @1@
-            <Setter Property="Margin" Value="0" /> ~1~ No additional margin @1@
-            <Setter Property="SnapsToDevicePixels" Value="True" /> ~1~ Crisp, clean rendering @1@
-            <Setter Property="OverridesDefaultStyle" Value="True" /> ~1~ WPF reset weapon @1@
+        </Style>
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#1E1E2D" /> <!-- Dark background -->
+            <Setter Property="BorderBrush" Value="#FF910F" /> <!-- Accent border -->
+            <Setter Property="BorderThickness" Value="1" /> <!-- Thin border -->
+            <Setter Property="Padding" Value="0" /> <!-- Remove internal padding -->
+            <Setter Property="Margin" Value="0" /> <!-- No additional margin -->
+            <Setter Property="SnapsToDevicePixels" Value="True" /> <!-- Crisp, clean rendering -->
+            <Setter Property="OverridesDefaultStyle" Value="True" /> <!-- WPF reset weapon -->
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContextMenu">
@@ -85,7 +85,7 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>-->
+        </Style>
     </Window.Resources>
     <Grid>
         <Border Background="#30323A" Margin="0" BorderBrush="#FF9103" BorderThickness="3" CornerRadius="10" Padding="0">
@@ -138,7 +138,7 @@
                         BorderThickness="2" CornerRadius="10,10,10,0"
                         Height="25" VerticalAlignment="Top"
                         Margin="0"
-                        MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp">
                     <Grid Background="Transparent" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -159,26 +159,25 @@
                                 CornerRadius="10" Background="#42454f" Height="20">
                                 <Grid Name="NavigationGrid" VerticalAlignment="Center" Width="Auto" Height="20">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="22" />
-                                        <ColumnDefinition Width="22" />
-                                        <ColumnDefinition Width="22" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="22" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                     
                                     <Button Grid.Column="0" Name="RefreshButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=Refresh}"
-                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="-2,0,0,0"/>
                                     <Button Grid.Column="1" Name="BackButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=ArrowLeft}"
-                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,0,0"/>
                                     <Button Grid.Column="2" Name="ForwardButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000"  Foreground="#FFFFFFFF"
                                             Content="{wpf:MaterialIconExt Kind=ArrowRight}"
-                                            Style="{StaticResource CircularButtonStyle}" Margin="-4,0,0,0"/>
-                    
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,0,0"/>
                     
                                     <Grid Grid.Column="3" Height="20">
                                         <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Stretch"
@@ -186,15 +185,16 @@
                                             Height="20"
                                             TextChanged="TextBox_TextChanged" 
                                             GotFocus="TextBox_GotFocus" 
-                                            LostFocus="TextBox_LostFocus" />
+                                            LostFocus="TextBox_LostFocus" 
+                                            Margin="4,0,4,0"/>
                                         <TextBlock Name="placeholderText" Text="Search or Enter a URL" Foreground="Gray" 
-                                                   IsHitTestVisible="False" VerticalAlignment="Center" />
+                                                   IsHitTestVisible="False" VerticalAlignment="Center" Margin="10,0,10,0"/>
                                     </Grid>
                     
                                     <Button Grid.Column="4" Name="SearchButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000" Foreground="#ffffff"
                                             Content="{wpf:MaterialIconExt Kind=Search}"
-                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,-4,0"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,-2,0"/>
                                 </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
@@ -214,91 +214,84 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <Border  Name="LeftBar" Background="#7730323A" BorderBrush="#363840" 
-                         BorderThickness="2" CornerRadius="0,5,7,10"
-                         Width="30" VerticalAlignment="Stretch" HorizontalAlignment="Left"
-                         Margin="0,25,0,0"
-                         Panel.ZIndex="99999">
-                <DockPanel  Background="Transparent" HorizontalAlignment="Stretch">
-                    <Grid DockPanel.Dock="Bottom" Background="Transparent" HorizontalAlignment="Stretch" MinHeight="180">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        
-                        <StackPanel Grid.Row="0" Orientation="Vertical" VerticalAlignment="Bottom" Margin="0,0,0,0">
-                            <Border Height="2" Margin="5,0" Background="White" HorizontalAlignment="Stretch" />
-                            <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel Name="PinnedTabs" Orientation="Vertical" />
-                            </ScrollViewer>
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
-                            <Border Name="StackPin" Background="#7730323A" BorderBrush="#00000000"
-                                    BorderThickness="2" CornerRadius="5"
-                                    Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
-                                    Margin="0" Padding="0"
-                                    ClipToBounds="True">
-                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin"
-                                            Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
-                                            Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=PinOutline}" Margin="0" Padding="0"/>
-                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelPin"
-                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
-                                        Pin Tab
-                                    </Label>
-                                </Grid>
-                            </Border>
-                            <Border Name="StackBookmark" Background="#7730323A" BorderBrush="#00000000"
-                                    BorderThickness="2" CornerRadius="5"
-                                    Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
-                                    Margin="0" Padding="0"
-                                    ClipToBounds="True">
-                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark"
-                                            Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
-                                            Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" Margin="0" Padding="0"/>
-                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelBookmark"
-                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
-                                        Bookmark Tab
-                                    </Label>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                    </Grid>
-    
-                    <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" MinHeight="150">
-                        <StackPanel Name="Tabs" Orientation="Vertical">
-                            <Border Name="AddTabStack" Background="#7730323A" BorderBrush="#00000000"
+                <Border Name="LeftBar" Background="#7730323A" BorderBrush="#363840" 
+                    BorderThickness="2" CornerRadius="0,6,6,10"
+                    Width="30" VerticalAlignment="Stretch" HorizontalAlignment="Left"
+                    Margin="0,25,0,0"
+                    Panel.ZIndex="99999">
+                    <DockPanel Background="Transparent" HorizontalAlignment="Stretch" MinHeight="50">
+                        <Border DockPanel.Dock="Bottom" Name="StackBookmark" Background="#7730323A" BorderBrush="#00000000"
                                 BorderThickness="2" CornerRadius="5"
-                                Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
                                 Margin="0" Padding="0"
                                 ClipToBounds="True">
-                                <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="AddTabButton"
-                                                           Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
-                                                           Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=House}" Margin="0" Padding="0"/>
-                                    <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="AddTabLabel"
-                                           Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
-                                        Home Tab
-                                    </Label>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </DockPanel>
+                            <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonBookmark"
+                                        Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                        Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=BookmarkOutline}" Margin="0" Padding="0"/>
+                                <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelBookmark"
+                                       Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                    Bookmark Tab
+                                </Label>
+                            </Grid>
+                        </Border>
+                        
+                        <Border DockPanel.Dock="Bottom" Name="StackPin" Background="#7730323A" BorderBrush="#00000000"
+                                BorderThickness="2" CornerRadius="5"
+                                Height="25" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                                Margin="0" Padding="0"
+                                ClipToBounds="True">
+                                    <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="ButtonPin"
+                                                Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                                Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=PinOutline}" Margin="0" Padding="0"/>
+                                        <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="LabelPin"
+                                               Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                            Pin Tab
+                                        </Label>
+                                    </Grid>
+                                </Border>
+                        
+                        <ScrollViewer DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" MinHeight="0" MaxHeight="{Binding ActualHeight, ElementName=LeftBar, Converter={StaticResource Pct}, ConverterParameter=0.6}">
+                            <StackPanel Name="PinnedTabs" Orientation="Vertical" VerticalAlignment="Bottom" Margin="0,0,0,0">
+                                
+                            </StackPanel>
+                        </ScrollViewer>
+                            
+                        <Border DockPanel.Dock="Bottom" Height="2" Margin="2,2" CornerRadius="500" Background="#505258" HorizontalAlignment="Stretch" />
+
+                        <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" MinHeight="150">
+                            <StackPanel Name="Tabs" Orientation="Vertical">
+                                <Border Name="AddTabStack" Background="#7730323A" BorderBrush="#00000000"
+                                        BorderThickness="2" CornerRadius="5"
+                                        Height="25" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                        Margin="0" Padding="0"
+                                        ClipToBounds="True">
+                                    <Grid Background="Transparent" ClipToBounds="True" Margin="0" HorizontalAlignment="Stretch">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Name="AddTabButton"
+                                                Width="21" Height="21" BorderThickness="0" Background="#002D2D30"
+                                                Foreground="#FFF" Content="{wpf:MaterialIconExt Kind=House}" Margin="0" Padding="0"/>
+                                        <Label Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Name="AddTabLabel"
+                                               Width="260" Height="21" Background="#002D2D30" Foreground="#FFFFFFFF" Margin="0" Padding="0">
+                                            Home Tab
+                                        </Label>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Border>
             </Grid>
         </Border>

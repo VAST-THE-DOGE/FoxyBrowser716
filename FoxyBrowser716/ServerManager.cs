@@ -24,7 +24,12 @@ public class ServerManager
 	
 	public List<InstanceManager> AllBrowserManagers = [];
 	
-	public List<MainWindow> BrowserWindows = [];
+	public InstanceManager CurrentBrowserManager;
+
+	public IReadOnlyList<BrowserApplicationWindow> AllBrowserWindows
+	{
+		get => AllBrowserManagers.SelectMany(m => m.BrowserWindows).ToList();
+	}
 	
 	private ServerManager()
 	{ /*TODO*/ }
@@ -55,32 +60,44 @@ public class ServerManager
 		// initialize that new server instance
 		Context.DefaultBrowserManager = new InstanceManager("Default");
 		Context.AllBrowserManagers.Add(Context.DefaultBrowserManager);
+		Context.CurrentBrowserManager = Context.DefaultBrowserManager;
 		tasks.Add(Context.DefaultBrowserManager.Initialize());
 			
 		// start the first browser window of the instance
 		if (e.Args.All(string.IsNullOrWhiteSpace))
 		{
-			Application.Current.Dispatcher.Invoke(() => 
+			Application.Current.Dispatcher.Invoke(async () =>
 			{
-				var firstWindow = new BrowserApplicationWindow(Context.DefaultBrowserManager);
-				firstWindow.Show();
-				// var firstWindow = new MainWindow(Context.DefaultBrowserManager);
-				// Context.BrowserWindows.Add(firstWindow);
-				// firstWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
-				// firstWindow.Show();
+				await Context.DefaultBrowserManager.CreateWindow();
 			});
 		}
 		else
 		{
 			var url = e.Args.First(s => !string.IsNullOrWhiteSpace(s));
 			Application.Current.Dispatcher.Invoke(async () => 
-			{ 
-				var newWindow = new MainWindow(Context.DefaultBrowserManager); 
-				await newWindow.InitTask; 
-				newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)); 
-				Context.BrowserWindows.Add(newWindow);
-				newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
-				newWindow.Show(); 
+			{
+				if (Context.CurrentBrowserManager is { } cbm)
+				{
+					if (cbm.CurrentBrowserWindow is { } cbw)
+					{
+						cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+					}
+					else
+					{
+						await cbm.CreateWindow(url);
+					}
+				}
+				else
+				{
+					if (Context.DefaultBrowserManager.CurrentBrowserWindow is { } cbw)
+					{
+						cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+					}
+					else
+					{
+						await Context.DefaultBrowserManager.CreateWindow(url);
+					}
+				}
 			});
 		}
 	}
@@ -101,14 +118,14 @@ public class ServerManager
 			{
 				var url = message.Replace("NewWindow|", "");
 				Application.Current.Dispatcher.Invoke(async () => { 
-					var newWindow = new MainWindow(Context.DefaultBrowserManager);
+					var newWindow = new BrowserApplicationWindow(Context.DefaultBrowserManager);
 					if (!string.IsNullOrWhiteSpace(url))
 					{
 						await newWindow.InitTask;
 						newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
 					}
-					Context.BrowserWindows.Add(newWindow);
-					newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
+					Context.DefaultBrowserManager.BrowserWindows.Add(newWindow);
+					newWindow.Closed += (w, _) => { Context.DefaultBrowserManager.BrowserWindows.Remove((BrowserApplicationWindow)w); };
 					newWindow.Show(); 
 				});
 			}
@@ -120,7 +137,7 @@ public class ServerManager
 		var pos = new Point(left, top);
 
 		foreach (var window in
-		         (from window in BrowserWindows
+		         (from window in AllBrowserWindows
 			         let da = window.GetLeftBarDropArea()
 			         let leftBoundS = da.X + 25
 			         let topBoundS = da.Y + 25
@@ -136,66 +153,15 @@ public class ServerManager
 		
 		return false;
 	}
-	
-	public async Task CreateWindowFromTab(WebsiteTab tab, Rect finalRect, bool fullscreen, InstanceManager? instance = null)
-	{
-		var newWindow = new MainWindow(instance ?? Context.DefaultBrowserManager)
-		{
-			Top = finalRect.Y,
-			Left = finalRect.X,
-		};
-		if (finalRect is { Height: > 50, Width: > 280 })
-		{
-			newWindow.Height = finalRect.Height;
-			newWindow.Width = finalRect.Width;
-		}
-		
-		await newWindow.InitTask; 
-		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab)); 
-		Context.BrowserWindows.Add(newWindow);
-		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
-		newWindow.Show();
 
-		if (fullscreen)
-		{
-			newWindow.WindowState = WindowState.Maximized;
-		}
-	}
-	
-	public async Task CreateWindow(Rect? finalRect = null, bool? fullscreen = null, InstanceManager? instance = null)
-	{
-		var newWindow = new MainWindow(instance ?? Context.DefaultBrowserManager);
-		if (finalRect is { } fR)
-		{
-			newWindow.Top = fR.Y;
-			newWindow.Left = fR.X;
-		}
-		
-		if (finalRect is { Height: > 50, Width: > 280 } fR2)
-		{
-			newWindow.Height = fR2.Height;
-			newWindow.Width = fR2.Width;
-		}
-		
-		await newWindow.InitTask; 
-		Context.BrowserWindows.Add(newWindow);
-		newWindow.Closed += (w, _) => { Context.BrowserWindows.Remove((MainWindow)w); };
-		newWindow.Show();
-
-		if (fullscreen is true)
-		{
-			newWindow.WindowState = WindowState.Maximized;
-		}
-	}
-	
-	private MainWindow? _lastOpenedWindow;
+	private BrowserApplicationWindow? _lastOpenedWindow => CurrentBrowserManager.CurrentBrowserWindow;
 
 	public bool DoPositionUpdate(double left, double top)
 	{
 	    var pos = new Point(left, top);
 	    var inExactDropArea = false;
 
-	    foreach (var window in BrowserWindows)
+	    foreach (var window in AllBrowserWindows)
 	    {
 	        var da = window.GetLeftBarDropArea();
 	        
@@ -219,7 +185,7 @@ public class ServerManager
 	            if (!window.SideOpen)
 	            {
 	                window.OpenSideBar();
-	                _lastOpenedWindow = window;
+	                // _lastOpenedWindow = window;
 	            }
 	        }
 	        else
@@ -229,7 +195,7 @@ public class ServerManager
 	                window.CloseSideBar();
 	                if (_lastOpenedWindow == window)
 	                {
-	                    _lastOpenedWindow = null;
+	                    // _lastOpenedWindow = null;
 	                }
 	            }
 	        }
@@ -246,7 +212,7 @@ public class ServerManager
 	        if (!(pos.X >= lastLeftBoundB && pos.X <= lastRightBoundB && pos.Y >= lastTopBoundB && pos.Y <= lastBottomBoundB))
 	        {
 	            _lastOpenedWindow.CloseSideBar();
-	            _lastOpenedWindow = null;
+	            //_lastOpenedWindow = null;
 	        }
 	    }
 

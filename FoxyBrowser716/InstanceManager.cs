@@ -15,7 +15,9 @@ public class InstanceManager
 	public readonly WebsiteInfoList BookmarkInfo = new();
 	public readonly BrowserSettingsManager SettingsManager = new();
 	
-	public List<MainWindow> BrowserWindows = [];
+	public List<BrowserApplicationWindow> BrowserWindows = [];
+	
+	public BrowserApplicationWindow? CurrentBrowserWindow;
 
 	public readonly string InstanceFolder;
 	public readonly string ExtensionFolder;
@@ -32,6 +34,99 @@ public class InstanceManager
 		ExtensionFolder = Path.Combine(InstanceFolder, "extensions");
 
 		if (!Directory.Exists(InstanceFolder)) Directory.CreateDirectory(InstanceFolder);
+	}
+
+	public enum BrowserWindowState
+	{
+		Minimized,
+		Normal,
+		Maximized,
+		Borderless
+	}
+
+	public static BrowserWindowState StateFromWindow(BrowserApplicationWindow window)
+	{
+		switch (window.WindowState)
+		{
+			case WindowState.Minimized:
+				return BrowserWindowState.Minimized;
+			case WindowState.Normal:
+				return BrowserWindowState.Normal;
+			case WindowState.Maximized:
+				return window.BorderlessFullscreen 
+					? BrowserWindowState.Borderless 
+					: BrowserWindowState.Maximized;
+			default:
+				return BrowserWindowState.Normal;
+		}
+	}
+
+	public static void ApplyWindowState(BrowserWindowState windowState, BrowserApplicationWindow window)
+	{
+		switch (windowState)
+		{
+			case BrowserWindowState.Minimized:
+				window.BorderlessFullscreen = false;
+				window.WindowState = WindowState.Minimized;
+				break;
+			case BrowserWindowState.Normal:
+				window.BorderlessFullscreen = false;
+				window.WindowState = WindowState.Normal;
+				break;
+			case BrowserWindowState.Maximized:
+				window.BorderlessFullscreen = false;
+				window.WindowState = WindowState.Maximized;
+				break;
+			case BrowserWindowState.Borderless:
+				window.BorderlessFullscreen = true;
+				window.WindowState = WindowState.Normal;
+				window.WindowState = WindowState.Maximized;
+				break;
+		}
+	}
+	
+	public async Task<BrowserApplicationWindow> CreateWindow(string? url = null,
+		Rect? startLocation = null, BrowserWindowState windowState = BrowserWindowState.Normal)
+	{
+		var newWindow = new BrowserApplicationWindow(this);
+		
+		if (startLocation is {Height: > 25, Width: > 50 } sl)
+		{
+			newWindow.Top = sl.Y;
+			newWindow.Left = sl.X;
+			newWindow.Height = sl.Height;
+			newWindow.Width = sl.Width;
+		}
+		ApplyWindowState(windowState, newWindow);
+		
+		await newWindow.InitTask; 
+		
+		BrowserWindows.Add(newWindow);
+		newWindow.Closed += (w, _) => 
+		{ 
+			if (w is BrowserApplicationWindow baw)
+				BrowserWindows.Remove(baw);
+			else
+				throw new InvalidOperationException(
+					$"Cannot remove browser application window from instance '{InstanceName}', sender type mismatch.");
+		};
+
+		if (url != null)
+		{
+			newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+		}
+		
+		newWindow.Show();
+
+		return newWindow;
+	}
+
+	public async Task<BrowserApplicationWindow> CreateAndTransferTabToWindow(WebsiteTab tab, 
+		Rect? startLocation = null, BrowserWindowState windowState = BrowserWindowState.Normal)
+	{
+		var newWindow = await CreateWindow(null, startLocation, windowState);
+		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab));
+		return newWindow;
 	}
 		
 	public async Task Initialize()
