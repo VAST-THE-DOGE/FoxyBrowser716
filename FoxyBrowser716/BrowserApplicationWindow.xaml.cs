@@ -27,7 +27,7 @@ namespace FoxyBrowser716;
 public partial class BrowserApplicationWindow : Window
 {
 	private HomePage _homePage;
-	private SettingsPage _settingsPage;
+	//private SettingsPage _settingsPage;
 	
 	private List<ExtensionPopupWindow> _extensionPopups = [];
 
@@ -792,6 +792,22 @@ public partial class BrowserApplicationWindow : Window
 		});
 	}
 
+	private void TabHolder_SizeChanged(object sender, SizeChangedEventArgs e)
+	{
+		var geometry = new RectangleGeometry(
+			new Rect(0, 0, TabHolder.ActualWidth, TabHolder.ActualHeight),
+			8, 8); // RadiusX and RadiusY set to 8 (inner corner radius)
+		TabHolder.Clip = geometry;
+	}
+	
+	private void Blur_SizeChanged(object sender, SizeChangedEventArgs e)
+	{
+		var geometry = new RectangleGeometry(
+			new Rect(0, 0, BlurredBackground.ActualWidth, BlurredBackground.ActualHeight),
+			8, 8); // RadiusX and RadiusY set to 8 (inner corner radius)
+		BlurredBackground.Clip = geometry;
+	}
+	
 	internal bool SideOpen;
 
 	internal void OpenSideBar()
@@ -912,6 +928,7 @@ public partial class BrowserApplicationWindow : Window
 
 	private void OpenSettings()
 	{
+		throw new NotImplementedException();
 		TabManager.SwapActiveTabTo(-2);
 	}
 
@@ -940,16 +957,12 @@ public partial class BrowserApplicationWindow : Window
 		_menu.IsOpen = true;
 	}
 
-	private void OpenBookmark(string url)
-	{
-		TabManager.SwapActiveTabTo(TabManager.AddTab(url));
-	}
-
 	private void OpenBookmarks()
 	{
 		ApplyMenuItems(_menu, _instanceData.BookmarkInfo.GetAllTabInfos().Values
-			.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => OpenBookmark(k.Url))
-		);
+			.ToDictionary<TabInfo, string, Action>(k => k.Title, k => () => 
+				TabManager.SwapActiveTabTo(TabManager.AddTab(k.Url))
+		));
 		_menu.PlacementTarget = ButtonMenu;
 		_menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
 		_menu.IsOpen = true;
@@ -1124,7 +1137,7 @@ public partial class BrowserApplicationWindow : Window
 			_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
 			AddTabStack.BorderBrush =
 				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
-			_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
+			//_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
 			
 			foreach (var card in Tabs.Children.OfType<TabCard>())
 			{
@@ -1161,11 +1174,11 @@ public partial class BrowserApplicationWindow : Window
 		TabHolder.Children.Add(_homePage);
 
 
-		_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
-		TabHolder.Children.Add(_settingsPage);
+		//_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
+		//TabHolder.Children.Add(_settingsPage);
 
-		_settingsPage.Loaded += (_, _) =>
-			_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
+		//_settingsPage.Loaded += (_, _) =>
+			//_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
 		_homePage.Loaded += (_, _) =>
 			_homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
 		AddTabStack.BorderBrush = TabManager.ActiveTabId == -1

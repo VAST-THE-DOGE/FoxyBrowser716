@@ -20,6 +20,8 @@ public class ServerManager
 {
 	public static ServerManager Context { get; private set; }
 	
+	private System.Timers.Timer _backupTimer;
+	
 	public InstanceManager DefaultBrowserManager { get; private set; }
 	
 	public List<InstanceManager> AllBrowserManagers = [];
@@ -53,16 +55,51 @@ public class ServerManager
 		{
 			var instanceName = path.Split(@"\")[^1];
 			if (instanceName == "Default") continue;
+
+			var newInstance = new InstanceManager(instanceName);
 			
-			Context.AllBrowserManagers.Add(new InstanceManager(instanceName));
+			Context.AllBrowserManagers.Add(newInstance);
+			
+			newInstance.Focused += manager =>
+			{
+				Context.CurrentBrowserManager = manager;
+			};
 		}
 		
 		// initialize that new server instance
 		Context.DefaultBrowserManager = new InstanceManager("Default");
+		Context.DefaultBrowserManager.Focused += manager =>
+		{
+			Context.CurrentBrowserManager = manager;
+		};
 		Context.AllBrowserManagers.Add(Context.DefaultBrowserManager);
 		Context.CurrentBrowserManager = Context.DefaultBrowserManager;
 		tasks.Add(Context.DefaultBrowserManager.Initialize());
-			
+		
+		//check if the application was not closed correctly:
+		var checkFile = Path.Combine(InfoGetter.AppData, "ERROR_CHECK.txt");
+		if (File.Exists(checkFile) && File.Exists(BackupManager.BackupFilePath))
+		{
+			//TODO: let the user know and open the backup once that system is in place
+			Application.Current.Dispatcher.Invoke(async () =>
+			{
+				if (MessageBox.Show("FoxyBrowser was close unexpectedly.\nDo you wish to load a backup file to restore the previous application state?", "Backup Found", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+				{
+					throw new NotImplementedException();
+				}
+			});
+		}
+		else
+		{
+			// create the check file
+			File.WriteAllText(checkFile, "Do not delete this file.\nThis is used to check if the application was closed correctly and restore any tabs when you reopen it.");
+		}
+		
+		Context._backupTimer = new System.Timers.Timer(5000);
+		Context._backupTimer.Elapsed += async (_,_) => await Context.DoBackup();
+		Context._backupTimer.AutoReset = true;
+		Context._backupTimer.Enabled = true;
+		
 		// start the first browser window of the instance
 		if (e.Args.All(string.IsNullOrWhiteSpace))
 		{
@@ -101,6 +138,11 @@ public class ServerManager
 			});
 		}
 	}
+
+	private async Task DoBackup()
+	{
+		await Application.Current.Dispatcher.Invoke(async () => await BackupManager.RefreshBackupFile(Context));
+	}
 	
 	private void StartPipeServer()
 	{
@@ -118,15 +160,21 @@ public class ServerManager
 			{
 				var url = message.Replace("NewWindow|", "");
 				Application.Current.Dispatcher.Invoke(async () => { 
-					var newWindow = new BrowserApplicationWindow(Context.DefaultBrowserManager);
+					
 					if (!string.IsNullOrWhiteSpace(url))
 					{
-						await newWindow.InitTask;
-						newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+						if (CurrentBrowserManager.CurrentBrowserWindow is { } cbw)
+							cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+						else
+						{
+							var newWindow = await CurrentBrowserManager.CreateWindow(url);
+							newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+						}
 					}
-					Context.DefaultBrowserManager.BrowserWindows.Add(newWindow);
-					newWindow.Closed += (w, _) => { Context.DefaultBrowserManager.BrowserWindows.Remove((BrowserApplicationWindow)w); };
-					newWindow.Show(); 
+					else
+					{
+						await CurrentBrowserManager.CreateWindow();
+					}
 				});
 			}
 		}

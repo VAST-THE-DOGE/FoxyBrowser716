@@ -10,7 +10,7 @@
   <Identity
     Name="f0e6aa1b-dbac-4bcc-9d62-a5cb54509118"
     Publisher="CN=William Herbert"
-    Version="0.3.1.0" />
+    Version="0.4.2.2" />
 
   <Properties>
     <DisplayName>PKG_FoxyBrowser716</DisplayName>
@@ -32,7 +32,7 @@
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="FoxyBrowser716"
-        Description="FoxyBrowser716 is a simple web browser based off of WebView2."
+        Description="FoxyBrowser716 is a simple web browser based off of Microsoft Edge&apos;s WebView2. This browser started as a joke, but grew into an fully functional web browser that is currently under heavy development."
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
@@ -88,7 +88,6 @@
             <uap:DisplayName>XML Document</uap:DisplayName>
             <uap:SupportedFileTypes>
               <uap:FileType>.xml</uap:FileType>
-              <uap:FileType>.xaml</uap:FileType>
             </uap:SupportedFileTypes>
           </uap:FileTypeAssociation>
         </uap:Extension>

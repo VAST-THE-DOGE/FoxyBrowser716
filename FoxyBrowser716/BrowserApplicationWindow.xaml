@@ -94,45 +94,13 @@
                         Margin="0" 
                         CornerRadius="10"
                         ClipToBounds="True" 
-                        Panel.ZIndex="-10">
-                    <Border.Background>
-                        <VisualBrush Visual="{Binding ElementName=TabHolder}" 
-                                     Stretch="UniformToFill"
-                                     TileMode="None">
-                            <VisualBrush.Transform>
-                                <ScaleTransform ScaleX="2.3" ScaleY="2.3" 
-                                                CenterX="0.35" CenterY="0.35"/>
-                            </VisualBrush.Transform>
-                        </VisualBrush>
-                    </Border.Background>
-                    <Border.Effect>
-                        <BlurEffect Radius="25"/>
-                    </Border.Effect>
-                    <Border.OpacityMask>
-                        <VisualBrush>
-                            <VisualBrush.Visual>
-                                <Border Background="Black" CornerRadius="10,10,10,10"
-                                        Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Border}}"
-                                        Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Border}}"/>
-                            </VisualBrush.Visual>
-                        </VisualBrush>
-                    </Border.OpacityMask>
+                        Panel.ZIndex="-10" SizeChanged="Blur_SizeChanged">
                 </Border>
                 <Border Background="#000000" BorderBrush="#363840"
                         BorderThickness="2" CornerRadius="10,10,10,10"
                         VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                        Margin="30,25,0,0" ClipToBounds="True">
-                <Grid Name="TabHolder" ClipToBounds="True">
-                    <Grid.OpacityMask>
-                        <VisualBrush>
-                            <VisualBrush.Visual>
-                                <Border Background="Black" CornerRadius="10,10,10,10" 
-                                        Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}"
-                                        Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"/>
-                            </VisualBrush.Visual>
-                        </VisualBrush>
-                    </Grid.OpacityMask>
-                </Grid>
+                        Margin="30,25,0,0">
+                    <Grid Name="TabHolder" SizeChanged="TabHolder_SizeChanged"/>
                 </Border>
                 <Border Background="#7730323A" BorderBrush="#363840"
                         BorderThickness="2" CornerRadius="10,10,10,0"

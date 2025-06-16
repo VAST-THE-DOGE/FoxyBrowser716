@@ -26,6 +26,8 @@ public class InstanceManager
 
 	public readonly bool PrimaryInstance;
 	
+	public event Action<InstanceManager> Focused;
+	
 	public InstanceManager(string name)
 	{
 		InstanceName = name;
@@ -102,6 +104,14 @@ public class InstanceManager
 		await newWindow.InitTask; 
 		
 		BrowserWindows.Add(newWindow);
+		newWindow.GotFocus += (s, e) =>
+		{
+			if (s is BrowserApplicationWindow win)
+			{
+				CurrentBrowserWindow = win;
+				Focused?.Invoke(this);
+			}
+		};
 		newWindow.Closed += (w, _) => 
 		{ 
 			if (w is BrowserApplicationWindow baw)
@@ -117,7 +127,7 @@ public class InstanceManager
 		}
 		
 		newWindow.Show();
-
+		newWindow.Focus();
 		return newWindow;
 	}
 
