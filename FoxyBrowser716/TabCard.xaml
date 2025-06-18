@@ -27,10 +27,10 @@
                     Height="21" Width="5" VerticalAlignment="Top"
                     Margin="0,0,0,0"
                     Visibility="Collapsed"/>
-            <Viewbox x:Name="TabIcon" Grid.Column="2" Margin="2" Width="17" Height="17" Stretch="Uniform"/>
+            <Viewbox x:Name="TabIcon" Grid.Column="2" Margin="2" Width="18" Height="17" Stretch="Uniform"/>
             <Label x:Name="TitleLabel" Grid.Column="3" Height="21" Foreground="#ffff" Background="Transparent" VerticalAlignment="Center" 
                    Margin="2,0,0,0" Padding="0" VerticalContentAlignment="Center"/>
-            <Button x:Name="DuplicateButton" Grid.Column="4" Width="17" Height="17" Margin="2" Background="#00000000" 
+            <Button x:Name="DuplicateButton" Grid.Column="4" Width="21" Height="21" Margin="0" Background="#00000000" 
                     BorderBrush="Transparent" Foreground="#ffff" Content="{wpf:MaterialIconExt Kind=ContentCopy}" />
             <Button x:Name="CloseButton" Grid.Column="5" Width="21" Height="21" Margin="0" Background="#00000000" 
                     BorderBrush="Transparent" Foreground="#ffff" Content="{wpf:MaterialIconExt Kind=Close}" />

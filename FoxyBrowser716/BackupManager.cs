@@ -2,6 +2,9 @@ using System.Drawing;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 
 namespace FoxyBrowser716;
 
@@ -66,7 +69,73 @@ public static class BackupManager
 	
 	public static async Task RestoreFromBackup(ServerManager context)
 	{
+		// sanity check
+		if (!File.Exists(BackupFilePath)) throw new FileNotFoundException("Backup file not found");
 		
+		// get the backup data
+		var json = await File.ReadAllTextAsync(BackupFilePath);
+		var backup = JsonSerializer.Deserialize<BackupFile>(json, _serializerOptions);
+		
+		if (backup == null) throw new Exception("Backup file is not a valid backup file");
+		
+		// restore the data
+		InstanceManager? managerToFocus = null;
+		var instanceTasks = backup.Instances.Select(async instance =>
+		{
+			if (context.AllBrowserManagers.FirstOrDefault(manager => manager.InstanceName == instance.InstanceName)
+			    is { } instanceManager)
+			{
+				BrowserApplicationWindow? windowToFocus = null;
+				var instanceTasks = instance.Windows.Select(async window =>
+				{
+					var newWindow = await instanceManager.CreateWindow(null, window.WindowRect, window.WindowState);
+					int TabToFocus = window.ActiveTabId < 0 ? window.ActiveTabId : -1;
+					foreach (var (tabId, url) in window.OpenTabs)
+					{
+						var id = newWindow.TabManager.AddTab(url);
+
+						var tab = newWindow.TabManager.GetTab(id);
+						if (tab is not null)
+						{
+							var init = AwaitCoreWebView2Initialization(tab.TabCore);
+							newWindow.TabManager.SwapActiveTabTo(id);
+							
+							if (tabId == window.ActiveTabId)
+							{
+								TabToFocus = id;
+							}
+							
+							// wait for the tab to initialize
+							await init;
+						}
+					}
+
+					
+					newWindow.TabManager.SwapActiveTabTo(TabToFocus);
+					
+					if (window.WindowId == instance.CurrentWindowId)
+					{
+						windowToFocus = newWindow;
+					}
+				});
+				
+				windowToFocus?.Focus();
+
+				if (instance.InstanceName == backup.CurrentInstanceName)
+				{
+						managerToFocus = instanceManager;
+				}
+				await Task.WhenAll(instanceTasks);
+			}
+			else
+			{
+				// TODO: handle better, but for now just skip as the instance may not exist anymore?
+			}
+		});
+		await Task.WhenAll(instanceTasks);
+		
+		if (managerToFocus is not null)
+			context.CurrentBrowserManager = managerToFocus;
 	}
 	
 	private record BackupFile
@@ -90,5 +159,23 @@ public static class BackupManager
 		
 		public required Rect WindowRect { get; set; }
 		public required InstanceManager.BrowserWindowState WindowState { get; set; }
+	}
+	
+	private static Task AwaitCoreWebView2Initialization(WebView2CompositionControl tabCore)
+	{
+		var tcs = new TaskCompletionSource<object>();
+		EventHandler<CoreWebView2InitializationCompletedEventArgs> handler = null;
+
+		handler = (sender, args) =>
+		{
+			tabCore.CoreWebView2InitializationCompleted -= handler; // Unsubscribe
+			if (args.IsSuccess)
+				tcs.SetResult(null); // Success
+			else
+				tcs.SetException(args.InitializationException); // Failure
+		};
+
+		tabCore.CoreWebView2InitializationCompleted += handler;
+		return tcs.Task;
 	}
 }

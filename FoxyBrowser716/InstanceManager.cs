@@ -92,6 +92,11 @@ public class InstanceManager
 	{
 		var newWindow = new BrowserApplicationWindow(this);
 		
+		await newWindow.InitTask; 
+		
+		newWindow.Show();
+
+		
 		if (startLocation is {Height: > 25, Width: > 50 } sl)
 		{
 			newWindow.Top = sl.Y;
@@ -100,8 +105,6 @@ public class InstanceManager
 			newWindow.Width = sl.Width;
 		}
 		ApplyWindowState(windowState, newWindow);
-		
-		await newWindow.InitTask; 
 		
 		BrowserWindows.Add(newWindow);
 		newWindow.GotFocus += (s, e) =>
@@ -126,7 +129,6 @@ public class InstanceManager
 			newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
 		}
 		
-		newWindow.Show();
 		newWindow.Focus();
 		return newWindow;
 	}
