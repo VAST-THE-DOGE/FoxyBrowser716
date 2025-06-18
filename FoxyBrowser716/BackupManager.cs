@@ -161,21 +161,31 @@ public static class BackupManager
 		public required InstanceManager.BrowserWindowState WindowState { get; set; }
 	}
 	
-	private static Task AwaitCoreWebView2Initialization(WebView2CompositionControl tabCore)
+	private static async Task AwaitCoreWebView2Initialization(WebView2CompositionControl tabCore)
 	{
 		var tcs = new TaskCompletionSource<object>();
 		EventHandler<CoreWebView2InitializationCompletedEventArgs> handler = null;
 
-		handler = (sender, args) =>
+		handler = (_, args) =>
 		{
-			tabCore.CoreWebView2InitializationCompleted -= handler; // Unsubscribe
+			tabCore.CoreWebView2InitializationCompleted -= handler;
 			if (args.IsSuccess)
-				tcs.SetResult(null); // Success
+				tcs.TrySetResult(null);
 			else
-				tcs.SetException(args.InitializationException); // Failure
+				tcs.TrySetException(args.InitializationException);
 		};
 
 		tabCore.CoreWebView2InitializationCompleted += handler;
-		return tcs.Task;
+		
+		var timeoutTask = Task.Delay(5000);
+		var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+		if (completedTask == timeoutTask)
+		{
+			tabCore.CoreWebView2InitializationCompleted -= handler; 
+			return;
+		}
+
+		await tcs.Task;
 	}
 }
