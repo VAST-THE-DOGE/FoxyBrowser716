@@ -38,6 +38,8 @@ public class ServerManager
 	{
 		// list of tasks to do
 		List<Task> tasks = [];
+
+		MessageBox.Show(InfoGetter.AppData, "APPDATA path");
 		
 		// start a server instance
 		Context = new ServerManager();

@@ -56,7 +56,7 @@ public partial class BrowserApplicationWindow : Window
 		{
 			_hwnd = new WindowInteropHelper(this).Handle;
 		};
-
+		
 		Loaded += (_, _) =>
 		{
 			_originalRectangle = new Rect(Left, Top, Width, Height);
@@ -120,6 +120,24 @@ public partial class BrowserApplicationWindow : Window
 		ForwardButton.Visibility = Visibility.Collapsed;
 		BackButton.Visibility = Visibility.Collapsed;
 		RefreshButton.Visibility = Visibility.Collapsed;
+
+		MouseDown += (s, e) =>
+		{
+			if (e.XButton1 == MouseButtonState.Pressed)
+			{
+				if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
+				{
+					tab.TabCore.GoBack();
+				}
+			}
+			else if (e.XButton2 == MouseButtonState.Pressed)
+			{
+				if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
+				{
+					tab.TabCore.GoForward();
+				}
+			}
+		};
 		
 		ForwardButton.Click += (_, _) =>
 		{
@@ -304,7 +322,7 @@ public partial class BrowserApplicationWindow : Window
 		}
 		else
 		{
-			TabManager.SwapActiveTabTo(TabManager.AddTab(Uri.EscapeDataString(SearchBox.Text)));
+			TabManager.SwapActiveTabTo(TabManager.AddTab(SearchBox.Text));
 		}
 	}
 	
