@@ -11,6 +11,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using FoxyBrowser716.Settings;
 using Material.Icons;
@@ -31,11 +32,13 @@ public partial class BrowserApplicationWindow : Window
 	
 	private List<ExtensionPopupWindow> _extensionPopups = [];
 
-	private System.Windows.Rect _originalRectangle = new(0,0,350,200);
+	private System.Windows.Rect _originalRectangle = new(0,0,960,540);
 
 	internal readonly TabManager TabManager;
 
 	private InstanceManager _instanceData;
+	
+	private SearchEnginePicker? _searchEnginePicker;
 
 	internal Task InitTask;
 
@@ -45,6 +48,8 @@ public partial class BrowserApplicationWindow : Window
 	private IntPtr _hwnd;
 
 	private bool ignoreNextStateChange;
+
+	public event Action<InfoGetter.SearchEngine>? EngineChangeRequested;
 	
 	public BrowserApplicationWindow(InstanceManager instanceData)
 	{
@@ -123,6 +128,8 @@ public partial class BrowserApplicationWindow : Window
 
 		MouseDown += (s, e) =>
 		{
+			_searchEnginePicker?.Close();
+			
 			if (e.XButton1 == MouseButtonState.Pressed)
 			{
 				if (TabManager?.GetTab(TabManager.ActiveTabId) is { } tab)
@@ -168,9 +175,36 @@ public partial class BrowserApplicationWindow : Window
 		ButtonFullscreen.Click += FullscreenRestore_Click;
 		
 		_instanceData = instanceData;
+		_instanceData.CurrentSearchEngineChanged += se =>
+		{
+			EngineIco.Source = new BitmapImage(new Uri(InfoGetter.GetSearchEngineIcon(se)));
+		};
+		EngineIco.Source = new BitmapImage(new Uri(InfoGetter.GetSearchEngineIcon(_instanceData.CurrentSearchEngine)));
 		TabManager = new TabManager(_instanceData);
 		InitTask = Initialize();
+		
+		EngineButton.Click += (_, _) =>
+		{
+			if (_searchEnginePicker is not null) return;
+			
+			_searchEnginePicker = new SearchEnginePicker(_instanceData.CurrentSearchEngine);
+			var pos = EngineButton.PointToScreen(new Point(0, EngineButton.Height));
+			_searchEnginePicker.Left = pos.X;
+			_searchEnginePicker.Top = pos.Y + 5;
+			_searchEnginePicker.Show();
+			_searchEnginePicker.Closed += (_, _) => { _searchEnginePicker = null; };
+			_searchEnginePicker.OnSearchEnginePicked += se =>
+			{
+				EngineChangeRequested?.Invoke(se);
+				Focus();
+			};
+		};
 
+		LostFocus += (_, _) =>
+		{
+			_searchEnginePicker?.Close();
+		};
+		
 		BlurredBackground.Effect = new BlurEffect { Radius = 25 };
 		BlurredBackground.Opacity = 1;
 		var visualBrush = new VisualBrush(TabHolder)
@@ -317,7 +351,31 @@ public partial class BrowserApplicationWindow : Window
 			}
 			catch
 			{
-				tabCore.CoreWebView2.Navigate($"https://www.google.com/search?q={Uri.EscapeDataString(SearchBox.Text)}");
+				if (SearchBox.Text.Contains('.') || SearchBox.Text.Contains(':') || SearchBox.Text.Contains('/'))
+					try
+					{
+						tabCore.CoreWebView2.Navigate("https://"+SearchBox.Text);
+					}
+					catch
+					{
+						try
+						{
+							try
+							{
+								tabCore.CoreWebView2.Navigate("http://"+SearchBox.Text);
+							}
+							catch
+							{
+								tabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instanceData.CurrentSearchEngine, SearchBox.Text));
+							}						
+						}
+						catch
+						{
+							tabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instanceData.CurrentSearchEngine, SearchBox.Text));
+						}
+					}
+				else
+					tabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instanceData.CurrentSearchEngine, SearchBox.Text));
 			}
 		}
 		else
@@ -344,7 +402,7 @@ public partial class BrowserApplicationWindow : Window
 		         [
 			         ButtonFullscreen, ButtonMaximize, ButtonMinimize, ButtonMenu,
 			         BackButton, ForwardButton, RefreshButton,
-			         SearchButton,
+			         SearchButton, EngineButton
 		         ])
 		{
 			b.MouseEnter += (_, _) => { ChangeColorAnimation(b.Background, Colors.Transparent, hoverColor); };
@@ -360,14 +418,17 @@ public partial class BrowserApplicationWindow : Window
 		UpdatePlaceholderVisibility();
 	}
 	
+	private static readonly Color SearchBorder = Color.FromArgb(255, 102, 104, 112);
 	private void TextBox_GotFocus(object sender, RoutedEventArgs e)
 	{
 		UpdatePlaceholderVisibility();
+		ChangeColorAnimation(SearchBackground.BorderBrush, SearchBorder, HighlightColor);
 	}
     
 	private void TextBox_LostFocus(object sender, RoutedEventArgs e)
 	{
 		UpdatePlaceholderVisibility();
+		ChangeColorAnimation(SearchBackground.BorderBrush, HighlightColor, SearchBorder);
 	}
 	
 	private void UpdatePlaceholderVisibility()
@@ -607,6 +668,8 @@ public partial class BrowserApplicationWindow : Window
 	
 	private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
+		_searchEnginePicker?.Close();
+		
 		if (e.ClickCount == 2)
 		{
 			MaximizeRestore_Click(null, EventArgs.Empty);
@@ -866,10 +929,10 @@ public partial class BrowserApplicationWindow : Window
 		LeftBar.BeginAnimation(WidthProperty, animation);
 	}
 
-	internal System.Windows.Rect GetLeftBarDropArea()
+	internal Rect GetLeftBarDropArea()
 	{
 		var p = PointToScreen(new Point(0, 30));
-		return new System.Windows.Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
+		return new Rect(p.X, p.Y, 260, LeftBar.ActualHeight);
 	}
 
 	private ContextMenu _menu = new()

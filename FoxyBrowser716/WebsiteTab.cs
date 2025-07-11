@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Web;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -80,8 +81,15 @@ public class WebsiteTab
 		TabCore.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		TabCore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
 		TabCore.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
-		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = true;
-			
+		
+		//TODO: changed for testing
+		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = false; // = true;
+		
+		//TODO added for testing
+		InputMethod.SetIsInputMethodSuspended(TabCore, true);
+		TabCore.FlowDirection = FlowDirection.LeftToRight;
+		TabCore.UseLayoutRounding = false;
+
 		TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
 		
 		TabCore.SourceChanged += (_, _) =>
@@ -117,11 +125,35 @@ public class WebsiteTab
 		
 		try
 		{
-			TabCore.Source = new Uri(url);
+			TabCore.CoreWebView2.Navigate(url);
 		}
 		catch
 		{
-			TabCore.Source = new Uri($"https://www.google.com/search?q={Uri.EscapeDataString(url)}");
+			if (url.Contains('.') || url.Contains(':') || url.Contains('/'))
+				try
+				{
+					TabCore.CoreWebView2.Navigate("https://"+url);
+				}
+				catch
+				{
+					try
+					{
+						try
+						{
+							TabCore.CoreWebView2.Navigate("http://"+url);
+						}
+						catch
+						{
+							TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
+						}						
+					}
+					catch
+					{
+						TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
+					}
+				}
+			else
+				TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
 		}
 	}
 	

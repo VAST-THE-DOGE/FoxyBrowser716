@@ -11,13 +11,14 @@
         SizeToContent="Height"
         Topmost="True"
         WindowStartupLocation="CenterScreen"
+        Background="Transparent"
         Title="" Width="450" HorizontalAlignment="Center" VerticalAlignment="Center">
-    <Border BorderBrush="#FF910F" BorderThickness="3" Background="#28283C">
+    <Border BorderBrush="#FF910F" BorderThickness="2" CornerRadius="10" Background="#EE30323A">
         <StackPanel>
             <Label Name="LabelTitle" Foreground="White" FontSize="30" FontWeight="Bold" Margin="10,3" Content="Title"/>
-            <TextBlock Name="LabelSubtitle" Foreground="#CCCCCC" FontSize="16" FontWeight="SemiBold" Margin="10,3" Text="Subtitle/Description" TextWrapping="Wrap"/>
+            <TextBlock Name="LabelSubtitle" Foreground="#CCCCCC" FontSize="16" FontWeight="SemiBold" Margin="15,3" Text="Subtitle/Description" TextWrapping="Wrap"/>
             <Border Background="#38384C" Height="2" HorizontalAlignment="Stretch" Margin="5,3"/>
-            <Border Name="ProgressBar" Height="20" BorderBrush="#FF910F" BorderThickness="2" Margin="5,3">
+            <Border Name="ProgressBar" Height="20" BorderBrush="#FF910F" CornerRadius="5" BorderThickness="2" Margin="5,3">
                 <Border.Background>
                     <LinearGradientBrush x:Name="GradientBrush" StartPoint="0,0" EndPoint="1,0.8">
                         <GradientStop x:Name="Stop1" Color="#36405B" Offset="0.4" />
@@ -26,8 +27,7 @@
                     </LinearGradientBrush>
                 </Border.Background>
             </Border>
-            <StackPanel Name="ButtonStack" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,3">
-                
+            <StackPanel Name="ButtonStack" Orientation="Horizontal" HorizontalAlignment="Right" Margin="2,2">
             </StackPanel>
         </StackPanel>
     </Border>

@@ -116,11 +116,35 @@ public class TabManager
 		{
 			try
 			{
-				tab.TabCore.Source = new Uri(url);
+				tab.TabCore.CoreWebView2.Navigate(url);
 			}
 			catch
 			{
-				tab.TabCore.Source = new Uri($"https://www.google.com/search?q={Uri.EscapeDataString(url)}");
+				if (url.Contains('.') || url.Contains(':') || url.Contains('/'))
+					try
+					{
+						tab.TabCore.CoreWebView2.Navigate("https://"+url);
+					}
+					catch
+					{
+						try
+						{
+							try
+							{
+								tab.TabCore.CoreWebView2.Navigate("http://"+url);
+							}
+							catch
+							{
+								tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
+							}						
+						}
+						catch
+						{
+							tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
+						}
+					}
+				else
+					tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
 			}
 		}
 		

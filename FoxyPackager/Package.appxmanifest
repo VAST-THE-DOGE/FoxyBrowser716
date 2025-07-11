@@ -10,7 +10,7 @@
   <Identity
     Name="f0e6aa1b-dbac-4bcc-9d62-a5cb54509118"
     Publisher="CN=William Herbert"
-    Version="0.4.2.4" />
+    Version="0.4.3.0" />
 
   <Properties>
     <DisplayName>PKG_FoxyBrowser716</DisplayName>

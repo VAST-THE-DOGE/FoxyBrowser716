@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using static FoxyBrowser716.Styling.ColorPalette;
 
 namespace FoxyBrowser716
 {
@@ -17,41 +19,47 @@ namespace FoxyBrowser716
             _tab = tab;
             _instanceManager = instanceManager;
 
+            RootBorder.BorderBrush = new SolidColorBrush(HighlightColor);
+            
             _startTime = DateTime.Now.Millisecond;
             
             TitleLabel.Content = _tab.Title;
             TabIcon.Child = _tab.Icon;
 
-            Loaded += (s, e) =>
+            Loaded += (_, _) =>
             {
-                
+                LocationChanged += async (s,e) => await Window_LocationChanged(s,e);
             };
 
-            // Hook up event handlers
-            LocationChanged += async (s,e) => await Window_LocationChanged(s,e);
             MouseMove += OnMouseMove;
             MouseLeftButtonUp += async (s,e) => await OnMouseLeftButtonUp(s,e);
         }
 
         private async Task Window_LocationChanged(object? sender, EventArgs e)
         {
-            if (ServerManager.Context.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await ServerManager.Context.TryTabTransfer(_tab, Left, Top))
+            // if (!IsVisible) return;
+            var mid = new Point(Left + RootBorder.Width / 2, Top + RootBorder.Height / 2);
+            // Point mid = Mouse.GetPosition(null);
+            //var mid = PointToScreen(Mouse.GetPosition(this));
+            
+            // var mid = Mouse.GetPosition(RootBorder);
+            // var mid = new Point(Left + mouse.X, Top + mouse.Y);
+            if (DateTime.Now.Millisecond > _startTime + 300 && ServerManager.Context.DoPositionUpdate(mid) && await ServerManager.Context.TryTabTransfer(_tab, mid))
             {
                 _isDragging = false;
                 Close();
             }
         }
 
-        private void OnMouseMove(object sender, MouseEventArgs e)
+        private async void OnMouseMove(object sender, MouseEventArgs e)
         {
             if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (!_dragInitiated)
                 {
                     _dragInitiated = true;
-                    DragMove(); // Initiates system drag with snapping
-                    // After DragMove returns, the drag is complete (mouse button released)
-                    OnMouseLeftButtonUp(sender, null);
+                    DragMove();
+                    await OnMouseLeftButtonUp(sender, null);
                 }
             }
         }
@@ -60,7 +68,7 @@ namespace FoxyBrowser716
         {
             if (!_isDragging) return;
             _isDragging = false;
-            var finalRect = new Rect(Left, Top, ActualWidth, ActualHeight);
+            var finalRect = new Rect(Left, Top, Width == 280 ? 0 : Width, Height == 45 ? 0 : Height);
             await _instanceManager.CreateAndTransferTabToWindow(_tab, finalRect, 
                 WindowState == WindowState.Maximized 
                     ? InstanceManager.BrowserWindowState.Maximized 

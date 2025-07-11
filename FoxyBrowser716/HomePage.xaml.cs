@@ -28,7 +28,7 @@ public partial class HomePage
     public event Action<bool>? ToggleEditMode;
     public bool InEditMode;
 
-    private static Dictionary<string, Func<Widget>> _widgetOptions = new()
+    private static Dictionary<string, Func<Widget>> _avaliableWidgets = new()
     {
         { SearchWidget.StaticWidgetName, () => new SearchWidget() },
         { TitleWidget.StaticWidgetName, () => new TitleWidget() },
@@ -36,6 +36,7 @@ public partial class HomePage
         { DateWidget.StaticWidgetName, () => new DateWidget() },
         { EditConfigWidget.StaticWidgetName, () => new EditConfigWidget() },
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
+        // { MediaPlayerWidget.StaticWidgetName, () => new MediaPlayerWidget()} //TODO: save for later
     };
 
     private System.Timers.Timer _updateTimer;
@@ -151,7 +152,7 @@ public partial class HomePage
 
     private static Widget? GetWidget(string widgetName)
     {
-        return _widgetOptions.TryGetValue(widgetName, out var factory) ? factory() : null;
+        return _avaliableWidgets.TryGetValue(widgetName, out var factory) ? factory() : null;
     }
 
     private async Task TryLoadWidgets()
@@ -352,7 +353,7 @@ public partial class HomePage
 
     public (BitmapSource preview, string name)[] GetWidgetOptions()
     {
-        return _widgetOptions.Values
+        return _avaliableWidgets.Values
             .Select(v => v())
             .Where(v => v.CanAdd)
             .Select(v => (v.PreviewControl(), v.WidgetName))

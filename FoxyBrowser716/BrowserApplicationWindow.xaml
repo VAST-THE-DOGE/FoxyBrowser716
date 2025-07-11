@@ -12,9 +12,10 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        MinWidth="360"
-        MinHeight="200"
-        Icon="Foxybrowser716.ico">
+        MinWidth="960"
+        MinHeight="540"
+        Icon="Foxybrowser716.ico"
+        WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="RectBorderStyle" TargetType="Rectangle">
             <Setter Property="Focusable" Value="False" />
@@ -162,7 +163,16 @@
                                     <Button Grid.Column="4" Name="SearchButton" Width="20" Height="20" BorderThickness="0"
                                             Background="#00000000" BorderBrush="#00000000" Foreground="#ffffff"
                                             Content="{wpf:MaterialIconExt Kind=Search}"
-                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,-2,0"/>
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,18,0"/>
+                                    <Button Grid.Column="4" Name="EngineButton" Width="20" Height="20" BorderThickness="0"
+                                            Background="#00000000" BorderBrush="#00000000" Foreground="#ffffff"
+                                            Style="{StaticResource CircularButtonStyle}" Margin="0,0,-22,0">
+                                        <Image Name="EngineIco" Source="https://www.google.com/favicon.ico" 
+                                               Width="14" Height="14" 
+                                               Stretch="Uniform"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Center"/>
+                                    </Button>
                                 </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"

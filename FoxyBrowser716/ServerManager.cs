@@ -76,25 +76,41 @@ public class ServerManager
 		
 		//check if the application was not closed correctly:
 		var checkFile = Path.Combine(InfoGetter.AppData, "ERROR_CHECK.txt");
-		var backupRestored = false;
 		if (File.Exists(checkFile) && File.Exists(BackupManager.BackupFilePath))
 		{
-			//TODO: let the user know and open the backup once that system is in place
-			
-				if (MessageBox.Show("FoxyBrowser was close unexpectedly.\nDo you wish to load a backup file to restore the previous application state?", "Backup Found", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+			var popup = new FoxyPopup()
+			{
+				Title = "Backup Found",
+				Subtitle = "FoxyBrowser was closed unexpectedly.\nDo you wish to load a backup file to restore the previous application state?",
+				ShowProgressbar = false,
+			};
+			popup.SetButtons(new FoxyPopup.BottomButton(() => {
+				Application.Current.Dispatcher.Invoke(async () =>
 				{
-					Application.Current.Dispatcher.Invoke(async () =>
-					{
-						await BackupManager.RestoreFromBackup(Context);
-					});
-					backupRestored = true;
-				}
+					popup.ShowProgressbar = true;
+					popup.Subtitle = "Restoring backup...";
+					await BackupManager.RestoreFromBackup(Context);
+					AfterPopupSetup(e, checkFile, true);
+					popup.Close();
+				});
+			}, "Yes"), new FoxyPopup.BottomButton(() =>
+			{
+				AfterPopupSetup(e, checkFile, false);
+				popup.Close();
+			}, "No"));
+			 
+			popup.Show();
 		}
 		else
 		{
-			// create the check file
-			File.WriteAllText(checkFile, "Do not delete this file.\nThis is used to check if the application was closed correctly and restore any tabs when you reopen it.");
+			AfterPopupSetup(e, checkFile, false);
 		}
+	}
+
+	private static void AfterPopupSetup(StartupEventArgs e, string checkFile, bool backupRestored)
+	{
+		// create the check file
+		File.WriteAllText(checkFile, "Do not delete this file.\nThis is used to check if the application was closed correctly and restore any tabs when you reopen it.");
 		
 		AppDomain.CurrentDomain.ProcessExit += (_, _) =>
 		{
@@ -190,18 +206,17 @@ public class ServerManager
 		}
 	}
 
-	public async Task<bool> TryTabTransfer(WebsiteTab tab, double left, double top)
+	public async Task<bool> TryTabTransfer(WebsiteTab tab, Point mid)
 	{
-		var pos = new Point(left, top);
 
 		foreach (var window in
 		         (from window in AllBrowserWindows
 			         let da = window.GetLeftBarDropArea()
-			         let leftBoundS = da.X + 25
-			         let topBoundS = da.Y + 25
-			         let rightBoundS = da.X + da.Width + 50
-			         let bottomBoundS = da.Y + da.Height + 50
-			         where pos.X >= leftBoundS && pos.X <= rightBoundS && pos.Y >= topBoundS && pos.Y <= bottomBoundS
+			         let leftBoundS = da.X - 5
+			         let topBoundS = da.Y - 5
+			         let rightBoundS = da.X + da.Width + 5
+			         let bottomBoundS = da.Y + da.Height + 5
+			         where mid.X >= leftBoundS && mid.X <= rightBoundS && mid.Y >= topBoundS && mid.Y <= bottomBoundS
 			         select window))
 		{
 			//TODO: modify this to keep the tab dragging
@@ -215,9 +230,8 @@ public class ServerManager
 	private BrowserApplicationWindow? _lastOpenedWindow
 		=> CurrentBrowserManager.CurrentBrowserWindow;
 
-	public bool DoPositionUpdate(double left, double top)
+	public bool DoPositionUpdate(Point mid)
 	{
-	    var pos = new Point(left, top);
 	    var inExactDropArea = false;
 
 	    foreach (var window in AllBrowserWindows)
@@ -229,17 +243,17 @@ public class ServerManager
 	        var rightBoundS = da.X + da.Width;
 	        var bottomBoundS = da.Y + da.Height;
 	        
-	        var leftBoundB = da.X - 50;
-	        var topBoundB = da.Y - 50;
-	        var rightBoundB = da.X + da.Width + 100;
-	        var bottomBoundB = da.Y + da.Height + 100;
+	        var leftBoundB = da.X - 150;
+	        var topBoundB = da.Y - 150;
+	        var rightBoundB = da.X + da.Width + 150;
+	        var bottomBoundB = da.Y + da.Height + 150;
 	        
-	        if (pos.X >= leftBoundS && pos.X <= rightBoundS && pos.Y >= topBoundS && pos.Y <= bottomBoundS)
+	        if (mid.X >= leftBoundS && mid.X <= rightBoundS && mid.Y >= topBoundS && mid.Y <= bottomBoundS)
 	        {
 	            inExactDropArea = true;
 	        }
 	        
-	        if (pos.X >= leftBoundB && pos.X <= rightBoundB && pos.Y >= topBoundB && pos.Y <= bottomBoundB)
+	        if (mid.X >= leftBoundB && mid.X <= rightBoundB && mid.Y >= topBoundB && mid.Y <= bottomBoundB)
 	        {
 	            if (!window.SideOpen)
 	            {
@@ -263,12 +277,12 @@ public class ServerManager
 	    if (_lastOpenedWindow != null)
 	    {
 	        var lastDa = _lastOpenedWindow.GetLeftBarDropArea();
-	        var lastLeftBoundB = lastDa.X - 50;
-	        var lastTopBoundB = lastDa.Y - 50;
+	        var lastLeftBoundB = lastDa.X - 100;
+	        var lastTopBoundB = lastDa.Y - 100;
 	        var lastRightBoundB = lastDa.X + lastDa.Width + 100;
 	        var lastBottomBoundB = lastDa.Y + lastDa.Height + 100;
 	        
-	        if (!(pos.X >= lastLeftBoundB && pos.X <= lastRightBoundB && pos.Y >= lastTopBoundB && pos.Y <= lastBottomBoundB))
+	        if (!(mid.X >= lastLeftBoundB && mid.X <= lastRightBoundB && mid.Y >= lastTopBoundB && mid.Y <= lastBottomBoundB))
 	        {
 	            _lastOpenedWindow.CloseSideBar();
 	            //_lastOpenedWindow = null;

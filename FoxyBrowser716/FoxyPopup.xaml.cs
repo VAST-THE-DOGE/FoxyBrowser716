@@ -3,6 +3,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 
 namespace FoxyBrowser716;
 
@@ -98,17 +100,37 @@ public partial class FoxyPopup : Window
 	{
 		foreach (var b in buttons)
 		{
-			var button = new Button()
+			var button = new Border
 			{
-				BorderBrush = new SolidColorBrush(Styling.ColorPalette.HighlightColor),
+				BorderBrush = new SolidColorBrush(Styling.ColorPalette.MainColor),
 				Background = new SolidColorBrush(Styling.ColorPalette.AccentColor),
-				Foreground = b.TextColor is null ? Brushes.White : new SolidColorBrush(b.TextColor.Value),
-				Margin = new Thickness(10,3,10,3),
-				FontSize = 14,
-				FontWeight = FontWeights.SemiBold,
-				Content = b.Text,
+				Margin = new Thickness(5,2,5,2),
+				CornerRadius = new CornerRadius(5),
+				BorderThickness = new Thickness(2),
+				Child = new Label
+				{
+					Foreground = b.TextColor is null ? Brushes.White : new SolidColorBrush(b.TextColor.Value),
+					FontSize = 14,
+					FontWeight = FontWeights.SemiBold,
+					Content = b.Text,
+					Margin = new Thickness(2,0,2,0),
+				},
 			};
-			button.Click += (_,_) => b.OnClick?.Invoke();
+
+			button.MouseEnter += (_, _) =>
+			{
+				ChangeColorAnimation(button.BorderBrush, MainColor, HighlightColor);;
+			};
+			button.MouseLeave += (_, _) =>
+			{
+				ChangeColorAnimation(button.BorderBrush, HighlightColor, MainColor);;
+			};
+			
+			button.MouseDown += (_, e) =>
+			{
+				if (e.LeftButton == MouseButtonState.Pressed)
+					b.OnClick?.Invoke();
+			};
 			
 			ButtonStack.Children.Add(button);
 		}

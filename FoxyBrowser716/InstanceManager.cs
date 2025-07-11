@@ -28,6 +28,9 @@ public class InstanceManager
 	
 	public event Action<InstanceManager> Focused;
 	
+	public InfoGetter.SearchEngine CurrentSearchEngine = InfoGetter.SearchEngine.Google; //TODO: move to settings
+	public event Action<InfoGetter.SearchEngine>? CurrentSearchEngineChanged;
+	
 	public InstanceManager(string name)
 	{
 		InstanceName = name;
@@ -97,12 +100,15 @@ public class InstanceManager
 		newWindow.Show();
 
 		
-		if (startLocation is {Height: > 25, Width: > 50 } sl)
+		if (startLocation is { } sl)
 		{
 			newWindow.Top = sl.Y;
 			newWindow.Left = sl.X;
-			newWindow.Height = sl.Height;
-			newWindow.Width = sl.Width;
+			if (sl is { Height: > 0, Width: > 0 })
+			{
+				newWindow.Height = sl.Height;
+				newWindow.Width = sl.Width;
+			}
 		}
 		ApplyWindowState(windowState, newWindow);
 		
@@ -122,6 +128,12 @@ public class InstanceManager
 			else
 				throw new InvalidOperationException(
 					$"Cannot remove browser application window from instance '{InstanceName}', sender type mismatch.");
+		};
+
+		newWindow.EngineChangeRequested += (se) =>
+		{
+			CurrentSearchEngine = se;
+			CurrentSearchEngineChanged?.Invoke(se);
 		};
 
 		if (url != null)
