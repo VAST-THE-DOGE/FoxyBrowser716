@@ -19,8 +19,8 @@ public class InstanceManager
 	
 	public BrowserApplicationWindow? CurrentBrowserWindow;
 
-	public readonly string InstanceFolder;
-	public readonly string ExtensionFolder;
+	public string InstanceFolder;
+	public string ExtensionFolder;
 	
 	public string InstanceName {get; private set; }
 
@@ -173,9 +173,12 @@ public class InstanceManager
 		//TODO
 	}
 
-	public async Task RenameInstance()
+	public async Task RenameInstance(string name)
 	{
-		//TODO
+		Directory.Move(InstanceFolder, Path.Combine(InfoGetter.InstanceFolder, name));
+		InstanceName = name;
+		InstanceFolder = Path.Combine(InfoGetter.InstanceFolder, InstanceName);
+		ExtensionFolder = Path.Combine(InstanceFolder, "extensions");
 	}
 	
 	#region ExtensionDownloadingStuff

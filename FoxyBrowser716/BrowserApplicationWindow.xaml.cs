@@ -28,7 +28,7 @@ namespace FoxyBrowser716;
 public partial class BrowserApplicationWindow : Window
 {
 	private HomePage _homePage;
-	//private SettingsPage _settingsPage;
+	private SettingsPage _settingsPage;
 	
 	private List<ExtensionPopupWindow> _extensionPopups = [];
 
@@ -1009,14 +1009,13 @@ public partial class BrowserApplicationWindow : Window
 
 	private void OpenSettings()
 	{
-		throw new NotImplementedException();
 		TabManager.SwapActiveTabTo(-2);
 	}
 
 	private void OpenInstances()
 	{
 		var openNewWindow = TabManager.GetAllTabs().Count > 0;
-		var instanceOptions = ServerManager.Context.AllBrowserManagers
+		var instanceOptions = ServerManager.Context.AllInstanceManagers
 			.Where(i => i.InstanceName != _instanceData.InstanceName)
 			.ToDictionary<InstanceManager, string, Action>(
 				i => $"{(openNewWindow ? "Open" : "Swap To")} {i.InstanceName}",
@@ -1186,7 +1185,7 @@ public partial class BrowserApplicationWindow : Window
 
 	private async Task BuildNewWindow(TabCard tabCard)
 	{
-		if (_buildingWindow || _createdFor == tabCard.Key) return;
+		if (_buildingWindow) return;
 		_buildingWindow = true;
 
 		if (TabManager.GetTab(tabCard.Key) is not { } tab) return;
@@ -1218,7 +1217,7 @@ public partial class BrowserApplicationWindow : Window
 			_homePage.Visibility = newActiveTab == -1 ? Visibility.Visible : Visibility.Collapsed;
 			AddTabStack.BorderBrush =
 				newActiveTab == -1 ? new SolidColorBrush(HighlightColor) : new SolidColorBrush(MainColor);
-			//_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
+			_settingsPage.Visibility = newActiveTab == -2 ? Visibility.Visible : Visibility.Collapsed;
 			
 			foreach (var card in Tabs.Children.OfType<TabCard>())
 			{
@@ -1255,11 +1254,11 @@ public partial class BrowserApplicationWindow : Window
 		TabHolder.Children.Add(_homePage);
 
 
-		//_settingsPage = PrimarySettingsPage.GeneratePage(null); //TODO
-		//TabHolder.Children.Add(_settingsPage);
+		_settingsPage = PrimarySettingsPage.GeneratePage(null, _instanceData); //TODO
+		TabHolder.Children.Add(_settingsPage);
 
-		//_settingsPage.Loaded += (_, _) =>
-			//_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
+		_settingsPage.Loaded += (_, _) =>
+			_settingsPage.Visibility = TabManager.ActiveTabId == -2 ? Visibility.Visible : Visibility.Collapsed;
 		_homePage.Loaded += (_, _) =>
 			_homePage.Visibility = TabManager.ActiveTabId == -1 ? Visibility.Visible : Visibility.Collapsed;
 		AddTabStack.BorderBrush = TabManager.ActiveTabId == -1
@@ -1472,8 +1471,6 @@ public partial class BrowserApplicationWindow : Window
 		}
 	}
 	
-	
-	
 	#region Extension Popup stuff
 	public class ExtensionPopupWindow : Window
 	{
@@ -1488,6 +1485,7 @@ public partial class BrowserApplicationWindow : Window
 			_tabManager = tabManager;
 			Width = 400;
 			Height = 300;
+			Topmost = true;
 			WindowStyle = WindowStyle.ToolWindow;
 			_webView2 = new WebView2CompositionControl();
 			Content = _webView2;

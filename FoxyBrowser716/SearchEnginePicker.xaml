@@ -9,8 +9,7 @@
         mc:Ignorable="d"
         Title="TabMoveWindowCard" 
         Height="100" Width="24"
-        Background="#01000000"
-        Topmost="True">
+        Background="#01000000">
     <Border Name="RootBorder" Background="#7730323A" BorderBrush="#7742454f"
             BorderThickness="2" CornerRadius="10"
             Margin="0" Padding="0"

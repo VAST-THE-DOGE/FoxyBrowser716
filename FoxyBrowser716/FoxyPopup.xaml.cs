@@ -98,6 +98,7 @@ public partial class FoxyPopup : Window
 
 	public void SetButtons(params BottomButton[] buttons)
 	{
+		ButtonStack.Children.Clear();
 		foreach (var b in buttons)
 		{
 			var button = new Border

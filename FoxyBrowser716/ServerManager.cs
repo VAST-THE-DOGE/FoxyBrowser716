@@ -24,12 +24,12 @@ public class ServerManager
 	
 	public InstanceManager DefaultBrowserManager { get; private set; }
 	
-	public List<InstanceManager> AllBrowserManagers = [];
+	public List<InstanceManager> AllInstanceManagers = [];
 	
 	public InstanceManager CurrentBrowserManager;
 
 	public IReadOnlyList<BrowserApplicationWindow> AllBrowserWindows 
-		=> AllBrowserManagers.SelectMany(m => m.BrowserWindows).ToList();
+		=> AllInstanceManagers.SelectMany(m => m.BrowserWindows).ToList();
 
 	private ServerManager()
 	{ /*TODO*/ }
@@ -56,7 +56,7 @@ public class ServerManager
 
 			var newInstance = new InstanceManager(instanceName);
 			
-			Context.AllBrowserManagers.Add(newInstance);
+			Context.AllInstanceManagers.Add(newInstance);
 			
 			newInstance.Focused += manager =>
 			{
@@ -70,7 +70,7 @@ public class ServerManager
 		{
 			Context.CurrentBrowserManager = manager;
 		};
-		Context.AllBrowserManagers.Add(Context.DefaultBrowserManager);
+		Context.AllInstanceManagers.Add(Context.DefaultBrowserManager);
 		Context.CurrentBrowserManager = Context.DefaultBrowserManager;
 		tasks.Add(Context.DefaultBrowserManager.Initialize());
 		

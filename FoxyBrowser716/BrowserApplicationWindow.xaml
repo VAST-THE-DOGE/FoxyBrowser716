@@ -6,14 +6,14 @@
         xmlns:local="clr-namespace:FoxyBrowser716"
         xmlns:wpf="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
         mc:Ignorable="d"
-        Height="450" 
-        Width="800"
+        MinHeight="150" 
+        MinWidth="300"
         Title="FoxyBrowser716"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        MinWidth="960"
-        MinHeight="540"
+        Width="960"
+        Height="540"
         Icon="Foxybrowser716.ico"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
@@ -151,7 +151,7 @@
                                     <Grid Grid.Column="3" Height="20">
                                         <TextBox Name="SearchBox" VerticalAlignment="Center" HorizontalAlignment="Stretch"
                                             Padding="0" Foreground="#ffffff" Background="Transparent" BorderBrush="Transparent"
-                                            Height="20"
+                                            Height="20" FontSize="12"
                                             TextChanged="TextBox_TextChanged" 
                                             GotFocus="TextBox_GotFocus" 
                                             LostFocus="TextBox_LostFocus" 

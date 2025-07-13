@@ -96,7 +96,8 @@ public class TabManager
 			if (tab.TabCore.Parent is Grid g)
 			{
 				g.Children.Remove(tab.TabCore);
-			}			else
+			}			
+			else
 				throw new Exception($"Tab (Id = {tabId}) could not be removed. Unknown TabCore Parent.");
 		}
 		
@@ -227,12 +228,18 @@ public class TabManager
 	/// <param name="tab">tab to add</param>
 	public Task<int> TransferTab(WebsiteTab tab)
 	{
-		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
-		PreloadCreated?.Invoke(tab);
-		TabCreated?.Invoke(tab);
-		TabsUpdated?.Invoke();
+		//TODO: TEMP STUFF HERE
+		// to fix a bug, just make a new tab, not the best method as website data may not save.
 		
-		return Task.FromResult(tab.TabId);
+		return Task.FromResult(AddTab(tab.TabCore.Source.ToString()));
+		
+		//old
+		// _tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
+		// PreloadCreated?.Invoke(tab);
+		// TabCreated?.Invoke(tab);
+		// TabsUpdated?.Invoke();
+		//
+		// return Task.FromResult(tab.TabId);
 	}
 	
 }

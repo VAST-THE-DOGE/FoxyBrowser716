@@ -28,7 +28,7 @@ public static class BackupManager
 			// create the backup data structure
 			var newBackup = new BackupFile
 			{
-				Instances = context.AllBrowserManagers
+				Instances = context.AllInstanceManagers
 					.Select(manager => new SimpleInstance
 					{
 						//TODO: verify that this works
@@ -82,7 +82,7 @@ public static class BackupManager
 		InstanceManager? managerToFocus = null;
 		var instanceTasks = backup.Instances.Select(async instance =>
 		{
-			if (context.AllBrowserManagers.FirstOrDefault(manager => manager.InstanceName == instance.InstanceName)
+			if (context.AllInstanceManagers.FirstOrDefault(manager => manager.InstanceName == instance.InstanceName)
 			    is { } instanceManager)
 			{
 				BrowserApplicationWindow? windowToFocus = null;

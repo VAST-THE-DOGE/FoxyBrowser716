@@ -14,34 +14,75 @@ namespace FoxyBrowser716.Settings;
 
 public class PrimarySettingsPage
 {
-    public static SettingsPage GeneratePage(BrowserSettingsManager manager)
+    public static SettingsPage GeneratePage(BrowserSettingsManager manager, InstanceManager ownerInstance)
     {
         var settingsPage = new SettingsPage();
 
         #region General
         var general= new SettingsCategory("General");
-        
+        general.AddSetting(new SubheadingSetting("Most of these do not work yet"));;
         #endregion
         #region Appearance
         var appearance = new SettingsCategory("Appearance");
 
         #endregion
-        #region WebView
-        var webview = new SettingsCategory("WebView2 Specific");
-
+        #region PrivacySecurity
+        var privacySecurity = new SettingsCategory("Privacy & Security");
         #endregion
-        #region Extensions
-        var extensions = new SettingsCategory("Extensions");
-
+        #region Performance
+        var performance = new SettingsCategory("Performance");
+        performance.AddSettings([
+            new BoolSetting("Prioritize Browser Performance", 
+                "Sets the thread priority to high. This helps to prevent the browser from freezing sometimes while playing games.",
+                true),
+            new BoolSetting("Tab Preloading", 
+                "Creates an extra tab that will be on an about:blank url so that any data and extensions are loaded and ready to go, which speeds up opening a tab.",
+                true),
+            new BoolSetting("Suspend Background Tabs", 
+                "Should improve performance in most cases, but might create unknown issues in background tabs on certain websites (I can't test every website to make sure this is not an issue, so here is an option to diable it just in case).",
+                true),
+            new BoolSetting("Fancy UI", 
+                "UI is not too laggy, but this could help on lower end systems where every little bit of performance counts. PLease don't diable this after all the time I spent to make a nice UI...",
+                true),   
+            
+        ]);
         #endregion
         #region Instances
         var instances = new SettingsCategory("Instances");
-        
+        instances.AddSettings([
+            new DescriptionSetting("Below you can manage your browser instances.\n" + 
+                "Each instance is an isolated container with it's own browsing data and settings (not including any settings that apply to the entire browser such as modifying instances)."),
+            new CustomControlSetting("Manage Instances", () => new InstanceManagerControl(ownerInstance))
+        ]);
         #endregion
         #region Misc
         var misc = new SettingsCategory("Misc");
 
         #endregion
+        #region Experimental
+        var experimental = new SettingsCategory("Experimental");
+        experimental.AddSettings([new DescriptionSetting(
+            "Warning:\n" +
+            "Features here are very work in progress and most likely have known bugs.\n" +
+            "Enabling any of there features has a small chance to break your browser or corrupt browser data.\n" +
+            "Use at your own risk.\n\n" +
+            "Feel free to provide feedback on GitHub on any features you enable before they are officially added to the browser.\n" +
+            "Also, if you can't find a setting you are looking for you can suggest it as a new feature on GitHub."),
+            new BoolSetting("Extension Support", 
+                "Adds support for downloading most extensions on the chrome web store. Please note the following issues:\n" +
+                "\t1. Not all extensions download successfully which is an active bug.\n" +
+                "\t2. Extensions can only be downloaded once from the chrome store in most cases which is another active bug.\n\n" +
+                "Extensions can also be downloaded manually with the extracted zip file that contains the manifest file of the extension added to the extensions folder of the instance (located in %APPDATA%/FoxyBrowser716/Instances/{ Instance Name Here }/Extensions).\n" +
+                "Enabling extension support and enables support for the popups from those extensions, but please see the following active bug:\n" +
+                "\t1. Extensions and their popups do not always know what tab is the current tab and might not be supported fully due to WebView2 limitations that I am trying to get around.", 
+                false),
+        ]);
+        #endregion
+        
+        #region AdvancedSettings
+        var advancedSettings = new SettingsCategory("AdvancedSettings");
+        #endregion
+        
         // EXAMPLE:
         // General Settings Category
         // generalCategory.AddSetting(new SubheadingSetting("Application Behavior"));
@@ -112,10 +153,12 @@ public class PrimarySettingsPage
         settingsPage.AddCategories(new[] { 
             general, 
             appearance,
-            webview,
-            extensions,
+            privacySecurity,
+            performance,
             instances,
             misc,
+            experimental,
+            advancedSettings,
         });
             
         return settingsPage;
@@ -399,7 +442,7 @@ public class CustomControlSetting : ISetting
     public string Name { get; }
     private readonly Func<UIElement> _controlFactory;
         
-    public CustomControlSetting(string name, Func<UIElement> controlFactory)
+    public CustomControlSetting(string name, Func<UserControl> controlFactory)
     {
         Name = name;
         _controlFactory = controlFactory;
