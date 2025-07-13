@@ -13,11 +13,11 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
-        <AssemblyVersion>0.5.0.0</AssemblyVersion>
-        <FileVersion>0.5.0.0</FileVersion>
+        <AssemblyVersion>0.4.3.0</AssemblyVersion>
+        <FileVersion>0.4.3.0</FileVersion>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>ANormalKey.snk</AssemblyOriginatorKeyFile>
-        <Version>0.5.0.0</Version>
+        <Version>0.4.3.0</Version>
         <Title>FoxyBrowser716</Title>
         <Authors>Vast The Doge &amp; FoxyGuy716</Authors>
         <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
