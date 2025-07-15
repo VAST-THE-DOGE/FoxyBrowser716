@@ -11,8 +11,8 @@ public class WebsiteInfoList
 	
 	private int _counter;
 	
-	public event Action<int, TabInfo> TabInfoAdded;
-	public event Action<int, TabInfo> TabInfoRemoved;
+	public event Action<int, TabInfo>? TabInfoAdded;
+	public event Action<int, TabInfo>? TabInfoRemoved;
 
 	public async Task LoadTabInfoFromJson(string filePath)
 	{

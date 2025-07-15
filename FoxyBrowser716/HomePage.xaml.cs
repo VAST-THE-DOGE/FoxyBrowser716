@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Timers;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FoxyBrowser716.Converters;
@@ -20,7 +15,7 @@ using WpfAnimatedGif;
 
 namespace FoxyBrowser716;
 
-public partial class HomePage : UserControl
+public partial class HomePage
 {
     private const string WidgetsFileName = "homeWidgets.json";
     private const string SettingsFileName = "homeSettings.json";
@@ -28,11 +23,12 @@ public partial class HomePage : UserControl
     private List<WidgetData> _savedWidgets;
     private HomeSettings _settings;
     private TabManager _manager;
-
-    public event Action<bool> ToggleEditMode;
+    private InstanceManager _instanceData;
+    
+    public event Action<bool>? ToggleEditMode;
     public bool InEditMode;
 
-    private static Dictionary<string, Func<IWidget>> WidgetOptions = new()
+    private static Dictionary<string, Func<Widget>> _avaliableWidgets = new()
     {
         { SearchWidget.StaticWidgetName, () => new SearchWidget() },
         { TitleWidget.StaticWidgetName, () => new TitleWidget() },
@@ -40,18 +36,21 @@ public partial class HomePage : UserControl
         { DateWidget.StaticWidgetName, () => new DateWidget() },
         { EditConfigWidget.StaticWidgetName, () => new EditConfigWidget() },
         { YoutubeWidget.StaticWidgetName, () => new YoutubeWidget() },
+        // { MediaPlayerWidget.StaticWidgetName, () => new MediaPlayerWidget()} //TODO: save for later
     };
 
-    private System.Timers.Timer updateTimer;
+    private System.Timers.Timer _updateTimer;
     
     public HomePage()
     {
         InitializeComponent();
     }
 
-    public async Task Initialize(TabManager manager)
+    public async Task Initialize(TabManager manager, InstanceManager instanceManager)
     {
         _manager = manager; // save manager for later use
+        _instanceData = instanceManager;
+        
         await TryLoadSettings();
         _imageControl = new Image
         {
@@ -59,29 +58,30 @@ public partial class HomePage : UserControl
             Stretch = Stretch.UniformToFill
         };
         ApplySettings();
+        Grid.SetRowSpan(_imageControl, 9999);
+        Grid.SetColumnSpan(_imageControl, 9999);
         Panel.SetZIndex(_imageControl, -1);
         MainGrid.Children.Add(_imageControl);
 
         await TryLoadWidgets();
         await AddWidgetsToGrid();
-
-
-        updateTimer = new System.Timers.Timer(250);
-        updateTimer.Elapsed += async (_,_) => await TimerTick();
-        updateTimer.AutoReset = true;
-        updateTimer.Enabled = true;  
         
-        updateTimer.Start();
+        _updateTimer = new System.Timers.Timer(50);
+        _updateTimer.Elapsed += async (_,_) => await TimerTick();
+        _updateTimer.AutoReset = true;
+        _updateTimer.Enabled = true;  
+        
+        _updateTimer.Start();
     }
 
     private int _imageIndex = -1;
     private Random _random = new();
     private Image _imageControl;
-    private async Task TimerTick()
+    private Task TimerTick()
     {
         if (_settings.DoSlideshow)
         {
-            var i = (DateTime.Now.Hour * 3600 + DateTime.Now.Minute * 60 + DateTime.Now.Second) / _settings.DisplayTime;
+            var i = (int)Math.Ceiling((DateTime.Now.Hour * 3600d + DateTime.Now.Minute * 60 + DateTime.Now.Second + (DateTime.Now.Millisecond / 1000d)) / (_settings.DisplayTime <= 0d ? 0.01d : _settings.DisplayTime));
             if (_imageIndex != i)
             {
                 _imageIndex = i;
@@ -91,29 +91,21 @@ public partial class HomePage : UserControl
                     MessageBox.Show("The specified directory does not exist for slideshow images, turning off slideshow.",
                         "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     _settings.DoSlideshow = false;
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 string[] extensions = [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".avi", ".mov", ".wmv"];
 
                 List<string> images = [];
-                try
-                {
-                    images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
-                        .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"An error occurred while reading slideshow images: {ex.Message}",
-                        "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
+                    .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
 
                 if (images.Count == 0)
                 {
                     MessageBox.Show($"No images found, turning off slideshow.",
                         "Slideshow Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     _settings.DoSlideshow = false;
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 Dispatcher.Invoke(() =>
@@ -130,37 +122,42 @@ public partial class HomePage : UserControl
                         _imageControl.Source = source;
                         ImageBehavior.SetAnimatedSource(_imageControl, source);
                     }
-                    catch (Exception ex)
+                    catch (Exception _)
                     {
-                        Console.WriteLine("e: "+uri??"null");
+                        Console.WriteLine("error: "+uri??"null"); //TODO: look more into  this
                     }
                 });
             }
         }
+
+        return Task.CompletedTask;
     }
 
     private void ApplySettings()
     {
-        if (!_settings.DoSlideshow)
+        try
         {
-            var source = new BitmapImage(new Uri(_settings.BackgroundPath));
-            _imageControl.Source = source;
-            ImageBehavior.SetAnimatedSource(_imageControl, source);
-            
-            Grid.SetRowSpan(_imageControl, 9999);
-            Grid.SetColumnSpan(_imageControl, 9999);
-            Panel.SetZIndex(_imageControl, -1);
+            if (!_settings.DoSlideshow)
+            {
+                var source = new BitmapImage(new Uri(_settings.BackgroundPath));
+                _imageControl.Source = source;
+                ImageBehavior.SetAnimatedSource(_imageControl, source);
+            }
+        }
+        catch (IOException _)
+        {
+            _imageControl.Source = null;
         }
     }
 
-    private static IWidget? GetWidget(string widgetName)
+    private static Widget? GetWidget(string widgetName)
     {
-        return WidgetOptions.TryGetValue(widgetName, out var factory) ? factory() : null;
+        return _avaliableWidgets.TryGetValue(widgetName, out var factory) ? factory() : null;
     }
 
     private async Task TryLoadWidgets()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, WidgetsFileName);
         if (File.Exists(path))
         {
             try
@@ -171,7 +168,7 @@ public partial class HomePage : UserControl
             catch
             {
                 _savedWidgets = GetDefaultWidgets();
-                await SaveSettingsToJson();
+                await SaveWidgetsToJson();
             }
         }
         else
@@ -219,7 +216,7 @@ public partial class HomePage : UserControl
 
     private async Task TryLoadSettings()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
+        var path = Path.Combine(_instanceData.InstanceFolder, SettingsFileName);
         if (File.Exists(path))
         {
             try
@@ -239,36 +236,23 @@ public partial class HomePage : UserControl
         }
 
         HomeSettings GetDefaults() => new() {
-            BackgroundPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DefaultBackgroundName),
+            BackgroundPath = Path.Combine(InfoGetter.AppData, DefaultBackgroundName),
         };
     }
 
     private async Task SaveWidgetsToJson()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WidgetsFileName);
-        try
-        {
-            var jsonData = JsonSerializer.Serialize(_savedWidgets, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(path, jsonData);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Widget Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        var path = Path.Combine(_instanceData.InstanceFolder, WidgetsFileName);
+        var jsonData = JsonSerializer.Serialize(_savedWidgets, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, jsonData);
     }
 
+    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private async Task SaveSettingsToJson()
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
-        try
-        {
-            var jsonData = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(path, jsonData);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Setting Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        var path = Path.Combine(_instanceData.InstanceFolder, SettingsFileName);
+        var jsonData = JsonSerializer.Serialize(_settings, Options);
+        await File.WriteAllTextAsync(path, jsonData);
     }
 
     private async Task AddWidgetsToGrid()
@@ -348,7 +332,7 @@ public partial class HomePage : UserControl
 
         foreach (var c in MainGrid.Children)
         {
-            if (c is not IWidget w) continue;
+            if (c is not Widget w) continue;
             w.InWidgetEditingMode = true;
         }
     }
@@ -362,14 +346,14 @@ public partial class HomePage : UserControl
 
         foreach (var c in MainGrid.Children)
         {
-            if (c is not IWidget w) continue;
+            if (c is not Widget w) continue;
             w.InWidgetEditingMode = false;
         }
     }
 
     public (BitmapSource preview, string name)[] GetWidgetOptions()
     {
-        return WidgetOptions.Values
+        return _avaliableWidgets.Values
             .Select(v => v())
             .Where(v => v.CanAdd)
             .Select(v => (v.PreviewControl(), v.WidgetName))
@@ -426,7 +410,7 @@ public partial class HomePage : UserControl
             
                 if (adornerLayer != null)
                 {
-                    var settingsAdorner = new SettingsAdorner(_slideshowSettings, $"Slideshow Settings", this);
+                    var settingsAdorner = new SettingsAdorner(SlideshowSettings, $"Slideshow Settings", this);
                     settingsAdorner.CloseRequested += (returnSettings) =>
                     {
                         adornerLayer.Remove(settingsAdorner);
@@ -434,7 +418,7 @@ public partial class HomePage : UserControl
                             _settings.DoSlideshow = boolSetting1.Value;
                         if (returnSettings.TryGetValue(1, out var valueRaw2) && valueRaw2.setting is WidgetSettingBool boolSetting2)
                             _settings.RandomPicking = boolSetting2.Value;
-                        if (returnSettings.TryGetValue(2, out var valueRaw3) && valueRaw3.setting is WidgetSettingInt intSetting)
+                        if (returnSettings.TryGetValue(2, out var valueRaw3) && valueRaw3.setting is WidgetSettingDouble intSetting)
                             _settings.DisplayTime = intSetting.Value;
                         if (returnSettings.TryGetValue(3, out var valueRaw4) && valueRaw4.setting is WidgetSettingFolderPicker folderSetting)
                             _settings.FolderPath = folderSetting.Value;
@@ -447,27 +431,20 @@ public partial class HomePage : UserControl
         }
     }
 
-    private Dictionary<int, (IWidgetSetting setting, string title)> _slideshowSettings => new()
+    private Dictionary<int, (IWidgetSetting setting, string title)> SlideshowSettings => new()
     {
         // [-3] = (new WidgetSettingSubTitle("Hello There"),""),
         // [-2] = (new WidgetSettingDescription("Hello there."),""),
         // [-1] = (new WidgetSettingDiv(),""),
         [0] = (new WidgetSettingBool(_settings.DoSlideshow), "Enable Slideshow"),
         [1] = (new WidgetSettingBool(_settings.RandomPicking), "Pick Random Images (will pick in alphabetical order when off)"),
-        [2] = (new WidgetSettingInt(_settings.DisplayTime), "Display Interval (in seconds)"),
+        [2] = (new WidgetSettingDouble(_settings.DisplayTime), "Display Interval (in seconds)"),
         [3] = (new WidgetSettingFolderPicker(_settings.FolderPath), "FolderPath (can have nested folders)"),
     };
     
-    public async void AddWidgetClicked(string name)
+    public async Task AddWidgetClicked(string name)
     {
-        try
-        {
-            await CreateWidget(name);
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show(e.Message, "Widget Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        await CreateWidget(name);
     }
 
     public enum OptionType
@@ -499,5 +476,5 @@ internal record HomeSettings
     public bool DoSlideshow { get; set; }
     public bool RandomPicking { get; set; }
     public string FolderPath { get; set; } = "";
-    public int DisplayTime { get; set; } = 60;
+    public double DisplayTime { get; set; } = 60;
 }

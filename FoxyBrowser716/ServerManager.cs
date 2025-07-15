@@ -1,83 +1,184 @@
 using System.IO;
 using System.IO.Pipes;
-using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Text;
 using System.Windows;
-using System.Windows.Input;
-using Microsoft.Win32;
 
 namespace FoxyBrowser716;
+
+// layout plan:
+// Server Manager (holds everything)
+// breaks down into instances and windows
+
+
 
 /// <summary>
 /// Browser works as a server-client system to easily manage and sync data across windows
 /// </summary>
 public class ServerManager
 {
-	private static ServerManager Instance { get; set; }
-
-	public InstanceDataManager BrowserData { get; private set; }
+	public static ServerManager Context { get; private set; }
 	
-	public List<MainWindow> BrowserWindows = [];
-
-	public readonly string InstanceName = "Main";
+	private System.Timers.Timer _backupTimer;
 	
+	public InstanceManager DefaultBrowserManager { get; private set; }
+	
+	public List<InstanceManager> AllInstanceManagers = [];
+	
+	public InstanceManager CurrentBrowserManager;
+
+	public IReadOnlyList<BrowserApplicationWindow> AllBrowserWindows 
+		=> AllInstanceManagers.SelectMany(m => m.BrowserWindows).ToList();
+
 	private ServerManager()
 	{ /*TODO*/ }
-
+	
 	public static void RunServer(StartupEventArgs e)
 	{
 		// list of tasks to do
 		List<Task> tasks = [];
 		
-		// check if it is installed.
-		if (!InstallationManager.IsBrowserInstalled()
-		    && MessageBox.Show($"Would you like to register {InstallationManager.GetApplicationName()} as an app (allows you to set it as the default browser in windows settings)?", "Finish Install?", MessageBoxButton.YesNo) 
-		    == MessageBoxResult.Yes)
+		// start a server instance
+		Context = new ServerManager();
+		Task.Run(() => Context.StartPipeServer());
+
+		if (!Directory.Exists(InfoGetter.InstanceFolder))
 		{
-			InstallationManager.RegisterBrowser();
+			Directory.CreateDirectory(InfoGetter.InstanceFolder);
+			Directory.CreateDirectory(Path.Combine(InfoGetter.InstanceFolder, "Default"));
 		}
 		
-		// start a server instance
-		Instance = new ServerManager();
-		Task.Run(() => Instance.StartPipeServer());
+		foreach (var path in Directory.GetDirectories(InfoGetter.InstanceFolder))
+		{
+			var instanceName = path.Split(@"\")[^1];
+			if (instanceName == "Default") continue;
+
+			var newInstance = new InstanceManager(instanceName);
+			
+			Context.AllInstanceManagers.Add(newInstance);
+			
+			newInstance.Focused += manager =>
+			{
+				Context.CurrentBrowserManager = manager;
+			};
+		}
 		
 		// initialize that new server instance
-		Instance.BrowserData = new InstanceDataManager(Instance);
-		tasks.Add(Instance.BrowserData.Initialize());
-			
+		Context.DefaultBrowserManager = new InstanceManager("Default");
+		Context.DefaultBrowserManager.Focused += manager =>
+		{
+			Context.CurrentBrowserManager = manager;
+		};
+		Context.AllInstanceManagers.Add(Context.DefaultBrowserManager);
+		Context.CurrentBrowserManager = Context.DefaultBrowserManager;
+		tasks.Add(Context.DefaultBrowserManager.Initialize());
+		
+		//check if the application was not closed correctly:
+		var checkFile = Path.Combine(InfoGetter.AppData, "ERROR_CHECK.txt");
+		if (File.Exists(checkFile) && File.Exists(BackupManager.BackupFilePath))
+		{
+			var popup = new FoxyPopup()
+			{
+				Title = "Backup Found",
+				Subtitle = "FoxyBrowser was closed unexpectedly.\nDo you wish to load a backup file to restore the previous application state?",
+				ShowProgressbar = false,
+			};
+			popup.SetButtons(new FoxyPopup.BottomButton(() => {
+				Application.Current.Dispatcher.Invoke(async () =>
+				{
+					popup.ShowProgressbar = true;
+					popup.Subtitle = "Restoring backup...";
+					await BackupManager.RestoreFromBackup(Context);
+					AfterPopupSetup(e, checkFile, true);
+					popup.Close();
+				});
+			}, "Yes"), new FoxyPopup.BottomButton(() =>
+			{
+				AfterPopupSetup(e, checkFile, false);
+				popup.Close();
+			}, "No"));
+			 
+			popup.Show();
+		}
+		else
+		{
+			AfterPopupSetup(e, checkFile, false);
+		}
+	}
+
+	private static void AfterPopupSetup(StartupEventArgs e, string checkFile, bool backupRestored)
+	{
+		// create the check file
+		File.WriteAllText(checkFile, "Do not delete this file.\nThis is used to check if the application was closed correctly and restore any tabs when you reopen it.");
+		
+		AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+		{
+			// normal application exit, remove the check
+			File.Delete(checkFile);
+		};
+		
+		Context._backupTimer = new System.Timers.Timer(5000);
+		Context._backupTimer.Elapsed += async (_,_) => await Context.DoBackup();
+		Context._backupTimer.AutoReset = true;
+		Context._backupTimer.Enabled = true;
+		
+		// if the backup is restored, do not do anything:
+		if (backupRestored) return;
+		
 		// start the first browser window of the instance
 		if (e.Args.All(string.IsNullOrWhiteSpace))
 		{
-			Application.Current.Dispatcher.Invoke(() => 
+			Application.Current.Dispatcher.Invoke(async () =>
 			{
-				var firstWindow = new MainWindow(Instance);
-				Instance.BrowserWindows.Add(firstWindow);
-				firstWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
-				firstWindow.Show();
+				await Context.DefaultBrowserManager.CreateWindow();
 			});
 		}
 		else
 		{
 			var url = e.Args.First(s => !string.IsNullOrWhiteSpace(s));
 			Application.Current.Dispatcher.Invoke(async () => 
-			{ 
-				var newWindow = new MainWindow(Instance); 
-				await newWindow._initTask; 
-				newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)); 
-				Instance.BrowserWindows.Add(newWindow);
-				newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
-				newWindow.Show(); 
+			{
+				if (Context.CurrentBrowserManager is { } cbm)
+				{
+					if (cbm.CurrentBrowserWindow is { } cbw)
+					{
+						cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+					}
+					else
+					{
+						await cbm.CreateWindow(url);
+					}
+				}
+				else
+				{
+					if (Context.DefaultBrowserManager.CurrentBrowserWindow is { } cbw)
+					{
+						cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+					}
+					else
+					{
+						await Context.DefaultBrowserManager.CreateWindow(url);
+					}
+				}
 			});
 		}
+	}
+
+	private async Task DoBackup()
+	{
+		await Application.Current.Dispatcher.Invoke(async () => await BackupManager.RefreshBackupFile(Context));
 	}
 	
 	private void StartPipeServer()
 	{
-		using var server = new NamedPipeServerStream("FoxyBrowser716_Pipe", 
-			PipeDirection.In,
-			NamedPipeServerStream.MaxAllowedServerInstances
-		);
 		while (true)
 		{
+#if DEBUG
+			using var server = new NamedPipeServerStream("DEBUG_FoxyBrowser716_Pipe");
+#else
+			using var server = new NamedPipeServerStream("FoxyBrowser716_Pipe");
+#endif
 			server.WaitForConnection();
 			using var reader = new StreamReader(server);
 			var message = reader.ReadLine();
@@ -85,32 +186,37 @@ public class ServerManager
 			{
 				var url = message.Replace("NewWindow|", "");
 				Application.Current.Dispatcher.Invoke(async () => { 
-					var newWindow = new MainWindow(Instance);
+					
 					if (!string.IsNullOrWhiteSpace(url))
 					{
-						await newWindow._initTask;
-						newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+						if (CurrentBrowserManager.CurrentBrowserWindow is { } cbw)
+							cbw.TabManager.SwapActiveTabTo(cbw.TabManager.AddTab(url));
+						else
+						{
+							var newWindow = await CurrentBrowserManager.CreateWindow(url);
+							newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+						}
 					}
-					Instance.BrowserWindows.Add(newWindow);
-					newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
-					newWindow.Show(); 
+					else
+					{
+						await CurrentBrowserManager.CreateWindow();
+					}
 				});
 			}
 		}
 	}
 
-	public async Task<bool> TryTabTransfer(WebsiteTab tab, double left, double top)
+	public async Task<bool> TryTabTransfer(WebsiteTab tab, Point mid)
 	{
-		var pos = new Point(left, top);
 
 		foreach (var window in
-		         (from window in BrowserWindows
+		         (from window in AllBrowserWindows
 			         let da = window.GetLeftBarDropArea()
-			         let leftBoundS = da.X + 25
-			         let topBoundS = da.Y + 25
-			         let rightBoundS = da.X + da.Width + 50
-			         let bottomBoundS = da.Y + da.Height + 50
-			         where pos.X >= leftBoundS && pos.X <= rightBoundS && pos.Y >= topBoundS && pos.Y <= bottomBoundS
+			         let leftBoundS = da.X - 5
+			         let topBoundS = da.Y - 5
+			         let rightBoundS = da.X + da.Width + 5
+			         let bottomBoundS = da.Y + da.Height + 5
+			         where mid.X >= leftBoundS && mid.X <= rightBoundS && mid.Y >= topBoundS && mid.Y <= bottomBoundS
 			         select window))
 		{
 			//TODO: modify this to keep the tab dragging
@@ -120,41 +226,15 @@ public class ServerManager
 		
 		return false;
 	}
-	
-	public async Task CreateWindowFromTab(WebsiteTab tab, Rect finalRect, bool fullscreen)
+
+	private BrowserApplicationWindow? _lastOpenedWindow
+		=> CurrentBrowserManager.CurrentBrowserWindow;
+
+	public bool DoPositionUpdate(Point mid)
 	{
-		var newWindow = new MainWindow(Instance)
-		{
-			Top = finalRect.Y,
-			Left = finalRect.X,
-		};
-		if (finalRect is { Height: > 50, Width: > 280 })
-		{
-			newWindow.Height = finalRect.Height;
-			newWindow.Width = finalRect.Width;
-		}
-		
-		await newWindow._initTask; 
-		newWindow.TabManager.SwapActiveTabTo(await newWindow.TabManager.TransferTab(tab)); 
-		Instance.BrowserWindows.Add(newWindow);
-		newWindow.Closed += (w, _) => { Instance.BrowserWindows.Remove((MainWindow)w); };
-		newWindow.Show();
-
-		if (fullscreen)
-		{
-			newWindow.WindowState = WindowState.Maximized;
-		}
-	}
-
-	
-	private MainWindow? _lastOpenedWindow;
-
-	public bool DoPositionUpdate(double left, double top)
-	{
-	    var pos = new Point(left, top);
 	    var inExactDropArea = false;
 
-	    foreach (var window in BrowserWindows)
+	    foreach (var window in AllBrowserWindows)
 	    {
 	        var da = window.GetLeftBarDropArea();
 	        
@@ -163,22 +243,22 @@ public class ServerManager
 	        var rightBoundS = da.X + da.Width;
 	        var bottomBoundS = da.Y + da.Height;
 	        
-	        var leftBoundB = da.X - 50;
-	        var topBoundB = da.Y - 50;
-	        var rightBoundB = da.X + da.Width + 100;
-	        var bottomBoundB = da.Y + da.Height + 100;
+	        var leftBoundB = da.X - 150;
+	        var topBoundB = da.Y - 150;
+	        var rightBoundB = da.X + da.Width + 150;
+	        var bottomBoundB = da.Y + da.Height + 150;
 	        
-	        if (pos.X >= leftBoundS && pos.X <= rightBoundS && pos.Y >= topBoundS && pos.Y <= bottomBoundS)
+	        if (mid.X >= leftBoundS && mid.X <= rightBoundS && mid.Y >= topBoundS && mid.Y <= bottomBoundS)
 	        {
 	            inExactDropArea = true;
 	        }
 	        
-	        if (pos.X >= leftBoundB && pos.X <= rightBoundB && pos.Y >= topBoundB && pos.Y <= bottomBoundB)
+	        if (mid.X >= leftBoundB && mid.X <= rightBoundB && mid.Y >= topBoundB && mid.Y <= bottomBoundB)
 	        {
 	            if (!window.SideOpen)
 	            {
 	                window.OpenSideBar();
-	                _lastOpenedWindow = window;
+	                // _lastOpenedWindow = window;
 	            }
 	        }
 	        else
@@ -188,7 +268,7 @@ public class ServerManager
 	                window.CloseSideBar();
 	                if (_lastOpenedWindow == window)
 	                {
-	                    _lastOpenedWindow = null;
+	                    // _lastOpenedWindow = null;
 	                }
 	            }
 	        }
@@ -197,15 +277,15 @@ public class ServerManager
 	    if (_lastOpenedWindow != null)
 	    {
 	        var lastDa = _lastOpenedWindow.GetLeftBarDropArea();
-	        var lastLeftBoundB = lastDa.X - 50;
-	        var lastTopBoundB = lastDa.Y - 50;
+	        var lastLeftBoundB = lastDa.X - 100;
+	        var lastTopBoundB = lastDa.Y - 100;
 	        var lastRightBoundB = lastDa.X + lastDa.Width + 100;
 	        var lastBottomBoundB = lastDa.Y + lastDa.Height + 100;
 	        
-	        if (!(pos.X >= lastLeftBoundB && pos.X <= lastRightBoundB && pos.Y >= lastTopBoundB && pos.Y <= lastBottomBoundB))
+	        if (!(mid.X >= lastLeftBoundB && mid.X <= lastRightBoundB && mid.Y >= lastTopBoundB && mid.Y <= lastBottomBoundB))
 	        {
 	            _lastOpenedWindow.CloseSideBar();
-	            _lastOpenedWindow = null;
+	            //_lastOpenedWindow = null;
 	        }
 	    }
 

@@ -1,11 +1,9 @@
-﻿using System.Threading.Tasks;
-using System.Timers;
-using System.Windows;
+﻿using System.Timers;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class DateWidget : IWidget
+public partial class DateWidget : Widget
 {
 	public DateWidget()
 	{
@@ -19,7 +17,10 @@ public partial class DateWidget : IWidget
 	{
 		base.Initialize(manager, settings);
 		
-		var timer = new System.Timers.Timer(1000);
+		// set the time immediately
+		TimeLabel.Text = DateTime.Now.ToString("M/d/yy");
+		
+		var timer = new System.Timers.Timer(10000);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
 		timer.Enabled = true;

@@ -1,11 +1,9 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class YoutubeWidget : IWidget
+public partial class YoutubeWidget : Widget
 {
 	public YoutubeWidget()
 	{

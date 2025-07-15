@@ -1,4 +1,4 @@
-﻿<homeWidgets:IWidget x:Class="FoxyBrowser716.HomeWidgets.EditConfigWidget"
+﻿<homeWidgets:Widget x:Class="FoxyBrowser716.HomeWidgets.EditConfigWidget"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,4 +13,4 @@
             Background="#002D2D30" Foreground="White"
             Content="{wpf:MaterialIconExt Kind=Edit}" >
     </Button>
-</homeWidgets:IWidget>
+</homeWidgets:Widget>

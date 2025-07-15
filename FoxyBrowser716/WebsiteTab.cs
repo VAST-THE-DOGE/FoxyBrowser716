@@ -1,12 +1,20 @@
 ﻿using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Web;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using WpfAnimatedGif;
+using Color = System.Drawing.Color;
 
 namespace FoxyBrowser716;
 
@@ -23,31 +31,39 @@ public class WebsiteTab
 		private set => _image = value;
 	}
 	
-	public readonly WebView2 TabCore;
+	public readonly WebView2CompositionControl TabCore;
 	public readonly int TabId;
 	public string Title { get; private set; }
 
 	public readonly Task SetupTask;
 		
 	private static int _tabCounter;
+	private InstanceManager _instance;
 
-	public WebsiteTab(string url)
+	public int ChromeTabId { get; private set; }
+
+	public Dictionary<string, (string Name, string Path)> Extensions = [];
+
+	public WebsiteTab(string url, CoreWebView2Environment websiteEnvironment, InstanceManager instance)
 	{
-		var webView = new WebView2();
-		webView.Visibility = Visibility.Collapsed;
-			
-		TabCore = webView;
-		TabCore.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0, 0, 0);
+		TabCore = new WebView2CompositionControl();
+		TabCore.Visibility = Visibility.Collapsed;
+		
+		TabCore.AllowExternalDrop = true;
+		TabCore.AllowDrop = true;
+		TabCore.UseLayoutRounding = true;
+		_instance = instance;
+		
+		TabCore.DefaultBackgroundColor = Color.Black;
 		TabId = Interlocked.Increment(ref _tabCounter); // thread safe version of _tabCounter++
-
-		// Display a loading animation while fetching the favicon
+		
 		var image = new Image();
-		var gifSource = new BitmapImage(new Uri("pack://application:,,,/Resources/NoiceLoadingIconBlack.gif"));
-		ImageBehavior.SetAnimatedSource(image, gifSource);
+		// var gifSource = new BitmapImage(new Uri("pack://application:,,,/Resources/NoiceLoadingIconBlack.gif"));
+		// ImageBehavior.SetAnimatedSource(image, gifSource);
 		Icon = image;
 		Title = "Loading...";
 		
-		SetupTask = Initialize(url);
+		SetupTask = Initialize(url, websiteEnvironment);
 	}
 
 	public event Action UrlChanged;
@@ -55,17 +71,26 @@ public class WebsiteTab
 	public event Action TitleChanged;
 	public event Action<string> NewTabRequested;
 	
-	private async Task Initialize(string url)
+	private async Task Initialize(string url, CoreWebView2Environment websiteEnvironment)
 	{
-		await TabCore.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-			
+		await TabCore.EnsureCoreWebView2Async(websiteEnvironment);
+		
+		var extensionLoadTask = LoadExtensions();
+		TabCore.AllowExternalDrop = true;
+		TabCore.AllowDrop = true;
+		TabCore.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		TabCore.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
 		TabCore.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
-		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = true;
-			
+		
+		//TODO: changed for testing
+		TabCore.CoreWebView2.Profile.IsGeneralAutofillEnabled = false; // = true;
+		
+		//TODO added for testing
+		InputMethod.SetIsInputMethodSuspended(TabCore, true);
+		TabCore.FlowDirection = FlowDirection.LeftToRight;
+		TabCore.UseLayoutRounding = false;
+
 		TabCore.CoreWebView2.Settings.AreDevToolsEnabled = true;
-			
-		await LoadExtensions();
 		
 		TabCore.SourceChanged += (_, _) =>
 		{
@@ -76,80 +101,96 @@ public class WebsiteTab
 		{
 			Title = TabCore.CoreWebView2.DocumentTitle;
 			TitleChanged?.Invoke();
+			TabCore.DefaultBackgroundColor = Color.White;
 		};
 		
 		TabCore.CoreWebView2.FaviconChanged += async (_, _) => await RefreshImage();
 
-		TabCore.CoreWebView2.NewWindowRequested += (_,e) =>
+		/*TabCore.CoreWebView2.NewWindowRequested += (_,e) =>
 		{
 			e.Handled = true;
 			NewTabRequested?.Invoke(e.Uri);
-		};
+		};*/
+
+		TabCore.CoreWebView2.DownloadStarting +=
+			async (_, e) =>
+			{
+				// we only care about downloads from the chrome webstore for now,
+				// skip anything else (aka, let the normal download handler take over):
+				if (TabCore.CoreWebView2.Source.Contains("chromewebstore.google.com"))
+					await _instance.ExtractIdAndAddExtension(e);
+			};
+
+		await extensionLoadTask;
 		
 		try
 		{
-			TabCore.Source = new Uri(url);
+			TabCore.CoreWebView2.Navigate(url);
 		}
-		catch (Exception exception)
+		catch
 		{
-			TabCore.Source = new Uri($"https://www.google.com/search?q={url}");
+			if (url.Contains('.') || url.Contains(':') || url.Contains('/'))
+				try
+				{
+					TabCore.CoreWebView2.Navigate("https://"+url);
+				}
+				catch
+				{
+					try
+					{
+						try
+						{
+							TabCore.CoreWebView2.Navigate("http://"+url);
+						}
+						catch
+						{
+							TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
+						}						
+					}
+					catch
+					{
+						TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
+					}
+				}
+			else
+				TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(_instance.CurrentSearchEngine, url));
 		}
 	}
 	
 	private async Task LoadExtensions()
 	{
-	    try
-	    {
-	        // Define the extension folder path relative to the application directory
-	        var extensionsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "extensions");
-	
-	        // Check if the directory exists, if not, create it (just in case)
-	        if (!Directory.Exists(extensionsFolder))
+        if (!Directory.Exists(_instance.ExtensionFolder))
+        {
+            Directory.CreateDirectory(_instance.ExtensionFolder);
+        }
+
+        async Task<bool> IsExtension(string path)
+        {
+	        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
+		        .FirstOrDefault();
+
+	        if (manifestFile != null)
 	        {
-	            Directory.CreateDirectory(extensionsFolder);
-	        }
-	
-	        async Task<bool> IsExtension(string path)
-	        {
-		        var manifestFile = Directory.GetFiles(path, "manifest.json", SearchOption.TopDirectoryOnly)
-			        .FirstOrDefault();
-	
-		        if (manifestFile != null)
+		        var ext = await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
+		        if (ext != null)
 		        {
-			        await TabCore.CoreWebView2.Profile.AddBrowserExtensionAsync(path);
+			        Extensions.Add(ext.Id, (ext.Name, path));
+			        //await TabCore.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MainWindow.GetScript(MainWindow.FindPopupHtml(manifestFile, path)));
 		        }
-	
-		        return manifestFile != null;
 	        }
-	        
-	        // Find all subfolders within the "extensions" directory
-	        foreach (var subfolder in Directory.GetDirectories(extensionsFolder))
-	        {
-	            try
-	            {
-		            // Check if the subfolder contains a manifest.json file
-		            if (await IsExtension(subfolder)) continue;
-		            if (Directory.GetDirectories(subfolder).Length == 1)
-			            await IsExtension(Directory.GetDirectories(subfolder)[0]);
-	                else
-		                throw new FileNotFoundException("Manifest.json not found in " + subfolder);
-	            }
-	            catch (Exception ex)
-	            {
-	                // If any error occurs loading an extension, show a message box for now
-	                MessageBox.Show(
-	                    $"Failed to load extension in folder: {subfolder}\nError: {ex.Message}",
-	                    "Extension Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-	            }
-	        }
-	    }
-	    catch (Exception ex)
-	    {
-	        // Catch and display errors in initializing or accessing the extensions folder
-	        MessageBox.Show(
-	            $"Failed to initialize extensions loader.\nError: {ex.Message}",
-	            "Extensions Error", MessageBoxButton.OK, MessageBoxImage.Error);
-	    }
+
+	        return manifestFile != null;
+        }
+        
+        foreach (var subfolder in Directory.GetDirectories(_instance.ExtensionFolder))
+        {
+            if (await IsExtension(subfolder)) continue;
+            if (Directory.GetDirectories(subfolder).Length == 1)
+	            await IsExtension(Directory.GetDirectories(subfolder)[0]); //TODO: loop through all + what if empty folder?
+            //TODO: find a proper way to handle this:
+            /*else
+                throw new FileNotFoundException("Manifest.json not found in " + subfolder);*/
+        }
 	}
 
 	private async Task RefreshImage()
@@ -179,48 +220,5 @@ public class WebsiteTab
 		}
 
 		ImageChanged?.Invoke();
-	}
-
-	
-	private static async Task<ImageSource> GetImageSourceFromStreamAsync(Stream stream)
-	{
-		var bitmap = new BitmapImage();
-		await using (stream)
-		{
-			bitmap.BeginInit();
-			bitmap.StreamSource = stream;
-			bitmap.CacheOption = BitmapCacheOption.OnLoad;
-			bitmap.EndInit();
-		}
-		return bitmap;
-	}
-
-	private static BitmapSource CreateCircleWithLetter(int width, int height, string letter, Brush circleBrush,
-		Brush textBrush)
-	{
-		var drawingVisual = new DrawingVisual();
-		using (var dc = drawingVisual.RenderOpen())
-		{
-			dc.DrawEllipse(circleBrush, null, new Point(width / 2.0, height / 2.0), width / 2.0, height / 2.0);
-
-			var formattedText = new FormattedText(
-				letter,
-				CultureInfo.CurrentCulture,
-				FlowDirection.LeftToRight,
-				new Typeface("Arial"),
-				Math.Min(width, height) / 2.0,
-				textBrush,
-				VisualTreeHelper.GetDpi(drawingVisual).PixelsPerDip);
-
-			var textPosition = new Point(
-				(width - formattedText.Width) / 2,
-				(height - formattedText.Height) / 2);
-			dc.DrawText(formattedText, textPosition);
-		}
-
-		var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-		bitmap.Render(drawingVisual);
-
-		return bitmap;
 	}
 }

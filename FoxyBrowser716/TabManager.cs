@@ -12,15 +12,6 @@ namespace FoxyBrowser716;
 public class TabManager
 {
 	private readonly ConcurrentDictionary<int, WebsiteTab> _tabs = [];
-
-	/*private readonly ConcurrentDictionary<int, TabInfo> _pins = [];
-
-	private readonly ConcurrentDictionary<int, TabInfo> _bookmarks = [];*/
-
-	private int _pinBookmarkCounter;
-
-	private bool _initialized;
-	
 	public event Action TabsUpdated;
 	/*public event Action PinsUpdated;
 	public event Action BookmarksUpdated;*/
@@ -34,10 +25,40 @@ public class TabManager
 
 	private bool _performanceMode = false; //TODO: link into settings?
 	
-	public static CoreWebView2Environment? WebsiteEnvironment { get; private set; }
+	public CoreWebView2Environment? WebsiteEnvironment { get; private set; }
 	
 	public event Action<WebsiteTab> TabCreated;
 	public event Action<int> TabRemoved;
+
+	public InstanceManager InstanceData;
+
+	/// <summary>
+	/// DO NOT USE, use `PreloadTab`
+	/// </summary>
+	private WebsiteTab? _preloadTab;
+
+	public event Action<WebsiteTab> PreloadCreated;
+	
+	/// <summary>
+	/// IMPORTANT: creates a new tab on each access, only call once and save the reference.
+	/// </summary>
+	private WebsiteTab? PreloadTab
+	{
+		get
+		{
+			var preloadTab = _preloadTab;
+			_preloadTab = null;
+			var newPreload = new WebsiteTab("about:blank", WebsiteEnvironment, InstanceData);
+			PreloadCreated?.Invoke(newPreload);
+			newPreload.SetupTask.ContinueWith(_ => _preloadTab = newPreload, TaskScheduler.FromCurrentSynchronizationContext() );
+			return preloadTab;
+		}
+	}
+	
+	public TabManager(InstanceManager instanceData)
+	{
+		InstanceData = instanceData;
+	}
 	
 	/// <summary>
 	/// Loads json data for pins and bookmarks.
@@ -49,11 +70,7 @@ public class TabManager
 			AreBrowserExtensionsEnabled = true,
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 		};
-		
-		//TODO: User data turns into "{InstanceName}\WebView2Data"
-		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, "UserData", options);
-
-		_initialized = true; // allow saving pis and bookmarks
+		WebsiteEnvironment ??= await CoreWebView2Environment.CreateAsync(null, Path.Combine(InfoGetter.AppData, Path.Combine(InstanceData.InstanceFolder, "WebView2")), options);
 	}
 
 	// getter and setters
@@ -73,52 +90,99 @@ public class TabManager
 		}
 		
 		if (_tabs.TryRemove(tabId, out var tab))
-			if(!keepCore)
+		{
+			if (!keepCore)
 				tab.TabCore.Dispose();
-			else if (tab.TabCore.Parent is Grid g)
+			if (tab.TabCore.Parent is Grid g)
+			{
 				g.Children.Remove(tab.TabCore);
+			}			
 			else
 				throw new Exception($"Tab (Id = {tabId}) could not be removed. Unknown TabCore Parent.");
-				
+		}
+		
 		TabsUpdated?.Invoke();
 		TabRemoved?.Invoke(tabId);
 	}
 	
 	public int AddTab(string url)
 	{
-		var tab = new WebsiteTab(url);
+		WebsiteTab? tab = null;//PreloadTab;
+		if (tab is null)
+		{
+			tab = new WebsiteTab(url, WebsiteEnvironment, InstanceData);
+			PreloadCreated?.Invoke(tab);
+		}
+		else
+		{
+			try
+			{
+				tab.TabCore.CoreWebView2.Navigate(url);
+			}
+			catch
+			{
+				if (url.Contains('.') || url.Contains(':') || url.Contains('/'))
+					try
+					{
+						tab.TabCore.CoreWebView2.Navigate("https://"+url);
+					}
+					catch
+					{
+						try
+						{
+							try
+							{
+								tab.TabCore.CoreWebView2.Navigate("http://"+url);
+							}
+							catch
+							{
+								tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
+							}						
+						}
+						catch
+						{
+							tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
+						}
+					}
+				else
+					tab.TabCore.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(InstanceData.CurrentSearchEngine, url));
+			}
+		}
+		
 		_tabs.TryAdd(tab.TabId, tab);
 		TabCreated?.Invoke(tab);
 		TabsUpdated?.Invoke();
+		
 		return tab.TabId;
 	}
 
 	// tab management
-	private int? nextToSwap;
-	private bool swaping;
+	private int? _nextToSwap;
+	private bool _swaping;
 	public void SwapActiveTabTo(int tabId)
 	{
 		if (ActiveTabId == tabId)
 			return;
 		
-		if (swaping)
+		if (_swaping)
 		{
-			nextToSwap = tabId;
+			_nextToSwap = tabId;
 			return;
 		}
-		swaping = true;
+		_swaping = true;
 		
-		if (tabId != -1 && _tabs.TryGetValue(tabId, out var tab))
+		if (tabId >= 0 && _tabs.TryGetValue(tabId, out var tab))
 		{
 			tab.SetupTask.ContinueWith(_ =>
 			{
 				if (tab.TabCore.CoreWebView2.IsSuspended)
 					tab.TabCore.CoreWebView2.Resume();
+				tab.TabCore.Focus();
 			}, TaskScheduler.FromCurrentSynchronizationContext());
-		} else if (tabId != -1)
+		} else if (tabId >= 0)
 		{
 			// should not happen, return.
-			swaping = false;
+			_swaping = false;
 			return;
 		}
 		
@@ -150,10 +214,10 @@ public class TabManager
 		
 		ActiveTabChanged?.Invoke(oldId, ActiveTabId);
 
-		swaping = false;
-		if (nextToSwap is { } next)
+		_swaping = false;
+		if (_nextToSwap is { } next)
 		{
-			nextToSwap = null;
+			_nextToSwap = null;
 			SwapActiveTabTo(next);
 		}
 	}
@@ -162,12 +226,20 @@ public class TabManager
 	/// to be called by another tab manager
 	/// </summary>
 	/// <param name="tab">tab to add</param>
-	public async Task<int> TransferTab(WebsiteTab tab)
+	public Task<int> TransferTab(WebsiteTab tab)
 	{
-		_tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
-		TabCreated?.Invoke(tab);
-		TabsUpdated?.Invoke();
+		//TODO: TEMP STUFF HERE
+		// to fix a bug, just make a new tab, not the best method as website data may not save.
 		
-		return tab.TabId;
+		return Task.FromResult(AddTab(tab.TabCore.Source.ToString()));
+		
+		//old
+		// _tabs.TryAdd(tab.TabId, tab); //TODO: is this an issue (TabId)? might be later on, not now.
+		// PreloadCreated?.Invoke(tab);
+		// TabCreated?.Invoke(tab);
+		// TabsUpdated?.Invoke();
+		//
+		// return Task.FromResult(tab.TabId);
 	}
+	
 }

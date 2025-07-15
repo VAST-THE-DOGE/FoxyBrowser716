@@ -1,11 +1,9 @@
-﻿using System.Threading.Tasks;
-using System.Timers;
-using System.Windows;
+﻿using System.Timers;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets;
 
-public partial class TimeWidget : IWidget
+public partial class TimeWidget : Widget
 {
 	public TimeWidget()
 	{
@@ -19,7 +17,7 @@ public partial class TimeWidget : IWidget
 	{
 		base.Initialize(manager, settings);
 		
-		var timer = new System.Timers.Timer(50);
+		var timer = new System.Timers.Timer(100);
 		timer.Elapsed += UpdateTime;
 		timer.AutoReset = true;
 		timer.Enabled = true;
@@ -29,6 +27,9 @@ public partial class TimeWidget : IWidget
 
 	private void UpdateTime(object? sender, ElapsedEventArgs elapsedEventArgs)
 	{
-		Dispatcher.Invoke(() => TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt"));
+		Dispatcher.Invoke(() =>
+		{
+			TimeLabel.Text = DateTime.Now.ToString("h:mm:ss tt");
+		});
 	}
 }

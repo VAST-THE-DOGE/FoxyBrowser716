@@ -7,14 +7,14 @@ using System.Windows.Shapes;
 using Material.Icons;
 using Material.Icons.WPF;
 
-using static FoxyBrowser716.ColorPalette;
-using static FoxyBrowser716.Animator;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 
 namespace FoxyBrowser716.HomeWidgets
 {
     public class WidgetOverlayAdorner : Adorner
     {
-        private readonly IWidget _widget;
+        private readonly Widget _widget;
         private readonly VisualCollection _visuals;
         private readonly Grid _grid;
         private readonly Border _border;
@@ -24,7 +24,7 @@ namespace FoxyBrowser716.HomeWidgets
         private bool _isDragging;
         private bool _isResizing;
 
-        public WidgetOverlayAdorner(IWidget widget) : base(widget)
+        public WidgetOverlayAdorner(Widget widget) : base(widget)
         {
             _widget = widget;
             _visuals = new VisualCollection(this);

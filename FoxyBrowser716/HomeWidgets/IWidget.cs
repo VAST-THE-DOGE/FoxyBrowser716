@@ -1,13 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using FoxyBrowser716.HomeWidgets.WidgetSettings;
 
 namespace FoxyBrowser716.HomeWidgets
 {
-    public abstract class IWidget : UserControl
+    public abstract class Widget : UserControl
     {
         public abstract string WidgetName { get; }
         public virtual bool CanAdd => true;
@@ -26,11 +24,11 @@ namespace FoxyBrowser716.HomeWidgets
         
         public WidgetData Data { get; set; }
         
-        protected TabManager _tabManager;
+        protected TabManager TabManager;
 
         public virtual Task Initialize(TabManager manager, Dictionary<string, IWidgetSetting>? settings = null)
         {
-            _tabManager = manager;
+            TabManager = manager;
             if (settings is { Count: > 0 } validSettings)
                 WidgetSettings = validSettings;
             return Task.CompletedTask;

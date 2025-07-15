@@ -1,75 +1,78 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using static FoxyBrowser716.Styling.ColorPalette;
 
 namespace FoxyBrowser716
 {
     public partial class TabMoveWindowCard : Window
     {
         private WebsiteTab _tab;
-        private ServerManager _instance;
         private bool _isDragging = true;
         private bool _dragInitiated = false;
         private double _startTime;
+        private InstanceManager  _instanceManager;
 
-        public TabMoveWindowCard(ServerManager instance, WebsiteTab tab)
+        public TabMoveWindowCard(WebsiteTab tab, InstanceManager instanceManager)
         {
             InitializeComponent();
-            _instance = instance;
             _tab = tab;
+            _instanceManager = instanceManager;
 
+            RootBorder.BorderBrush = new SolidColorBrush(HighlightColor);
+            
             _startTime = DateTime.Now.Millisecond;
             
             TitleLabel.Content = _tab.Title;
             TabIcon.Child = _tab.Icon;
 
-            Loaded += (s, e) =>
+            Loaded += (_, _) =>
             {
-                
+                LocationChanged += async (s,e) => await Window_LocationChanged(s,e);
             };
 
-            // Hook up event handlers
-            LocationChanged += Window_LocationChanged;
             MouseMove += OnMouseMove;
-            MouseLeftButtonUp += OnMouseLeftButtonUp;
+            MouseLeftButtonUp += async (s,e) => await OnMouseLeftButtonUp(s,e);
         }
 
-        private async void Window_LocationChanged(object sender, EventArgs e)
+        private async Task Window_LocationChanged(object? sender, EventArgs e)
         {
-            try
+            // if (!IsVisible) return;
+            var mid = new Point(Left + RootBorder.Width / 2, Top + RootBorder.Height / 2);
+            // Point mid = Mouse.GetPosition(null);
+            //var mid = PointToScreen(Mouse.GetPosition(this));
+            
+            // var mid = Mouse.GetPosition(RootBorder);
+            // var mid = new Point(Left + mouse.X, Top + mouse.Y);
+            if (DateTime.Now.Millisecond > _startTime + 300 && ServerManager.Context.DoPositionUpdate(mid) && await ServerManager.Context.TryTabTransfer(_tab, mid))
             {
-                if (_instance.DoPositionUpdate(Left, Top) && DateTime.Now.Millisecond > _startTime + 200 && await _instance.TryTabTransfer(_tab, Left, Top))
-                {
-                    _isDragging = false;
-                    Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"{ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _isDragging = false;
+                Close();
             }
         }
 
-        private void OnMouseMove(object sender, MouseEventArgs e)
+        private async void OnMouseMove(object sender, MouseEventArgs e)
         {
             if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
             {
                 if (!_dragInitiated)
                 {
                     _dragInitiated = true;
-                    this.DragMove(); // Initiates system drag with snapping
-                    // After DragMove returns, the drag is complete (mouse button released)
-                    OnMouseLeftButtonUp(sender, null);
+                    DragMove();
+                    await OnMouseLeftButtonUp(sender, null);
                 }
             }
         }
 
-        private async void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs? e)
+        private async Task OnMouseLeftButtonUp(object sender, MouseButtonEventArgs? e)
         {
             if (!_isDragging) return;
             _isDragging = false;
-            var finalRect = new Rect(Left, Top, ActualWidth, ActualHeight);
-            await _instance.CreateWindowFromTab(_tab, finalRect, WindowState == WindowState.Maximized);
+            var finalRect = new Rect(Left, Top, Width == 280 ? 0 : Width, Height == 45 ? 0 : Height);
+            await _instanceManager.CreateAndTransferTabToWindow(_tab, finalRect, 
+                WindowState == WindowState.Maximized 
+                    ? InstanceManager.BrowserWindowState.Maximized 
+                    : InstanceManager.BrowserWindowState.Normal);
             Close();
         }
     }

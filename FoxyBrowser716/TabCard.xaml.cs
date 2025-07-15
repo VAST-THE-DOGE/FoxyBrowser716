@@ -1,5 +1,5 @@
-using static FoxyBrowser716.ColorPalette;
-using static FoxyBrowser716.Animator;
+using static FoxyBrowser716.Styling.ColorPalette;
+using static FoxyBrowser716.Styling.Animator;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -100,31 +100,33 @@ public partial class TabCard
 
     private void SetupAnimations()
     {
-        RootPanel.Background = new SolidColorBrush(MainColor);
-
+        RootBorder.Background = new SolidColorBrush(_transparentBack);
+        RootBorder.BorderBrush = new SolidColorBrush(_transparentAccent);
+        
         CloseButton.MouseEnter += (_, _) =>
             { ChangeColorAnimation(CloseButton.Foreground, ((SolidColorBrush)RootPanel.Background).Color, Colors.Red); };
         CloseButton.MouseLeave += (_, _) =>
             { ChangeColorAnimation(CloseButton.Foreground, ((SolidColorBrush)RootPanel.Background).Color, Colors.White); };
-
+        
         DuplicateButton.MouseEnter += (_, _) =>
             { ChangeColorAnimation(DuplicateButton.Foreground, ((SolidColorBrush)RootPanel.Background).Color, Colors.DodgerBlue); };
         DuplicateButton.MouseLeave += (_, _) =>
             { ChangeColorAnimation(DuplicateButton.Foreground, ((SolidColorBrush)RootPanel.Background).Color, Colors.White); };
 
-        RootPanel.MouseEnter += (_, _) =>
-            { if (!_active) ChangeColorAnimation(RootPanel.Background, ((SolidColorBrush)RootPanel.Background).Color, AccentColor); };
-        RootPanel.MouseLeave += (_, _) =>
-            { if (!_active) ChangeColorAnimation(RootPanel.Background, ((SolidColorBrush)RootPanel.Background).Color, MainColor); };
+        RootPanel.MouseEnter += (_, _) => { ChangeColorAnimation(RootBorder.Background, ((SolidColorBrush)RootBorder.Background).Color, _transparentAccent); };
+        RootPanel.MouseLeave += (_, _) => { ChangeColorAnimation(RootBorder.Background, ((SolidColorBrush)RootBorder.Background).Color, _transparentBack); };
     }
         
+    private readonly Color _transparentBack = Color.FromArgb(225, 48, 50, 58);
+    private readonly Color _transparentAccent = Color.FromArgb(255, AccentColor.R, AccentColor.G, AccentColor.B);
+    private readonly Color _transparentHighlight = Color.FromArgb(255, HighlightColor.R, HighlightColor.G, HighlightColor.B);
     public void ToggleActiveTo(bool active)
     {
         _active = active;
 
-        ChangeColorAnimation(RootPanel.Background, 
-            ((SolidColorBrush)RootPanel.Background).Color, 
-            _active ? HighlightColor : MainColor,
+        ChangeColorAnimation(RootBorder.BorderBrush, 
+            ((SolidColorBrush)RootBorder.BorderBrush).Color, 
+            _active ? _transparentHighlight : MainColor,
             _active ? 0.25 : 0.5);
     }
     
@@ -149,7 +151,7 @@ public partial class TabCard
             _isDragging = false;
             Opacity = 1.0;
             return;
-        };
+        }
         
         if (Parent is not StackPanel stackPanel) return;
         var currentPosition = e.GetPosition(stackPanel);
@@ -186,7 +188,7 @@ public partial class TabCard
     {
         if (currentPosition.X < 0 || currentPosition.X > Width) return null;
         
-        var move = (int)(currentPosition.Y / 30);
+        var move = (int)(currentPosition.Y / 25);
         return move == 0 ? (int?)0 : move;
     }
 }

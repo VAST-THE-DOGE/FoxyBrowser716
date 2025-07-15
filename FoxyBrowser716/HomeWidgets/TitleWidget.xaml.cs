@@ -1,9 +1,6 @@
-﻿using System.Threading.Tasks;
-using FoxyBrowser716.HomeWidgets.WidgetSettings;
+﻿namespace FoxyBrowser716.HomeWidgets;
 
-namespace FoxyBrowser716.HomeWidgets;
-
-public partial class TitleWidget : IWidget
+public partial class TitleWidget : Widget
 {
 	public TitleWidget()
 	{
