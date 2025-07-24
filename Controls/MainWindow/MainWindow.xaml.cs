@@ -1,15 +1,4 @@
-using System.Runtime.InteropServices;
-using Windows.Foundation;
-using Windows.Graphics.Display;
 using Microsoft.UI.Windowing;
-using WinRT.Interop;
-
-//
-
-using Microsoft.UI.Xaml.Input;
-
-using Windows.Win32;
-using Windows.Win32.UI.WindowsAndMessaging;
 using WinUIEx;
 
 // using CommunityToolkit.WinUI.Helpers;
