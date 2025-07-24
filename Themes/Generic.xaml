@@ -1,0 +1,42 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FoxyBrowser716_WinUI.Controls.Generic"
+    xmlns:helpers="using:FoxyBrowser716_WinUI.Controls.Helpers">
+
+    <helpers:HalfValueConverter x:Key="HalfValueConverter"/>
+
+    <Style TargetType="local:FIconButton">
+    <Setter Property="Width" Value="40"/>
+    <Setter Property="Height" Value="40"/>
+    <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAccentBrush}"/>
+
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="local:FIconButton">
+                <Border
+                    Padding="0"
+                    Background="{TemplateBinding Background}"
+                    Width="{TemplateBinding Width}"
+                    Height="{TemplateBinding Height}"
+                    CornerRadius="{Binding Width,
+                               RelativeSource={RelativeSource TemplatedParent},
+                               Converter={StaticResource HalfValueConverter}}">
+                    <ContentPresenter
+                        Padding="1"
+                        Content="{TemplateBinding Content}"
+                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                        ContentTransitions="{TemplateBinding ContentTransitions}"
+                        Width="{TemplateBinding Width}"
+                        Height="{TemplateBinding Height}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"/>
+                </Border>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+
+</ResourceDictionary>
