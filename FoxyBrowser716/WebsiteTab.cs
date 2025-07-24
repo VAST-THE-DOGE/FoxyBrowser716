@@ -1,19 +1,10 @@
-﻿using System.Globalization;
-using System.IO;
-using System.IO.Compression;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Web;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
-using WpfAnimatedGif;
 using Color = System.Drawing.Color;
 
 namespace FoxyBrowser716;
