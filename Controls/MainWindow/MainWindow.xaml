@@ -14,10 +14,10 @@
     </Window.SystemBackdrop>-->
     <Grid x:Name="Root" Background="Orange">
         <Grid Background="Transparent" BorderBrush="Orange" BorderThickness="2" CornerRadius="10">
-            <Grid x:Name="BlurredBackgroundGrid" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="10"/>
+            <Grid x:Name="BlurredBackgroundGrid" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="10"/>
             <mainWindow:TopBar x:Name="TopBar" 
-                               MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
-                               />
+                               MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" 
+                               CloseClicked="TopBar_OnCloseClicked" BorderlessToggled="TopBar_OnBorderlessToggled"/>
             <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="10" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,30,0,0">
                 <WebView2 Source="https://music.youtube.com/playlist?list=PLJXbLSSbZFzdtRlB24b24yqolwIqhdysV"></WebView2>
             </Grid>

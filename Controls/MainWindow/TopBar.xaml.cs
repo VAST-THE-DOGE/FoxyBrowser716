@@ -30,7 +30,7 @@ public sealed partial class TopBar : UserControl
     public event Action? BackClicked;
     public event Action? ForwardClicked;
     public event Action? RefreshClicked;
-    public event Action? SearchClicked;
+    public event Action<string>? SearchClicked;
     public event Action? EngineClicked;
     
     private Theme _currentTheme = DefaultThemes.DarkMode;
@@ -54,7 +54,7 @@ public sealed partial class TopBar : UserControl
         ButtonBorderlessToggle.CurrentTheme = CurrentTheme;
         ButtonMinimize.CurrentTheme = CurrentTheme;
         ButtonMaximize.CurrentTheme = CurrentTheme;
-        ButtonClose.CurrentTheme = CurrentTheme;
+        ButtonClose.CurrentTheme = CurrentTheme with { PrimaryAccentColor = CurrentTheme.NoColor };
         ButtonBack.CurrentTheme = CurrentTheme;
         ButtonForward.CurrentTheme = CurrentTheme;
         ButtonRefresh.CurrentTheme = CurrentTheme;
@@ -72,10 +72,55 @@ public sealed partial class TopBar : UserControl
         ApplyTheme();
     }
 
-    private void BorderlessToggleClick(object sender, RoutedEventArgs e)
+    private void BorderlessToggle_OnClick(object sender, RoutedEventArgs e)
     {
         IsBorderless = !IsBorderless;
         BorderlessToggled?.Invoke();
         ButtonBorderlessToggle.ForceHighlight = IsBorderless;
+    }
+
+    private void ButtonMenu_OnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void ButtonRefresh_OnClick(object sender, RoutedEventArgs e)
+    {
+        RefreshClicked?.Invoke();
+    }
+
+    private void ButtonBack_OnClick(object sender, RoutedEventArgs e)
+    {
+        BackClicked?.Invoke();
+    }
+
+    private void ButtonForward_OnClick(object sender, RoutedEventArgs e)
+    {
+        ForwardClicked?.Invoke();
+    }
+
+    private void ButtonSearch_OnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void ButtonEngine_OnClick(object sender, RoutedEventArgs e)
+    {
+        EngineClicked?.Invoke();
+    }
+
+    private void ButtonMinimize_OnClick(object sender, RoutedEventArgs e)
+    {
+        MinimizeClicked?.Invoke();
+    }
+
+    private void ButtonMaximize_OnClick(object sender, RoutedEventArgs e)
+    {
+        MaximizeClicked?.Invoke();
+    }
+
+    private void ButtonClose_OnClick(object sender, RoutedEventArgs e)
+    {
+        CloseClicked?.Invoke();
     }
 }
