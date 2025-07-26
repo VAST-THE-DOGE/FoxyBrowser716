@@ -37,6 +37,6 @@ public sealed class MaterialMarkupIcon : MarkupExtension
     
 	protected override object ProvideValue()
 	{
-		return new MaterialControlIcon { Kind = Kind };
+		return new MaterialControlIcon { Kind = Kind,  };
 	}
 }

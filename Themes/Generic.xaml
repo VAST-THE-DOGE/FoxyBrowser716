@@ -7,33 +7,18 @@
     <helpers:HalfValueConverter x:Key="HalfValueConverter"/>
 
     <Style TargetType="local:FIconButton">
-    <Setter Property="Width" Value="40"/>
-    <Setter Property="Height" Value="40"/>
     <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAccentBrush}"/>
 
     <Setter Property="Template">
         <Setter.Value>
             <ControlTemplate TargetType="local:FIconButton">
-                <Border
-                    Padding="0"
+                <ContentPresenter
                     Background="{TemplateBinding Background}"
-                    Width="{TemplateBinding Width}"
-                    Height="{TemplateBinding Height}"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
                     CornerRadius="{Binding Width,
                                RelativeSource={RelativeSource TemplatedParent},
-                               Converter={StaticResource HalfValueConverter}}">
-                    <ContentPresenter
-                        Padding="1"
-                        Content="{TemplateBinding Content}"
-                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                        ContentTransitions="{TemplateBinding ContentTransitions}"
-                        Width="{TemplateBinding Width}"
-                        Height="{TemplateBinding Height}"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        HorizontalContentAlignment="Stretch"
-                        VerticalContentAlignment="Stretch"/>
-                </Border>
+                               Converter={StaticResource HalfValueConverter}}"/>
             </ControlTemplate>
         </Setter.Value>
     </Setter>

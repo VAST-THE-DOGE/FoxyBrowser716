@@ -12,45 +12,40 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         InitializeComponent();
         
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(TopBar.DragZone); // initial is needed to allow clicks for other buttons
-        var presenter = AppWindow.Presenter as OverlappedPresenter;
-        if (presenter != null)
+        // initial is needed to allow clicks for other buttons
+        SetTitleBar(TopBar.DragZone); 
+        if (AppWindow.Presenter is OverlappedPresenter p)
         {
-            presenter.SetBorderAndTitleBar(true, false);
+            ExtendsContentIntoTitleBar = true;
+            p.SetBorderAndTitleBar(true, false);
         }
+        else
+            throw new Exception("AppWindowPresenterKind is not OverlappedPresenter, cannot setup the window properly!");
         
         TopBar.DragZone.PointerEntered += (_, _) =>
         {
-            SetTitleBar(TopBar.DragZone); // to fix a bug with this becoming unset for whatever reason
+            // to fix a bug with this becoming unset for whatever reason
+            SetTitleBar(TopBar.DragZone);
         };
-
-        this.WindowStateChanged += HandleWindowStateChanged;
     }
 
     private void TopBar_OnMinimizeClicked()
     {
-        if (InFullscreen)
-        {
-            AppWindow.SetPresenter(AppWindowPresenterKind.Default);
-        }
-
+        // can't click this in fullscreen, and will cause an error if this runs while in fullscreen
+        if (InFullscreen) return;
+        
         this.Minimize();
     }
 
     private void TopBar_OnMaximizeClicked()
     {
-        if (!InFullscreen && WindowState == WindowState.Normal)
-        {
-            if (TopBar.IsBorderless)
-                AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            else
-                this.Maximize();
-        }
-        else if (InFullscreen)
-            AppWindow.SetPresenter(AppWindowPresenterKind.Default);
-        else if (WindowState == WindowState.Maximized)
+        // can't click this in fullscreen, and will cause an error if this runs while in fullscreen
+        if (InFullscreen) return;
+        
+        if (WindowState == WindowState.Maximized)
             this.Restore();
+        else
+            this.Maximize();
     }
 
     private void TopBar_OnCloseClicked()
@@ -60,28 +55,10 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     
     private void TopBar_OnBorderlessToggled()
     {
-        if (!TopBar.IsBorderless && InFullscreen)
-        {
-            AppWindow.SetPresenter(AppWindowPresenterKind.Default);
-            if (WindowState != WindowState.Maximized)
-            {
-                this.Maximize();
-            }
-        }
-        else if (TopBar.IsBorderless && WindowState == WindowState.Maximized)
-        {
-            AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-        }
+        AppWindow.SetPresenter(TopBar.IsBorderless
+            ? AppWindowPresenterKind.FullScreen
+            : AppWindowPresenterKind.Default);
     }
     
     internal bool InFullscreen => AppWindow.Presenter is FullScreenPresenter;
-    
-    private void HandleWindowStateChanged(object? s, WindowState ws)
-    {
-        //TODO: very weird here!
-        // need the following to make maximize by drag or windows arrow keys to work properly with fullscreen
-        
-        // if (ws == WindowState.Maximized && !InFullscreen && TopBar.IsBorderless)
-        //     AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-    }
 }

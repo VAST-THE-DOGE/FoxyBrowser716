@@ -23,6 +23,8 @@ public sealed partial class TopBar : UserControl
     public bool IsBorderless { get; private set; }
     public event Action? BorderlessToggled;
     
+    public event Action? MenuClicked;
+    
     public event Action? MinimizeClicked;
     public event Action? MaximizeClicked;
     public event Action? CloseClicked;
@@ -63,6 +65,7 @@ public sealed partial class TopBar : UserControl
         
         SearchBackground.Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent);
         SearchBackground.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
+        SearchBox.SelectionHighlightColor = new SolidColorBrush(CurrentTheme.SecondaryHighlightColorVeryTransparent);
     }
     
     public TopBar()
@@ -77,11 +80,15 @@ public sealed partial class TopBar : UserControl
         IsBorderless = !IsBorderless;
         BorderlessToggled?.Invoke();
         ButtonBorderlessToggle.ForceHighlight = IsBorderless;
+        
+        DragZone.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
+        ButtonMaximize.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
+        ButtonMinimize.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void ButtonMenu_OnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        MenuClicked?.Invoke();
     }
 
     private void ButtonRefresh_OnClick(object sender, RoutedEventArgs e)
@@ -101,7 +108,11 @@ public sealed partial class TopBar : UserControl
 
     private void ButtonSearch_OnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        var searchText = SearchBox.Text.Trim();
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            SearchClicked?.Invoke(searchText);
+        }
     }
 
     private void ButtonEngine_OnClick(object sender, RoutedEventArgs e)
@@ -122,5 +133,31 @@ public sealed partial class TopBar : UserControl
     private void ButtonClose_OnClick(object sender, RoutedEventArgs e)
     {
         CloseClicked?.Invoke();
+    }
+
+    private void SearchBox_OnKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            var searchText = SearchBox.Text.Trim();
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                SearchClicked?.Invoke(searchText);
+            }
+        }
+    }
+
+    private void SearchBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        ChangeColorAnimation(SearchBackground.BorderBrush, CurrentTheme.SecondaryAccentColorSlightTransparent);
+        ChangeColorAnimation(SearchBackground.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
+
+    }
+
+    private void SearchBox_OnGotFocus(object sender, RoutedEventArgs e)
+    {
+        ChangeColorAnimation(SearchBackground.BorderBrush, CurrentTheme.PrimaryHighlightColor);
+        ChangeColorAnimation(SearchBackground.Background, CurrentTheme.PrimaryBackgroundColorSlightTransparent);
+
     }
 }
