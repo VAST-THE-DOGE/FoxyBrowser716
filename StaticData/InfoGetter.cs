@@ -5,8 +5,7 @@ namespace FoxyBrowser716_WinUI.DataManagement;
 public static class InfoGetter
 {
     #region FilePaths
-    public static readonly string AppData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"FoxyBrowser716");
-    public static readonly string InstanceFolder = Path.Combine(AppData, "Instances");
+    //TODO: maybe keep in here, or in the middleware?
     #endregion
     
     #region Versioning

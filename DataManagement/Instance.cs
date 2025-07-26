@@ -14,6 +14,8 @@ public class Instance
 
 	public InstanceSettings Settings;
 	
+	public InstanceCacheData CacheData;
+	
 	public readonly bool IsPrimaryInstance;
 
 	public List<MainWindow> Windows = [];

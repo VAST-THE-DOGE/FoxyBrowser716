@@ -111,6 +111,9 @@ public sealed partial class TopBar : UserControl
         var searchText = SearchBox.Text.Trim();
         if (!string.IsNullOrEmpty(searchText))
         {
+            // should update later with a webview2 getting the focus, but doing so now can't hurt:
+            SearchBackground.Focus(FocusState.Programmatic);
+            
             SearchClicked?.Invoke(searchText);
         }
     }
@@ -139,11 +142,7 @@ public sealed partial class TopBar : UserControl
     {
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
-            var searchText = SearchBox.Text.Trim();
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                SearchClicked?.Invoke(searchText);
-            }
+            ButtonSearch_OnClick(this, e);
         }
     }
 
