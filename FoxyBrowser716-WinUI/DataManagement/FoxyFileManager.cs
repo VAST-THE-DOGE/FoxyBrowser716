@@ -580,6 +580,11 @@ public static class FoxyFileManager
 	
 	public static async Task<ReturnCode> ExportDataAsync(string exportPath)
 	{
+		throw new NotImplementedException(); // used to see data and copy and paste to another computer.
+	}
+	
+	public static async Task<ReturnCode> ImportDataAsync(string importPath)
+	{
 		throw new NotImplementedException();
 	}
 	

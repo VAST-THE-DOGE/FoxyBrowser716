@@ -2,8 +2,9 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Timers;
+using FoxyBrowser716_WinUI.DataManagement;
 
-namespace FoxyBrowser716_WinUI.DataManagement;
+namespace FoxyBrowser716_WinUI.DataObjects;
 
 public abstract class NotifyPropertyChanged : INotifyPropertyChanged
 {
