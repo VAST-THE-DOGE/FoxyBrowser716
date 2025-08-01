@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using FoxyBrowser716_WinUI.DataObjects.Basic;
 
 namespace FoxyBrowser716_WinUI.StaticData;
 

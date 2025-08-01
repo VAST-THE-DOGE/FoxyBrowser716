@@ -1,4 +1,6 @@
-﻿public struct Theme
+﻿namespace FoxyBrowser716_WinUI.DataObjects.Basic;
+
+public struct Theme
 {
 	public required Color PrimaryBackgroundColor;
 	public Color PrimaryBackgroundColorSlightTransparent

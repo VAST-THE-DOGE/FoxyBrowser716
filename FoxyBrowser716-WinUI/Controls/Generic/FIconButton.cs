@@ -1,3 +1,5 @@
+using FoxyBrowser716_WinUI.DataObjects.Basic;
+
 namespace FoxyBrowser716_WinUI.Controls.Generic;
 
 public sealed partial class FIconButton : ContentControl

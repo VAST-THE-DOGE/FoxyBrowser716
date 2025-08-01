@@ -1,4 +1,6 @@
 using Windows.UI.Text;
+using FoxyBrowser716_WinUI.DataObjects.Basic;
+using Microsoft.UI.Text;
 
 namespace FoxyBrowser716_WinUI.Controls.Generic;
 

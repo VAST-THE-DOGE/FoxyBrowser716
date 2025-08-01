@@ -7,10 +7,11 @@ namespace FoxyBrowser716_WinUI.DataManagement;
 public static class FoxyFileManager
 {
 	#region FolderNames
+
 	/// <summary>
 	/// just the app name, from the info getter.
 	/// </summary>
-	private static readonly string BrowserDataFolderName = InfoGetter.AppName;
+	private static readonly string BrowserDataFolderName = "FoxyBrowser716"; //InfoGetter.AppName; //TODO: temp fix before initialization is implemented
 	/// <summary>
 	/// the name of the folder that contains all instances of the browser.
 	/// </summary>

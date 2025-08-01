@@ -11,7 +11,7 @@
     <EnableUnsafeMixedMicrosoftWindowsUIXamlProjections>true</EnableUnsafeMixedMicrosoftWindowsUIXamlProjections>
     <CsWinRTUseWindowsUIXamlProjections>false</CsWinRTUseWindowsUIXamlProjections>
     <UseWinUI>true</UseWinUI>
-    <UseUwp>true</UseUwp>
+<!--    <UseUwp>false</UseUwp>-->
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -43,8 +43,11 @@
 
 
 
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+
+
     <PackageReference Include="Material.Icons.WinUI3" Version="2.4.1" />
-    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3415-prerelease" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />

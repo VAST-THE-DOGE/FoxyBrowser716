@@ -2,19 +2,11 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Timers;
+using CommunityToolkit.Mvvm.ComponentModel;
 using FoxyBrowser716_WinUI.DataManagement;
 
-namespace FoxyBrowser716_WinUI.DataObjects;
+namespace FoxyBrowser716_WinUI.DataObjects.Complex;
 
-public abstract class NotifyPropertyChanged : INotifyPropertyChanged
-{
-	public event PropertyChangedEventHandler? PropertyChanged;
-
-	protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-	{
-		PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-	}
-}
 
 public abstract class IFoxyAutoSaverItem
 {
@@ -29,7 +21,7 @@ public abstract class IFoxyAutoSaverItem
 	{
 		SaveRequested?.Invoke(this, priority ?? Priority);
 	}
-	public abstract void RequestLoad();
+	// public abstract void RequestLoad();
 }
 
 /// <summary>
@@ -38,7 +30,7 @@ public abstract class IFoxyAutoSaverItem
 /// This should act as the field itself! pass in new T()
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public abstract class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : NotifyPropertyChanged
+public class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : class, INotifyPropertyChanged, new()
 {
 	private SavePriority Priority { get; }
 	private string FilePath { get; init; }
@@ -100,7 +92,7 @@ public abstract class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : Notif
 	}
 }
 
-public abstract class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : NotifyPropertyChanged
+public class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyPropertyChanged, new()
 {
 	private SavePriority Priority { get; init; } = SavePriority.Normal;
 	protected string FilePath { get; init; }
@@ -108,7 +100,7 @@ public abstract class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : Notify
 	
 	public ObservableCollection<T>? Items { get; private set; } = null;
 	
-	private readonly HashSet<NotifyPropertyChanged> _subscribedItems = [];
+	private readonly HashSet<T> _subscribedItems = [];
 
 	public FoxyAutoSaverList(ObservableCollection<T> item, string fileName, FoxyFileManager.FolderType folderType, string? instanceName = null, SavePriority priority = SavePriority.Normal)
 	{
@@ -154,7 +146,7 @@ public abstract class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : Notify
 	{
 		if (e.NewItems is not null)
 		{
-			foreach (NotifyPropertyChanged item in e.NewItems)
+			foreach (T item in e.NewItems)
 			{
 				if (_subscribedItems.Add(item))
 				{
@@ -165,7 +157,7 @@ public abstract class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : Notify
     
 		if (e.OldItems is not null && e.Action != NotifyCollectionChangedAction.Move)
 		{
-			foreach (NotifyPropertyChanged item in e.OldItems)
+			foreach (T item in e.OldItems)
 			{
 				if (_subscribedItems.Remove(item))
 				{
@@ -219,8 +211,8 @@ public enum SavePriority
 
 public class FoxyAutoSaver : IDisposable
 {
-	private uint _saveIntervalMs = 15000;
-	public uint SaveIntervalMs
+	private int _saveIntervalMs = 15000;
+	public int SaveIntervalMs
 	{
 		get => _saveIntervalMs;
 		set
@@ -244,15 +236,8 @@ public class FoxyAutoSaver : IDisposable
 	
 	private readonly HashSet<IFoxyAutoSaverItem> _items = [];
 	
-	public FoxyAutoSaver(List<IFoxyAutoSaverItem> items)
-	{
-		_queueTimer.Interval = SaveIntervalMs;
-		_queueTimer.Elapsed += HandleQueueTimerElapsed;
-		
-		foreach (var item in items)
-			if (_items.Add(item))
-				item.SaveRequested += AddToQueue;
-	}
+	private FoxyAutoSaver()
+	{ }
 
 	public async Task<bool> AddItem(IFoxyAutoSaverItem item, bool loadItem = true)
 	{
@@ -275,20 +260,47 @@ public class FoxyAutoSaver : IDisposable
 		return true;
 	}
 	
-	public async Task Start(bool LoadItems = true)
+	public async Task AddItems(List<IFoxyAutoSaverItem> items, bool loadItem = true)
 	{
+		await Task.WhenAll(items.Select(item => AddItem(item, loadItem)));
+	}
+	
+	public void RemoveItems(List<IFoxyAutoSaverItem> items)
+	{
+		foreach (var item in items)
+		{
+			RemoveItem(item);
+		}
+	}
+
+	
+	public static async Task<FoxyAutoSaver> Create(List<IFoxyAutoSaverItem>? items = null, bool LoadItems = true)
+	{
+		items ??= [];
+		
+		var autoSaver = new FoxyAutoSaver();
+		
+		autoSaver._queueTimer.Interval = autoSaver.SaveIntervalMs;
+		autoSaver._queueTimer.Elapsed += autoSaver.HandleQueueTimerElapsed;
+		
+		foreach (var item in items)
+			if (autoSaver._items.Add(item))
+				item.SaveRequested += autoSaver.AddToQueue;
+		
 		if (LoadItems)
 		{
-			foreach (var item in _items)
+			foreach (var item in autoSaver._items)
 			{
 				await item.Load();
 			}
 		}
 
-		_queueTimer.Start();
+		autoSaver._queueTimer.Start();
+
+		return autoSaver;
 	}
 
-	private uint tick;
+	private int tick;
 	private async void HandleQueueTimerElapsed(object? sender, ElapsedEventArgs e)
 	{
 		if (_runningTick)
@@ -299,6 +311,7 @@ public class FoxyAutoSaver : IDisposable
 		switch (tick++)
 		{
 			case 3:
+				tick = 0;
 				tasks.Add(SaveQueue(_lowQueue, SavePriority.Low));
 				goto case 1;
 			case 1:
@@ -307,7 +320,6 @@ public class FoxyAutoSaver : IDisposable
 			case 0:
 			case 2:
 				tasks.Add(SaveQueue(_highQueue, SavePriority.High));
-				tick = 0;
 				await Task.WhenAll(tasks);
 				break;
 		}

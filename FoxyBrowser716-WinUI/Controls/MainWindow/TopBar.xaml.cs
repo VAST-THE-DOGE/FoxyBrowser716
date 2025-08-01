@@ -1,17 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
+using FoxyBrowser716_WinUI.DataObjects.Basic;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
+
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -77,7 +66,14 @@ public sealed partial class TopBar : UserControl
 
     private void BorderlessToggle_OnClick(object sender, RoutedEventArgs e)
     {
-        IsBorderless = !IsBorderless;
+        ToggleBorderless(!IsBorderless);
+        
+    }
+
+    public void ToggleBorderless(bool isBorderless)
+    {
+        IsBorderless = isBorderless;
+        
         BorderlessToggled?.Invoke();
         ButtonBorderlessToggle.ForceHighlight = IsBorderless;
         

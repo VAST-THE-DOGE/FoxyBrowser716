@@ -1,6 +1,8 @@
-namespace FoxyBrowser716_WinUI.DataObjects;
+using FoxyBrowser716_WinUI.DataObjects.Complex;
 
-public class BasicTabInfo : NotifyPropertyChanged
+namespace FoxyBrowser716_WinUI.DataObjects.Basic;
+
+public class BasicTabInfo
 {
 	public string Url { get; init; }
 	public string FaviconUrl { get; init; }

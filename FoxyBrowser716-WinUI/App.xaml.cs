@@ -1,34 +1,83 @@
-﻿using FoxyBrowser716_WinUI.Controls.MainWindow;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+﻿
+using System.Diagnostics;
+using Windows.ApplicationModel.Activation;
+using FoxyBrowser716_WinUI.Controls.MainWindow;
+using FoxyBrowser716_WinUI.DataManagement;
+using Microsoft.Windows.AppLifecycle;
 
 namespace FoxyBrowser716_WinUI
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
     public partial class App : Application
     {
-        private Window? _window;
-        
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
+        private const string AppKey =
+#if DEBUG
+            "FoxyBrowser716-WinUI-Debug";
+#else
+            "FoxyBrowser716-WinUI-Prod";
+#endif
+            
+
         public App()
         {
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Invoked when the application is launched.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            _window = new MainWindow();
-            _window.Activate();
+            // Get the current app instance
+            var currentInstance = AppInstance.GetCurrent();
+            
+            // Check if this is the first instance
+            var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);
+            
+            if (!mainInstance.IsCurrent)
+            {
+                var activationArgs = currentInstance.GetActivatedEventArgs();
+                mainInstance.RedirectActivationToAsync(activationArgs).AsTask().Wait();
+                
+                System.Environment.Exit(0);
+                return;
+            }
+
+            // This is the main instance, set up activation handling
+            currentInstance.Activated += OnActivated;
+            
+            var e = currentInstance.GetActivatedEventArgs();
+            
+            _ = HandleActivationArgs(e, true);
+        }
+
+        private void OnActivated(object? sender, AppActivationArguments e)
+        {
+                _ = HandleActivationArgs(e, false);
+        }
+        
+        private async Task HandleActivationArgs(AppActivationArguments args, bool isFirst)
+        {
+            switch (args.Kind)
+            {
+                case ExtendedActivationKind.Launch:
+                    if (args.Data is ILaunchActivatedEventArgs launchArgs)
+                    {
+                        var arguments = launchArgs.Arguments;
+                        await AppServer.HandleLaunchEvent(arguments?.Split(" ") ?? [], isFirst);
+                    }
+                    break;
+                case ExtendedActivationKind.Protocol:
+                    if (args.Data is IProtocolActivatedEventArgs protocolArgs)
+                    {
+                        var uri = protocolArgs.Uri;
+                        await AppServer.HandleLaunchEvent([uri.ToString()], isFirst);
+                    }
+                    break;
+                case ExtendedActivationKind.CommandLineLaunch:
+                    if (args.Data is ICommandLineActivatedEventArgs commandArgs)
+                    {
+                        var arguments = commandArgs.Operation.Arguments;
+                        await AppServer.HandleLaunchEvent(arguments?.Split(" ") ?? [], isFirst);
+                    }
+                    break;
+            }
         }
     }
 }

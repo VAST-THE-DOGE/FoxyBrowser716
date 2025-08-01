@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace FoxyBrowser716_WinUI.DataManagement;
+namespace FoxyBrowser716_WinUI.StaticData;
 
 public static class InfoGetter
 {
@@ -19,7 +19,7 @@ public static class InfoGetter
     public static readonly string[] Contributors = ["FoxyGuy716"];
     #endregion
     
-    public static readonly string AppName = Assembly.GetExecutingAssembly().GetName().FullName;
+    public static readonly string AppName = Assembly.GetExecutingAssembly().GetName().Name;
 
     #region URLs
 

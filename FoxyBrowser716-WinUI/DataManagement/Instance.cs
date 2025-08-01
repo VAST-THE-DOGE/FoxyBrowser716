@@ -1,18 +1,26 @@
-﻿using FoxyBrowser716_WinUI.Controls.MainWindow;
+﻿using Windows.Foundation;
+using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataObjects;
+using FoxyBrowser716_WinUI.DataObjects.Basic;
+using FoxyBrowser716_WinUI.DataObjects.Complex;
 using FoxyBrowser716_WinUI.StaticData;
+using WinUIEx;
 
 namespace FoxyBrowser716_WinUI.DataManagement;
 
 public class Instance
 {
-	public readonly string InstanceName;
+	public string Name { get; private set; }
 
-	public InstanceSettings Settings;
 	
-	public bool IsPrimaryInstance => InstanceName == "TODO: AppServerField";
+	public InstanceSettings Settings => _settings.Item;
+	public InstanceCache Cache => _cache.Item;
+	private FoxyAutoSaverField<InstanceSettings> _settings = new(() => new InstanceSettings(), "Settings.json", FoxyFileManager.FolderType.Data);
+	private FoxyAutoSaverField<InstanceCache> _cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data);
+	
+	public bool IsPrimaryInstance => Name == AppServer.PrimaryInstance.Name;
 
-	public List<MainWindow> Windows = [];
+	public LinkedList<MainWindow> Windows = [];
 	public MainWindow? CurrentWindow => Windows.FirstOrDefault();
 	
 	public event Action<Theme>? ThemeUpdated;
@@ -27,32 +35,74 @@ public class Instance
 		}
 	}
 	
-	public Instance(string name)
-	{
-		InstanceName = name;
+	public event Action<Instance>? Focused;
+	
+	private Instance()
+	{}
 
-		//TODO: find a good way to force initialize to be called before using the instance.
+	public static async Task<Instance> Create(string name, InstanceRetoreData? retoreData = null)
+	{
+		var newInstance = new Instance();
+		await newInstance.Initialize(name, retoreData);
+		return newInstance;
 	}
 
-	public async Task Initialize(InstanceRetoreData? retoreData = null)
+	public async Task Initialize(string name, InstanceRetoreData? retoreData = null)
 	{
 		var isNewInstance = false;
 		
-		//TODO: optimize this later on. Should be a Task.WhenAll ot load all at one time.
+		Name = name;
 		
-		var result = await FoxyFileManager.ReadFromFileAsync<InstanceSettings>(
-			FoxyFileManager.BuildFilePath("Settings.json", FoxyFileManager.FolderType.Data, InstanceName));
-		if (result.code == FoxyFileManager.ReturnCode.Success && result.content is { } settings)
-		{
-			Settings = settings;
-		}
-		else if (result.code == FoxyFileManager.ReturnCode.NotFound)
-		{
-			
-		}
-		else
-		{
-			throw new Exception($"Failed to load settings.json for instance {InstanceName}: {result.code}");
-		}
+		await AppServer.AutoSaver.AddItems([
+			_settings,
+			_cache,
+		]);
 	}
+	
+	public async Task<MainWindow> CreateWindow(string? url = null,
+		Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
+	{
+		var newWindow = await MainWindow.Create(this);
+		
+		Focused?.Invoke(this);
+		
+		if (startLocation is { } sl)
+		{
+			newWindow.MoveAndResize(sl.X, sl.Y, sl.Width, sl.Height);;
+		}
+		newWindow.ApplyWindowState(windowState);
+		
+		Windows.AddFirst(newWindow);
+		newWindow.Activated += (s, e) =>
+		{
+			if (e.WindowActivationState != WindowActivationState.Deactivated && s is MainWindow win)
+			{
+				Windows.Remove(win);
+				Windows.AddFirst(win);
+				Focused?.Invoke(this);
+			}
+		};
+		newWindow.Closed += (w, _) => 
+		{ 
+			if (w is MainWindow baw)
+				Windows.Remove(baw);
+			else
+				throw new InvalidOperationException(
+					$"Cannot remove browser application window from instance '{Name}', sender type mismatch.");
+		};
+
+		// newWindow.EngineChangeRequested += (se) =>
+		// {
+		// 	Cache.CurrentSearchEngine = se;
+		// };
+
+		if (url != null)
+		{
+			newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
+		}
+		
+		newWindow.Activate();
+		return newWindow;
+	}
+	
 }
