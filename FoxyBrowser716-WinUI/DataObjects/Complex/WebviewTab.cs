@@ -44,7 +44,7 @@ public class WebviewTab
 
 		var extensionSetupTask = TabManager.Instance.GetExtensions().ContinueWith(SetupExtensions);
 
-		// Core.AllowDrop = true;
+		Core.AllowDrop = true;
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		Core.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
 		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
