@@ -52,24 +52,61 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;
         TabManager.TabAdded += TabManagerOnTabAdded;
         TabManager.TabRemoved += TabManagerOnTabRemoved;
+        
+        await LeftBar.Initialize(TabManager);
+
     }
 
-    private void TabManagerOnTabRemoved(int id)
+    private void TabManagerOnTabRemoved(WebviewTab tab)
     {
         //TODO
     }
 
-    private void TabManagerOnTabAdded(WebviewTab tab)
+    private async void TabManagerOnTabAdded(WebviewTab tab)
     {
         TabHolder.Children.Add(tab.Core);
+
+        tab.Info.PropertyChanged += (_, _) =>
+        {
+            if (TabManager.ActiveTabId == tab.Id)
+            {
+                RefreshCurrentTabUi(tab);
+            }
+        };
+        await tab.InitializeTask;
+        tab.Core.CoreWebView2.HistoryChanged += (_, _) =>
+        {
+            if (TabManager.ActiveTabId == tab.Id)
+            {
+                RefreshCurrentTabUi(tab);
+            }
+        };
+    }
+
+    private void RefreshCurrentTabUi(WebviewTab? tab, int? browserWindowId = null)
+    {
+        if (tab is not null)
+        {
+            TopBar.UpdateSearchBar(true, tab.Core.CanGoBack, tab.Core.CanGoForward, tab.Info.Url);
+        }
+        else if (browserWindowId is not null)
+        {
+            TopBar.UpdateSearchBar(false, false, false, string.Empty);
+            HomePage.Visibility = browserWindowId == -1 ? Visibility.Visible : Visibility.Collapsed;
+            SettingsPage.Visibility = browserWindowId == -2 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+            throw new Exception("when refresh ui is called, tab or browserWindowId must be provided.");
     }
 
     private void TabManagerOnActiveTabChanged((int oldId, int newId) pair)
     {
-        HomePage.Visibility = pair.newId == -1 ? Visibility.Visible : Visibility.Collapsed;
-        SettingsPage.Visibility = pair.newId == -2 ? Visibility.Visible : Visibility.Collapsed;
-        
-        //TODO
+        if (pair.newId < 0)
+            RefreshCurrentTabUi(null, pair.newId);
+        else if (TabManager.TryGetTab(pair.newId, out var tab))
+            RefreshCurrentTabUi(tab);
+        else
+            throw new Exception($"Could not retrieve tab with id '{pair.newId}'");
     }
 
     private Theme _currentTheme = DefaultThemes.DarkMode;
@@ -87,6 +124,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         //TODO: remove apply theme from other constructors
         TopBar.CurrentTheme = CurrentTheme;
+        LeftBar.CurrentTheme = CurrentTheme;
         
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);

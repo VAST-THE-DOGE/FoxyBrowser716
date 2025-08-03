@@ -17,7 +17,7 @@ public class WebviewTab
 	public WebView2 Core { get; private set; }
 	
 	public Task InitializeTask { get; private set; }
-
+	
 	public WebviewTab(TabManager tabManager, string? url)
 	{
 		var core = new WebView2();

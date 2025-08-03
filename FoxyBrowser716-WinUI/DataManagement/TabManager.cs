@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
 using Microsoft.Web.WebView2.Core;
 
@@ -11,7 +12,7 @@ public class TabManager
 	private ConcurrentDictionary<int, WebviewTab> _tabs { get; set; } = [];
 	
 	public event Action<WebviewTab> TabAdded;
-	public event Action<int> TabRemoved;
+	public event Action<WebviewTab> TabRemoved;
 	public event Action<(int oldId, int newId)> ActiveTabChanged; 
 	
 	public int ActiveTabId { get; private set; } = -1;
@@ -75,9 +76,8 @@ public class TabManager
 			}			
 			else
 				throw new Exception($"Tab (Id = {tabId}) could not be removed. Unknown Core Parent.");
+			TabRemoved?.Invoke(tab);
 		}
-		
-		TabRemoved?.Invoke(tabId);
 	}
 	
 	public int AddTab(string? url)
@@ -91,10 +91,18 @@ public class TabManager
 	// tab management
 	private int? _nextToSwap;
 	private bool _swaping;
-	public void SwapActiveTabTo(int tabId)
+	public void SwapActiveTabTo(int tabId) => _ = SwapActiveTabTo(tabId, true);
+	
+	public async Task SwapActiveTabTo(int tabId, bool waitForTabToInitialize)
 	{
+		Debug.WriteLine($"{ActiveTabId} => {tabId}");
 		if (ActiveTabId == tabId)
 			return;
+
+		if (waitForTabToInitialize && ActiveTabId >= 0 && _tabs.TryGetValue(ActiveTabId, out var activeTab))
+		{
+			await activeTab.InitializeTask;
+		}
 		
 		if (_swaping)
 		{
@@ -105,12 +113,11 @@ public class TabManager
 		
 		if (tabId >= 0 && _tabs.TryGetValue(tabId, out var tab))
 		{
-			tab.InitializeTask.ContinueWith(_ =>
-			{
-				if (tab.Core.CoreWebView2.IsSuspended)
-					tab.Core.CoreWebView2.Resume();
-				tab.Core.Focus(FocusState.Programmatic);
-			}, TaskScheduler.FromCurrentSynchronizationContext());
+			await tab.InitializeTask;
+			if (tab.Core.CoreWebView2.IsSuspended)
+				tab.Core.CoreWebView2.Resume();
+			tab.Core.Focus(FocusState.Programmatic);
+			
 		} else if (tabId >= 0)
 		{
 			// should not happen, return.

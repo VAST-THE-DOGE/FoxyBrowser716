@@ -15,8 +15,13 @@ public class Instance
 	
 	public InstanceSettings Settings => _settings.Item;
 	public InstanceCache Cache => _cache.Item;
-	private FoxyAutoSaverField<InstanceSettings> _settings = new(() => new InstanceSettings(), "Settings.json", FoxyFileManager.FolderType.Data);
-	private FoxyAutoSaverField<InstanceCache> _cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data);
+	private FoxyAutoSaverField<InstanceSettings> _settings;
+	private FoxyAutoSaverField<InstanceCache> _cache;
+	
+	public ObservableCollection<WebsiteInfo> Pins => _pins.Items;
+	public ObservableCollection<WebsiteInfo> Bookmarks => _bookmarks.Items;
+	private FoxyAutoSaverList<WebsiteInfo> _pins;
+	private FoxyAutoSaverList<WebsiteInfo> _bookmarks;
 	
 	public bool IsPrimaryInstance => Name == AppServer.PrimaryInstance.Name;
 
@@ -53,14 +58,21 @@ public class Instance
 		
 		Name = name;
 		
+		_cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data, Name);
+		_settings = new(() => new InstanceSettings(), "Settings.json", FoxyFileManager.FolderType.Data, Name);
+		
+		_pins = new("Pins.json", FoxyFileManager.FolderType.Data, Name);
+		_bookmarks = new("Bookmarks.json", FoxyFileManager.FolderType.Data, Name);
+			
 		await AppServer.AutoSaver.AddItems([
 			_settings,
 			_cache,
+			_pins,
+			_bookmarks
 		]);
 	}
 	
-	public async Task<MainWindow> CreateWindow(string? url = null,
-		Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
+	public async Task<MainWindow> CreateWindow(string? url = null, Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
 	{
 		var newWindow = await MainWindow.Create(this);
 		

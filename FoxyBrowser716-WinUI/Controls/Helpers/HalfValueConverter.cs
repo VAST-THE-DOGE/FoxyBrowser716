@@ -8,7 +8,7 @@ public class HalfValueConverter : IValueConverter
 {
 	public object Convert(object value, Type targetType, object parameter, string language)
 	{
-		if (value is double d)
+		if (value is double d and > 0)
 		{
 			if (parameter as string == "Point")
 				return new Windows.Foundation.Point(d / 2, d / 2);

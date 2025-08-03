@@ -102,9 +102,9 @@ public class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyP
 	
 	private readonly HashSet<T> _subscribedItems = [];
 
-	public FoxyAutoSaverList(ObservableCollection<T> item, string fileName, FoxyFileManager.FolderType folderType, string? instanceName = null, SavePriority priority = SavePriority.Normal)
+	public FoxyAutoSaverList(string fileName, FoxyFileManager.FolderType folderType, string? instanceName = null, SavePriority priority = SavePriority.Normal)
 	{
-		Items = item;
+		Items = [];
 		FilePath = FoxyFileManager.BuildFilePath(fileName, folderType, instanceName);
 		Priority = priority;
 	}

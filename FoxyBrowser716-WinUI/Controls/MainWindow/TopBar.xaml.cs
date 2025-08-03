@@ -55,6 +55,7 @@ public sealed partial class TopBar : UserControl
         SearchBackground.Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent);
         SearchBackground.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
         SearchBox.SelectionHighlightColor = new SolidColorBrush(CurrentTheme.SecondaryHighlightColorVeryTransparent);
+        SearchBox.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
     }
     
     public TopBar()
@@ -153,6 +154,15 @@ public sealed partial class TopBar : UserControl
     {
         ChangeColorAnimation(SearchBackground.BorderBrush, CurrentTheme.PrimaryHighlightColor);
         ChangeColorAnimation(SearchBackground.Background, CurrentTheme.PrimaryBackgroundColorSlightTransparent);
+    }
 
+    public void UpdateSearchBar(bool showRefresh, bool showBack, bool showForward, string? searchText=null)
+    {
+        ButtonRefresh.Visibility = showRefresh ? Visibility.Visible : Visibility.Collapsed;
+        ButtonBack.Visibility = showBack ? Visibility.Visible : Visibility.Collapsed;
+        ButtonForward.Visibility = showForward ? Visibility.Visible : Visibility.Collapsed;
+
+        if (searchText is { } text)
+            SearchBox.Text = text;
     }
 }

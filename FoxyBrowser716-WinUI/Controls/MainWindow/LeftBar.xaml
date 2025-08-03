@@ -5,9 +5,39 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    xmlns:mainWindow="using:FoxyBrowser716_WinUI.Controls.MainWindow"
+    xmlns:generic="using:FoxyBrowser716_WinUI.Controls.Generic"
+    mc:Ignorable="d" SizeChanged="LeftBar_OnSizeChanged">
+    <Grid x:Name="Root" CornerRadius="10" BorderThickness="2" Width="30" HorizontalAlignment="Left"
+          PointerEntered="Root_OnPointerEntered" PointerExited="Root_OnPointerExited" 
+          PointerPressed="Root_OnPointerPressed" PointerReleased="Root_OnPointerReleased"
+          PointerMoved="Root_OnPointerMoved">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" x:Name="PinsRow"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1"/>
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Stretch"
+                      ZoomMode="Disabled">
+            <StackPanel x:Name="Tabs" HorizontalAlignment="Stretch"/>
+        </ScrollViewer>
+        <Border Grid.Row="2" x:Name="Div" Height="2" Margin="2,2" CornerRadius="1" HorizontalAlignment="Stretch" />
+        <ScrollViewer Grid.Row="3"
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Stretch"
+                      ZoomMode="Disabled">
+            <StackPanel x:Name="Pins" HorizontalAlignment="Stretch"/>
+        </ScrollViewer>
 
-    <Grid Background="Red" Height="50" VerticalAlignment="Stretch" HorizontalAlignment="Left">
-
+        <mainWindow:TabCard Grid.Row="4" x:Name="PinCard" ShowClose="False" ShowDuplicate="False"/>
+        <mainWindow:TabCard Grid.Row="5" x:Name="BookmarkCard" ShowClose="False" ShowDuplicate="False"/>
     </Grid>
 </UserControl>

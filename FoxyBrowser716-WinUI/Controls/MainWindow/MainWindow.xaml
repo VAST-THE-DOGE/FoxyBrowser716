@@ -20,11 +20,11 @@
             <mainWindow:TopBar x:Name="TopBar" 
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" 
                                CloseClicked="TopBar_OnCloseClicked" BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked"/>
-            <Border Background="Red" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="30" Margin="0,30,0,0"/>
             <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,30,0,0">
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
             </Grid>
+            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,30,0,0"/>
         </Grid>
     </Grid>
 </winUiEx:WindowEx>

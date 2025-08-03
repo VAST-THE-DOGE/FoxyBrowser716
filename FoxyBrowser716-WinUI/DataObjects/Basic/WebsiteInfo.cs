@@ -2,10 +2,11 @@
 
 namespace FoxyBrowser716_WinUI.DataObjects.Basic;
 
-public class WebsiteInfo
+[ObservableObject]
+public partial class WebsiteInfo
 {
-	public required string Url { get; set; }
-	public required string FavIconUrl { get; set; }
-	public required string Title { get; set; }
-	public DateTime? DateAdded { get; set; }
+	[ObservableProperty] private string _url;
+	[ObservableProperty] private string _favIconUrl;
+	[ObservableProperty] private string _title;
+	[ObservableProperty] private DateTime? _dateAdded;
 }

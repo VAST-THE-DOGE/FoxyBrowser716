@@ -71,8 +71,8 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         
-        <generic:FIconButton Grid.Column="0" x:Name="ButtonMenu" Height="26" Width="26" Content="{generic:MaterialMarkupIcon Kind=Menu}" OnClick="ButtonMenu_OnClick"/>
-        <Grid Grid.Column="1" x:Name="SearchBackground" Height="26" 
+        <generic:FIconButton Grid.Column="0" x:Name="ButtonMenu" Height="24" Width="24" Content="{generic:MaterialMarkupIcon Kind=Menu}" OnClick="ButtonMenu_OnClick"/>
+        <Grid Grid.Column="1" x:Name="SearchBackground" Height="24" 
               BorderThickness="2" CornerRadius="10" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -84,13 +84,13 @@
 
             </Grid.ColumnDefinitions>
             
-            <generic:FIconButton Grid.Column="0" x:Name="ButtonRefresh" Height="22" Width="22" Content="{generic:MaterialMarkupIcon Kind=Refresh}" OnClick="ButtonRefresh_OnClick"/>
-            <generic:FIconButton Grid.Column="1" x:Name="ButtonBack" Height="22" Width="22" Content="{generic:MaterialMarkupIcon Kind=ArrowBack}" OnClick="ButtonBack_OnClick"/>
-            <generic:FIconButton Grid.Column="2" x:Name="ButtonForward" Height="22" Width="22" Content="{generic:MaterialMarkupIcon Kind=ArrowForward}" OnClick="ButtonForward_OnClick"/>
+            <generic:FIconButton Grid.Column="0" x:Name="ButtonRefresh" Height="20" Width="20" Content="{generic:MaterialMarkupIcon Kind=Refresh}" OnClick="ButtonRefresh_OnClick"/>
+            <generic:FIconButton Grid.Column="1" x:Name="ButtonBack" Height="20" Width="20" Content="{generic:MaterialMarkupIcon Kind=ArrowBack}" OnClick="ButtonBack_OnClick"/>
+            <generic:FIconButton Grid.Column="2" x:Name="ButtonForward" Height="20" Width="20" Content="{generic:MaterialMarkupIcon Kind=ArrowForward}" OnClick="ButtonForward_OnClick"/>
             <TextBox Grid.Column="3" x:Name="SearchBox" 
                      Style="{StaticResource CustomTextBoxStyle}"
-                     Height="22" 
-                     MaxHeight="22"
+                     Height="20" 
+                     MaxHeight="20"
                      Margin="0,0,0,0" 
                      Padding="5,0,5,0"
                      IsSpellCheckEnabled="True" 
@@ -99,15 +99,15 @@
                      LostFocus="SearchBox_OnLostFocus" 
                      KeyDown="SearchBox_OnKeyDown"
                      PlaceholderText="Search or enter a URL"/>
-            <generic:FIconButton Grid.Column="4" x:Name="ButtonSearch" Height="22" Width="22" Content="{generic:MaterialMarkupIcon Kind=Search}" OnClick="ButtonSearch_OnClick"/>
-            <generic:FIconButton Grid.Column="5" x:Name="ButtonEngine" Height="22" Width="22" Content="{generic:MaterialMarkupIcon Kind=AbTesting}" OnClick="ButtonEngine_OnClick"/>
+            <generic:FIconButton Grid.Column="4" x:Name="ButtonSearch" Height="20" Width="20" Content="{generic:MaterialMarkupIcon Kind=Search}" OnClick="ButtonSearch_OnClick"/>
+            <generic:FIconButton Grid.Column="5" x:Name="ButtonEngine" Height="20" Width="20" Content="{generic:MaterialMarkupIcon Kind=AbTesting}" OnClick="ButtonEngine_OnClick"/>
         </Grid>
         <Border Grid.Column="2" x:Name="DragZone" Width="100" x:FieldModifier="internal" Background="Transparent"/>
-        <generic:FIconButton Grid.Column="3" x:Name="ButtonBorderlessToggle" OnClick="BorderlessToggle_OnClick" Height="26" Width="26"  Content="{generic:MaterialMarkupIcon Kind=Fullscreen}"/>
+        <generic:FIconButton Grid.Column="3" x:Name="ButtonBorderlessToggle" OnClick="BorderlessToggle_OnClick" Height="24" Width="24"  Content="{generic:MaterialMarkupIcon Kind=Fullscreen}"/>
         
-        <generic:FIconButton Grid.Column="4" x:Name="ButtonMinimize" Height="26" Width="26" Content="{generic:MaterialMarkupIcon Kind=Minimize}" OnClick="ButtonMinimize_OnClick"/>
-        <generic:FIconButton Grid.Column="5" x:Name="ButtonMaximize" Height="26" Width="26" Content="{generic:MaterialMarkupIcon Kind=Maximize}" OnClick="ButtonMaximize_OnClick"/>
-        <generic:FIconButton Grid.Column="6" x:Name="ButtonClose" Height="26" Width="26" Content="{generic:MaterialMarkupIcon Kind=Close}" OnClick="ButtonClose_OnClick"/>
+        <generic:FIconButton Grid.Column="4" x:Name="ButtonMinimize" Height="24" Width="24" Content="{generic:MaterialMarkupIcon Kind=Minimize}" OnClick="ButtonMinimize_OnClick"/>
+        <generic:FIconButton Grid.Column="5" x:Name="ButtonMaximize" Height="24" Width="24" Content="{generic:MaterialMarkupIcon Kind=Maximize}" OnClick="ButtonMaximize_OnClick"/>
+        <generic:FIconButton Grid.Column="6" x:Name="ButtonClose" Height="24" Width="24" Content="{generic:MaterialMarkupIcon Kind=Close}" OnClick="ButtonClose_OnClick"/>
 
     </Grid>
 </UserControl>
