@@ -206,7 +206,7 @@ public sealed partial class LeftBar : UserControl
             case -2:
                 break;
             case -1:
-                HomeCard.ForceHighlight = false;
+                HomeCard.ForceHighlight = true;
                 break;
             case >= 0:
                 if (TabCards.TryGetValue(pair.newId, out var card))
