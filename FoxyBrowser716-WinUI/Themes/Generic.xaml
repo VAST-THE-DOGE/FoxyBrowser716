@@ -5,23 +5,70 @@
     xmlns:helpers="using:FoxyBrowser716_WinUI.Controls.Helpers">
 
     <helpers:HalfValueConverter x:Key="HalfValueConverter"/>
-
+    <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    <helpers:HeightToIconSizeConverter x:Key="HeightToIconSizeConverter"/>
+    
+    
     <Style TargetType="local:FIconButton">
-    <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAccentBrush}"/>
+        <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAccentBrush}"/>
 
-    <Setter Property="Template">
-        <Setter.Value>
-            <ControlTemplate TargetType="local:FIconButton">
-                <ContentPresenter
-                    Background="{TemplateBinding Background}"
-                    HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch"
-                    CornerRadius="{Binding Width,
-                               RelativeSource={RelativeSource TemplatedParent},
-                               Converter={StaticResource HalfValueConverter}}"/>
-            </ControlTemplate>
-        </Setter.Value>
-    </Setter>
-</Style>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:FIconButton">
+                    <ContentPresenter
+                        Background="{TemplateBinding Background}"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        CornerRadius="{Binding Width,
+                                   RelativeSource={RelativeSource TemplatedParent},
+                                   Converter={StaticResource HalfValueConverter}}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Style TargetType="local:FTextButton">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:FTextButton">
+                    <Border x:Name="RootBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="0"
+                            CornerRadius="{TemplateBinding Corn}"
+                            Padding="0">
+                        <StackPanel Orientation="Horizontal" 
+                                    HorizontalAlignment="{TemplateBinding ContentHorizontalAlignment}" 
+                                    VerticalAlignment="Center">
+                            <Viewbox x:Name="IconViewbox"
+                                     Height="{Binding ActualHeight, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HeightToIconSizeConverter}}"
+                                     Width="{Binding Height, RelativeSource={RelativeSource Self}}"
+                                     Margin="3,0"
+                                     VerticalAlignment="Center"
+                                     Visibility="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NullToVisibilityConverter}}">
+                                <ContentPresenter Content="{TemplateBinding Icon}"
+                                                  Foreground="{TemplateBinding Foreground}"/>
+                            </Viewbox>
+                            <TextBlock Text="{TemplateBinding ButtonText}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Left"
+                                       TextWrapping="NoWrap"
+                                       Padding="0"
+                                       Margin="3,0"/>
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="ContentHorizontalAlignment" Value="Center"/>
+    </Style>
+    
 
 </ResourceDictionary>

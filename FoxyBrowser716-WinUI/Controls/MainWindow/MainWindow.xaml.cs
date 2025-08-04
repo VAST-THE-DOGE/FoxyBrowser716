@@ -1,7 +1,10 @@
+using FoxyBrowser716_WinUI.Controls.Generic;
 using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
+using Material.Icons;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml.Media.Imaging;
 using WinUIEx;
 
 // using CommunityToolkit.WinUI.Helpers;
@@ -13,6 +16,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 {
     public TabManager TabManager { get; private set; }
     public Instance Instance { get; private set; }
+
+    public Action<InfoGetter.SearchEngine> SearchEngineChangeRequested;
     
     private MainWindow()
     {
@@ -125,6 +130,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         //TODO: remove apply theme from other constructors
         TopBar.CurrentTheme = CurrentTheme;
         LeftBar.CurrentTheme = CurrentTheme;
+        ContextMenuPopup.CurrentTheme = CurrentTheme;
         
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
@@ -224,5 +230,81 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         {
             TabManager.SwapActiveTabTo(TabManager.AddTab(searchText));
         }
+    }
+
+    private void TopBar_OnMenuClicked()
+    {
+        if (ContextMenuPopup.Visibility == Visibility.Visible)
+        {
+            ContextMenuPopup.SetItems([]);
+            return;
+        }
+
+        List<FContextMenu.MenuItem> items =
+        [
+            new(new MaterialControlIcon {Kind = MaterialIconKind.CardMultiple}, "Instances", () => throw new NotImplementedException()),
+            new(new MaterialControlIcon {Kind = MaterialIconKind.BookmarkMultiple}, "Bookmarks", () => throw new NotImplementedException()),
+            new(new MaterialControlIcon {Kind = MaterialIconKind.History}, "History", () => throw new NotImplementedException()),
+        ];
+        
+        ContextMenuPopup.Margin = new Thickness(32, 32, 0, 0);
+        switch (TabManager.ActiveTabId)
+        {
+            case >= 0:
+                ContextMenuPopup.SetItems(items
+                    .Prepend(new(new MaterialControlIcon {Kind = MaterialIconKind.Cogs}, "Settings", () => TabManager.SwapActiveTabTo(-2)))
+                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Download}, "Downloads", () => throw new NotImplementedException()))
+                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Puzzle}, "Extensions", () => throw new NotImplementedException())),
+                    200
+                );
+                break;
+            case -1:
+                ContextMenuPopup.SetItems(items
+                    .Prepend(new(new MaterialControlIcon {Kind = MaterialIconKind.Cogs}, "Settings", () => TabManager.SwapActiveTabTo(-2)))
+                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Pencil}, "Edit Widgets", () => throw new NotImplementedException())),
+                    200
+                );
+                break;
+            case -2:
+                ContextMenuPopup.SetItems(items, 200);
+                break;
+        }
+    }
+
+    private void TopBar_OnBackClicked()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void TopBar_OnEngineClicked()
+    {
+        ContextMenuPopup.Margin = new Thickness( TopBar.GetSearchEngineOffset(), 35, 0, 0);
+        ContextMenuPopup.SetItems(
+            Enum.GetValues<InfoGetter.SearchEngine>()
+                .Where(e => e != Instance.Cache.CurrentSearchEngine)
+                .Select(se => 
+                    new FContextMenu.MenuItem(
+                        new Image
+                        {
+                            Source = new BitmapImage(new Uri(InfoGetter.GetSearchEngineIcon(se))),
+                            Width = 14, Height = 14,
+                            Stretch = Stretch.Uniform,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                        },
+                        null/*InfoGetter.GetSearchEngineName(se)*/, 
+                        () => SearchEngineChangeRequested?.Invoke(se)
+                    )
+                ), 30);
+    }
+
+    private void TopBar_OnForwardClicked()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void TopBar_OnRefreshClicked()
+    {
+        throw new NotImplementedException();
     }
 }

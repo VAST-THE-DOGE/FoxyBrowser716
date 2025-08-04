@@ -76,7 +76,7 @@ public class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : class, INotify
 		}
 		
 		if (result.code != FoxyFileManager.ReturnCode.Success || result.content is null)
-			throw new Exception($"Failed to save {FilePath}: {result}");
+			throw new Exception($"Failed to load {FilePath}: {result}");
 		
 		Item = result.content;
 		Item.PropertyChanged += HandlePropertyChanged;
@@ -132,7 +132,7 @@ public class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyP
 		}
 		
 		if (result.code != FoxyFileManager.ReturnCode.Success || result.content is null)
-			throw new Exception($"Failed to save {FilePath}: {result}");
+			throw new Exception($"Failed to load {FilePath}: {result}");
 
 		foreach (var item in result.content)
 		{

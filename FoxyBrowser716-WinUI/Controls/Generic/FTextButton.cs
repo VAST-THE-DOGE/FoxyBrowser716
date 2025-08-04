@@ -1,3 +1,4 @@
+
 using Windows.UI.Text;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using Microsoft.UI.Text;
@@ -6,32 +7,42 @@ namespace FoxyBrowser716_WinUI.Controls.Generic;
 
 public sealed partial class FTextButton : ContentControl
 {
-    private Border _border;
-    private TextBlock _textBlock;
-    
     public event RoutedEventHandler? OnClick;
     
     public static readonly DependencyProperty ButtonTextProperty = DependencyProperty.Register(
         nameof(ButtonText), typeof(string), typeof(FTextButton),
-        new PropertyMetadata(null, ButtonTextChanged));
+        new PropertyMetadata(string.Empty));
     
     public string ButtonText
     {
         get => (string)GetValue(ButtonTextProperty);
-        set { SetValue(ButtonTextProperty, value);
-            ButtonTextChanged(this, null);
-        }
+        set => SetValue(ButtonTextProperty, value);
+    }
+    
+    public static readonly DependencyProperty IconProperty = DependencyProperty.Register(
+        nameof(Icon), typeof(UIElement), typeof(FTextButton),
+        new PropertyMetadata(null));
+    
+    public static readonly DependencyProperty ContentHorizontalAlignmentProperty = DependencyProperty.Register(
+        nameof(ContentHorizontalAlignment), typeof(HorizontalAlignment), typeof(FTextButton),
+        new PropertyMetadata(HorizontalAlignment.Center));
+    
+    public HorizontalAlignment ContentHorizontalAlignment
+    {
+        get => (HorizontalAlignment)GetValue(ContentHorizontalAlignmentProperty);
+        set => SetValue(ContentHorizontalAlignmentProperty, value);
     }
 
-    private static void ButtonTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs? e)
+    
+    public UIElement Icon
     {
-        var control = (FTextButton)d;
-        control._textBlock.Text = control.ButtonText;
+        get => (UIElement)GetValue(IconProperty);
+        set => SetValue(IconProperty, value);
     }
     
     public static readonly DependencyProperty ForceHighlightProperty = DependencyProperty.Register(
         nameof(ForceHighlight), typeof(bool), typeof(FTextButton),
-        new PropertyMetadata(null, ForceHighlightChanged));
+        new PropertyMetadata(false, ForceHighlightChanged));
     
     public bool ForceHighlight
     {
@@ -44,16 +55,11 @@ public sealed partial class FTextButton : ContentControl
     private static void ForceHighlightChanged(DependencyObject d, DependencyPropertyChangedEventArgs? e)
     {
         var control = (FTextButton)d;
-        control._border.Background = new SolidColorBrush(control.ForceHighlight 
+        control.Background = new SolidColorBrush(control.ForceHighlight 
             ? control._currentTheme.PrimaryHighlightColor 
             : control.PointerOver 
                 ? control.CurrentTheme.PrimaryAccentColor 
                 : control.CurrentTheme.PrimaryAccentColorSlightTransparent);
-        control._border.BorderBrush = new SolidColorBrush(control.ForceHighlight 
-            ? control._currentTheme.SecondaryHighlightColor 
-            : control.PointerOver 
-                ? control.CurrentTheme.SecondaryAccentColor 
-                : control.CurrentTheme.SecondaryAccentColorSlightTransparent);
     }
 
     private Theme _currentTheme = DefaultThemes.DarkMode;
@@ -72,77 +78,50 @@ public sealed partial class FTextButton : ContentControl
     {
         if (ForceHighlight)
         {
-            _border.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
-            _border.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryHighlightColor);
+            Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         }
         else
         {
-            _border.Background = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColor : CurrentTheme.PrimaryAccentColorSlightTransparent);
-            _border.BorderBrush = new SolidColorBrush(PointerOver ? CurrentTheme.SecondaryAccentColor : CurrentTheme.SecondaryAccentColorSlightTransparent);
+            Background = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColor : CurrentTheme.PrimaryAccentColorSlightTransparent);
         }
 
-        _textBlock.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
+        Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
     }
     
-    public bool PointerOver { get; set; }
+    internal bool PointerOver { get; set; }
     
     public FTextButton()
     {
         DefaultStyleKey = typeof(FTextButton);
-
-        _textBlock = new TextBlock
-        {
-            Padding = new Thickness(0),
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.NoWrap,
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-        };
         
-        _border = new Border
-        {
-            BorderThickness = new Thickness(2),
-            CornerRadius = new CornerRadius(10),
-            Child = _textBlock,
-        };
-
-        Content = _border;
-        
-        
-        _border.PointerEntered += (_,_) =>
+        PointerEntered += (_,_) =>
         {
             PointerOver = true;
             
             if (ForceHighlight) return;
 
-            ChangeColorAnimation(_border.Background, CurrentTheme.PrimaryAccentColor);
-            ChangeColorAnimation(_border.BorderBrush, CurrentTheme.PrimaryHighlightColor);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColor);
         };
 
-        _border.PointerExited += (_, _) =>
+        PointerExited += (_, _) =>
         {
             PointerOver = false;
             
             if (ForceHighlight) return;
             
-            ChangeColorAnimation(_border.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
-            ChangeColorAnimation(_border.BorderBrush, CurrentTheme.SecondaryAccentColorSlightTransparent);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
         };
         
-        _border.PointerPressed += (_, _) =>
+        PointerPressed += (_, _) =>
         {
             if (ForceHighlight) return;
             
-            ChangeColorAnimation(_border.Background, CurrentTheme.PrimaryHighlightColor, 0.05);
-            ChangeColorAnimation(_border.BorderBrush, CurrentTheme.SecondaryHighlightColor, 0.05);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryHighlightColor, 0.05);
         };
 
-        _border.PointerReleased += (_, _) =>
+        PointerReleased += (_, _) =>
         {
-            ChangeColorAnimation(_border.Background, CurrentTheme.PrimaryAccentColor, 0.3);
-            ChangeColorAnimation(_border.BorderBrush, CurrentTheme.PrimaryHighlightColor, 0.3);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColor, 0.3);
             
             OnClick?.Invoke(this, new RoutedEventArgs());
         };

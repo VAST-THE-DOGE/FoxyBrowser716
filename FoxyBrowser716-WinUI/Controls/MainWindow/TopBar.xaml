@@ -60,7 +60,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Name="Root" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="0" BorderThickness="2" CornerRadius="10" Padding="0">
+    <Grid Name="Root" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="0" BorderThickness="2" CornerRadius="10,10,10,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>

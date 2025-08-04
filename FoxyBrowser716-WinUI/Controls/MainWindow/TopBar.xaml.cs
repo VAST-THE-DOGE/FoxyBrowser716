@@ -1,3 +1,4 @@
+using Windows.Foundation;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using Microsoft.UI.Xaml.Input;
 
@@ -164,5 +165,11 @@ public sealed partial class TopBar : UserControl
 
         if (searchText is { } text)
             SearchBox.Text = text;
+    }
+
+    public double GetSearchEngineOffset()
+    {
+        var transform = ButtonEngine.TransformToVisual(null);
+        return transform.TransformPoint(new Point(0, 0)).X;
     }
 }

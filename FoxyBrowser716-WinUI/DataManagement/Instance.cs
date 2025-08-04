@@ -103,10 +103,10 @@ public class Instance
 					$"Cannot remove browser application window from instance '{Name}', sender type mismatch.");
 		};
 
-		// newWindow.EngineChangeRequested += (se) =>
-		// {
-		// 	Cache.CurrentSearchEngine = se;
-		// };
+		newWindow.SearchEngineChangeRequested += (se) =>
+		{
+			Cache.CurrentSearchEngine = se;
+		};
 
 		if (url != null)
 		{

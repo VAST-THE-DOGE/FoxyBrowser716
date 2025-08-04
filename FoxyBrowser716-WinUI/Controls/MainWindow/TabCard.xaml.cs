@@ -161,9 +161,9 @@ public sealed partial class TabCard : UserControl
         Root.BorderBrush = new SolidColorBrush(ForceHighlight ? CurrentTheme.PrimaryHighlightColor : CurrentTheme.SecondaryBackgroundColor);
         Root.Background = new SolidColorBrush(MouseOver ? CurrentTheme.PrimaryAccentColorSlightTransparent : CurrentTheme.PrimaryBackgroundColorVeryTransparent);
 
-        if (Icon.Child is MaterialControlIcon mi)
+        if (Icon.Child is FrameworkElement iconElement)
         {
-            mi.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
+            iconElement.SetValue(Control.ForegroundProperty, new SolidColorBrush(CurrentTheme.PrimaryForegroundColor));
         }
         Label.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
 
