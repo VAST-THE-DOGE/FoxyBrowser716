@@ -78,7 +78,7 @@ public sealed partial class TopBar : UserControl
         
         BorderlessToggled?.Invoke();
         ButtonBorderlessToggle.ForceHighlight = IsBorderless;
-        if (ButtonMaximize.Content is MaterialIconExt icon)
+        if (ButtonBorderlessToggle.Content is MaterialIcon icon)
             icon.Kind = IsBorderless ? MaterialIconKind.ArrowCollapse : MaterialIconKind.ArrowExpand;
         
         DragZone.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
@@ -188,7 +188,7 @@ public sealed partial class TopBar : UserControl
 
     public void UpdateMaximizeRestore(WindowState state)
     {
-        if (ButtonMaximize.Content is MaterialIconExt icon)
+        if (ButtonMaximize.Content is MaterialIcon icon)
             icon.Kind = state == WindowState.Maximized ? MaterialIconKind.CheckboxMultipleBlankOutline : MaterialIconKind.Maximize;
     }
 }

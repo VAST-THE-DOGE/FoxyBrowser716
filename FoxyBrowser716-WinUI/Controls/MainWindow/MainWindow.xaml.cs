@@ -40,6 +40,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             SetTitleBar(TopBar.DragZone);
         };
         
+        TopBar.UpdateMaximizeRestore(WindowState);
         ApplyTheme();
     }
 
