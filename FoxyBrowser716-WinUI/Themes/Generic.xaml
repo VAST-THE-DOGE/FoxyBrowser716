@@ -35,7 +35,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="0"
-                            CornerRadius="{TemplateBinding Corn}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="0">
                         <StackPanel Orientation="Horizontal" 
                                     HorizontalAlignment="{TemplateBinding ContentHorizontalAlignment}" 
