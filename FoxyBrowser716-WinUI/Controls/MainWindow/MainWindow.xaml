@@ -8,9 +8,10 @@
     xmlns:mainWindow="using:FoxyBrowser716_WinUI.Controls.MainWindow"
     xmlns:homePage="using:FoxyBrowser716_WinUI.Controls.HomePage"
     xmlns:settingsPage="using:FoxyBrowser716_WinUI.Controls.SettingsPage"
+    xmlns:material="using:Material.Icons.WinUI3"
     xmlns:winUiEx="using:WinUIEx" mc:Ignorable="d" 
     MinWidth="253" MinHeight="43"
-    Title="FoxyBrowser716-WinUI">
+    Title="FoxyBrowser716-WinUI" WindowStateChanged="MainWindow_OnWindowStateChanged">
     <!--<Window.SystemBackdrop>
         <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
     </Window.SystemBackdrop>-->
@@ -27,7 +28,7 @@
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
             </Grid>
             <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,30,0,0"/>
-            <generic:FContextMenu x:Name="ContextMenuPopup"/>
+            <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
         </Grid>
     </Grid>
 </winUiEx:WindowEx>

@@ -40,9 +40,9 @@ public sealed partial class LeftBar : UserControl
         InitializeComponent();
         ApplyTheme();
 
-        HomeCard.Icon.Child = new MaterialControlIcon { Kind = MaterialIconKind.Home };
-        PinCard.Icon.Child = new MaterialControlIcon { Kind = MaterialIconKind.PinOutline };
-        BookmarkCard.Icon.Child = new MaterialControlIcon { Kind = MaterialIconKind.BookmarkOutline };
+        HomeCard.Icon.Child = new MaterialIcon { Kind = MaterialIconKind.Home };
+        PinCard.Icon.Child = new MaterialIcon { Kind = MaterialIconKind.PinOutline };
+        BookmarkCard.Icon.Child = new MaterialIcon { Kind = MaterialIconKind.BookmarkOutline };
         
         HomeCard.Label.Text = "Home";
         PinCard.Label.Text = "Pin Tab";

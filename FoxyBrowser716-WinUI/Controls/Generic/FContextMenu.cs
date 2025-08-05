@@ -8,9 +8,11 @@ namespace FoxyBrowser716_WinUI.Controls.Generic;
 public sealed partial class FContextMenu : UserControl
 {
     private StackPanel _stackPanel;
+    private Border _border;
     private double _menuWidth;
     private bool _isFocused;
     private List<MenuItem> _currentItems = new();
+    public event Action? OnClose;
 
     private Theme _currentTheme = DefaultThemes.DarkMode;
 
@@ -39,14 +41,21 @@ public sealed partial class FContextMenu : UserControl
         {
             Orientation = Orientation.Vertical,
             Spacing = 0,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        
+        _border = new Border
+        {
             BorderThickness = new Thickness(2),
             CornerRadius = new CornerRadius(10),
             VerticalAlignment = VerticalAlignment.Top,
             HorizontalAlignment = HorizontalAlignment.Left,
             Width = _menuWidth > 4 ? _menuWidth : 4,
+            Child = _stackPanel,
         };
 
-        Content = _stackPanel;
+        Content = _border;
         ApplyTheme();
         
         GotFocus += (_, _) => _isFocused = true;
@@ -68,10 +77,10 @@ public sealed partial class FContextMenu : UserControl
 
     private void ApplyTheme()
     {
-        _stackPanel.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
-        _stackPanel.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        _border.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        _border.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
 
-        if (_stackPanel?.Children is not null)
+        if (_stackPanel.Children is not null)
             foreach (var child in _stackPanel.Children)
             {
                 if (child is FIconButton iconButton)
@@ -91,7 +100,7 @@ public sealed partial class FContextMenu : UserControl
         
         Width = maxWidth;
         _menuWidth = maxWidth;
-        _stackPanel.Width = maxWidth;
+        _border.Width = maxWidth;
             
         _stackPanel.Children.Clear();
         _currentItems.Clear();
@@ -136,6 +145,7 @@ public sealed partial class FContextMenu : UserControl
             var button = new FIconButton
             {
                 Content = item.Icon,
+                Padding = new Thickness(item.IconPadding),
                 Width = buttonSize,
                 Height = buttonSize,
                 Margin = new Thickness(0),
@@ -159,6 +169,7 @@ public sealed partial class FContextMenu : UserControl
             var button = new FTextButton
             {
                 Icon = item.Icon,
+                Padding = new Thickness(item.IconPadding),
                 ButtonText = item.Text ?? string.Empty,
                 Width = _menuWidth - 4,
                 Margin = new Thickness(0),
@@ -184,6 +195,7 @@ public sealed partial class FContextMenu : UserControl
         _stackPanel.Children.Clear();
         _currentItems.Clear();
         _isFocused = false;
+        OnClose?.Invoke();
     }
 
     public bool IsFocused => _isFocused;
@@ -191,10 +203,12 @@ public sealed partial class FContextMenu : UserControl
     public class MenuItem
     {
         public UIElement? Icon { get; set; }
+        public double IconPadding { get; set; }
+
         public string? Text { get; set; }
         public Action? OnClick { get; set; }
 
-        public MenuItem(UIElement? icon, string? text, Action? onClick)
+        public MenuItem(UIElement? icon, double iconPadding, string? text, Action? onClick)
         {
             if (icon == null && string.IsNullOrEmpty(text))
             {
@@ -202,6 +216,7 @@ public sealed partial class FContextMenu : UserControl
             }
 
             Icon = icon;
+            IconPadding = iconPadding;
             Text = text;
             OnClick = onClick;
         }

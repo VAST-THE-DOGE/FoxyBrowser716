@@ -53,6 +53,11 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
     <PackageReference Include="WinUIEx" Version="2.6.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Material.Icons.WinUI3">
+      <HintPath>..\..\..\.nuget\packages\material.icons.winui3\2.4.1\lib\net8.0-windows10.0.18362\Material.Icons.WinUI3.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution

@@ -211,13 +211,20 @@ public enum SavePriority
 
 public class FoxyAutoSaver : IDisposable
 {
-	private int _saveIntervalMs = 15000;
+	private int _tickSpeed = 1000;
+	
+	/// <summary>
+	/// In Milliseconds.
+	/// high priority is every tick
+	/// normal priority is every 5 ticks
+	/// low priority is every 25 ticks
+	/// </summary>
 	public int SaveIntervalMs
 	{
-		get => _saveIntervalMs;
+		get => _tickSpeed;
 		set
 		{
-			_saveIntervalMs = value;
+			_tickSpeed = value;
 			_queueTimer.Interval = value;
 		}
 	}
@@ -307,22 +314,23 @@ public class FoxyAutoSaver : IDisposable
 			return;
 		
 		_runningTick = true;
-		List<Task> tasks = [];
-		switch (tick++)
+		List<Task> tasks =
+		[
+			SaveQueue(_highQueue, SavePriority.High)
+		];
+		
+		if (tick % 5 == 0)  // run every 5 ticks
+			tasks.Add(SaveQueue(_normalQueue, SavePriority.Normal));
+		
+		if (tick % 25 == 0) // run every 25 ticks
 		{
-			case 3:
-				tick = 0;
-				tasks.Add(SaveQueue(_lowQueue, SavePriority.Low));
-				goto case 1;
-			case 1:
-				tasks.Add(SaveQueue(_normalQueue, SavePriority.Normal));
-				goto case 0;
-			case 0:
-			case 2:
-				tasks.Add(SaveQueue(_highQueue, SavePriority.High));
-				await Task.WhenAll(tasks);
-				break;
+			tasks.Add(SaveQueue(_lowQueue, SavePriority.Low));
+			tick = 0; // reset so that keeping the browser open forever does not cause a crash (due to integer limit).
 		}
+
+		tick += 1;
+		
+		await Task.WhenAll(tasks);
 
 		while (_waitQueue.TryDequeue(out var pair))
 		{

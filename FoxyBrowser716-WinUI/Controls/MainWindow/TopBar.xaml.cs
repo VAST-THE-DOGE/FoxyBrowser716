@@ -1,10 +1,10 @@
-using Windows.Foundation;
-using FoxyBrowser716_WinUI.DataObjects.Basic;
-using Microsoft.UI.Xaml.Input;
-
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
+
+using Material.Icons;
+using Material.Icons.WinUI3;
+using WinUIEx;
 
 namespace FoxyBrowser716_WinUI.Controls.MainWindow;
 
@@ -78,6 +78,8 @@ public sealed partial class TopBar : UserControl
         
         BorderlessToggled?.Invoke();
         ButtonBorderlessToggle.ForceHighlight = IsBorderless;
+        if (ButtonMaximize.Content is MaterialIconExt icon)
+            icon.Kind = IsBorderless ? MaterialIconKind.ArrowCollapse : MaterialIconKind.ArrowExpand;
         
         DragZone.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
         ButtonMaximize.Visibility = IsBorderless ? Visibility.Collapsed : Visibility.Visible;
@@ -171,5 +173,22 @@ public sealed partial class TopBar : UserControl
     {
         var transform = ButtonEngine.TransformToVisual(null);
         return transform.TransformPoint(new Point(0, 0)).X;
+    }
+    
+    public void UpdateSearchEngineIcon(InfoGetter.SearchEngine se)
+    {
+        ButtonEngine.Content = new Image
+        {
+            Source = new BitmapImage(new Uri(InfoGetter.GetSearchEngineIcon(se))),
+            Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+    }
+
+    public void UpdateMaximizeRestore(WindowState state)
+    {
+        if (ButtonMaximize.Content is MaterialIconExt icon)
+            icon.Kind = state == WindowState.Maximized ? MaterialIconKind.CheckboxMultipleBlankOutline : MaterialIconKind.Maximize;
     }
 }

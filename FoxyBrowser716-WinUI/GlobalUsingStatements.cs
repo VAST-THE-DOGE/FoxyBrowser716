@@ -21,3 +21,7 @@ global using static FoxyBrowser716_WinUI.Controls.Helpers.Animator;
 global using FoxyBrowser716_WinUI.StaticData;
 global using Microsoft.UI.Xaml.Data;
 global using CommunityToolkit.Mvvm.ComponentModel;
+global using Windows.Foundation;
+global using FoxyBrowser716_WinUI.DataObjects.Basic;
+global using Microsoft.UI.Xaml.Input;
+global using Microsoft.UI.Xaml.Media.Imaging;

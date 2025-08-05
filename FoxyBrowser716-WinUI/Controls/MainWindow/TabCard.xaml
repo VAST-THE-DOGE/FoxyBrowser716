@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:generic="using:FoxyBrowser716_WinUI.Controls.Generic"
+    xmlns:material="using:Material.Icons.WinUI3"
     mc:Ignorable="d" MinWidth="0" HorizontalAlignment="Stretch">
 
     <Grid Name="Root" CornerRadius="10" BorderThickness="2" Height="26" MinWidth="0" HorizontalAlignment="Stretch"
@@ -19,7 +20,7 @@
         <Viewbox Grid.Column="0" Margin="2" Width="18" Height="18" x:Name="Icon" x:FieldModifier="public" />
         <TextBlock Grid.Column="1" Height="24" Margin="2,0" x:Name="Label" x:FieldModifier="public" 
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-        <generic:FIconButton Grid.Column="2" Width="22" Height="22" x:Name="ButtonDuplicate" x:FieldModifier="public" Content="{generic:MaterialMarkupIcon Kind=ContentCopy}" OnClick="ButtonDuplicate_OnOnClick"/>
-        <generic:FIconButton Grid.Column="3" Width="22" Height="22" x:Name="ButtonClose" x:FieldModifier="public" Content="{generic:MaterialMarkupIcon Kind=Close}" OnClick="ButtonClose_OnOnClick"/>
+        <generic:FIconButton Grid.Column="2" Width="22" Height="22" x:Name="ButtonDuplicate" Padding="4" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=ContentCopy}" OnClick="ButtonDuplicate_OnOnClick"/>
+        <generic:FIconButton Grid.Column="3" Width="22" Height="22" x:Name="ButtonClose" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=Close}" OnClick="ButtonClose_OnOnClick"/>
     </Grid>
 </UserControl>

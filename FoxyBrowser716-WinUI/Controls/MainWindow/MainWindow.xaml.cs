@@ -3,6 +3,7 @@ using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
 using Material.Icons;
+using Material.Icons.WinUI3;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUIEx;
@@ -46,7 +47,13 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         var win = new MainWindow();
         await win.Initialize(instance);
+        
         return win;
+    }
+
+    private void HandleCacheChanged()
+    {
+        TopBar.UpdateSearchEngineIcon(Instance.Cache.CurrentSearchEngine);
     }
 
     private async Task Initialize(Instance instance)
@@ -54,12 +61,18 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Instance = instance;
         TabManager = await TabManager.Create(Instance);
         
+        await LeftBar.Initialize(TabManager);
+        
+        // link events from tab manager
         TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;
         TabManager.TabAdded += TabManagerOnTabAdded;
         TabManager.TabRemoved += TabManagerOnTabRemoved;
         
-        await LeftBar.Initialize(TabManager);
-
+        // link events from the instance
+        instance.Cache.PropertyChanged += (_, _) => HandleCacheChanged();
+        
+        // refresh all data
+        HandleCacheChanged();
     }
 
     private void TabManagerOnTabRemoved(WebviewTab tab)
@@ -136,9 +149,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         TabHolder.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
     }
-    
-    
-    
 
     #region Window Events
     private void TopBar_OnMinimizeClicked()
@@ -234,17 +244,19 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void TopBar_OnMenuClicked()
     {
-        if (ContextMenuPopup.Visibility == Visibility.Visible)
+        if (ContextMenuPopup.Visibility == Visibility.Visible && !_contextmenuUsedForSearchEngine)
         {
             ContextMenuPopup.SetItems([]);
             return;
         }
+        
+        _contextmenuUsedForSearchEngine = false;
 
         List<FContextMenu.MenuItem> items =
         [
-            new(new MaterialControlIcon {Kind = MaterialIconKind.CardMultiple}, "Instances", () => throw new NotImplementedException()),
-            new(new MaterialControlIcon {Kind = MaterialIconKind.BookmarkMultiple}, "Bookmarks", () => throw new NotImplementedException()),
-            new(new MaterialControlIcon {Kind = MaterialIconKind.History}, "History", () => throw new NotImplementedException()),
+            new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", () => throw new NotImplementedException()),
+            new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", () => throw new NotImplementedException()),
+            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", () => throw new NotImplementedException()),
         ];
         
         ContextMenuPopup.Margin = new Thickness(32, 32, 0, 0);
@@ -252,16 +264,16 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         {
             case >= 0:
                 ContextMenuPopup.SetItems(items
-                    .Prepend(new(new MaterialControlIcon {Kind = MaterialIconKind.Cogs}, "Settings", () => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Download}, "Downloads", () => throw new NotImplementedException()))
-                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Puzzle}, "Extensions", () => throw new NotImplementedException())),
+                    .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", () => throw new NotImplementedException()))
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", () => throw new NotImplementedException())),
                     200
                 );
                 break;
             case -1:
                 ContextMenuPopup.SetItems(items
-                    .Prepend(new(new MaterialControlIcon {Kind = MaterialIconKind.Cogs}, "Settings", () => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialControlIcon {Kind = MaterialIconKind.Pencil}, "Edit Widgets", () => throw new NotImplementedException())),
+                    .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings",() => TabManager.SwapActiveTabTo(-2)))
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Pencil}, 1, "Edit Widgets",() => throw new NotImplementedException())),
                     200
                 );
                 break;
@@ -276,26 +288,37 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         throw new NotImplementedException();
     }
 
+    private bool _contextmenuUsedForSearchEngine;
     private void TopBar_OnEngineClicked()
     {
-        ContextMenuPopup.Margin = new Thickness( TopBar.GetSearchEngineOffset(), 35, 0, 0);
+        if (_contextmenuUsedForSearchEngine)
+        {
+            ContextMenuPopup.SetItems([]);
+            _contextmenuUsedForSearchEngine = false;
+            return;
+        }
+        
+        _contextmenuUsedForSearchEngine = true;
+        
+        ContextMenuPopup.Margin = new Thickness( TopBar.GetSearchEngineOffset() - 4, 4, 0, 0);
         ContextMenuPopup.SetItems(
             Enum.GetValues<InfoGetter.SearchEngine>()
                 .Where(e => e != Instance.Cache.CurrentSearchEngine)
+                .Prepend(Instance.Cache.CurrentSearchEngine)
                 .Select(se => 
                     new FContextMenu.MenuItem(
                         new Image
                         {
                             Source = new BitmapImage(new Uri(InfoGetter.GetSearchEngineIcon(se))),
-                            Width = 14, Height = 14,
                             Stretch = Stretch.Uniform,
-                            VerticalAlignment = VerticalAlignment.Center,
-                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Stretch,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
                         },
+                        2,
                         null/*InfoGetter.GetSearchEngineName(se)*/, 
                         () => SearchEngineChangeRequested?.Invoke(se)
                     )
-                ), 30);
+                ), 24);
     }
 
     private void TopBar_OnForwardClicked()
@@ -306,5 +329,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void TopBar_OnRefreshClicked()
     {
         throw new NotImplementedException();
+    }
+
+    private void ContextMenuPopup_OnOnClose()
+    {
+        _contextmenuUsedForSearchEngine = false;
+    }
+
+    private void MainWindow_OnWindowStateChanged(object? sender, WindowState e)
+    {
+        TopBar.UpdateMaximizeRestore(e);
     }
 }
