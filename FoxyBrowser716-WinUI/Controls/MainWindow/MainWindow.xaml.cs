@@ -283,12 +283,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 break;
         }
     }
-
-    private void TopBar_OnBackClicked()
-    {
-        throw new NotImplementedException();
-    }
-
+    
     private bool _contextmenuUsedForSearchEngine;
     private void TopBar_OnEngineClicked()
     {
@@ -322,14 +317,22 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 ), 24);
     }
 
+    private void TopBar_OnBackClicked()
+    {
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+            tab!.Core.GoBack();
+    }
+    
     private void TopBar_OnForwardClicked()
     {
-        throw new NotImplementedException();
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+            tab!.Core.GoForward();
     }
 
     private void TopBar_OnRefreshClicked()
     {
-        throw new NotImplementedException();
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+            tab!.Core.Reload();
     }
 
     private void ContextMenuPopup_OnOnClose()
