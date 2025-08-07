@@ -7,6 +7,7 @@ using System.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using FoxyBrowser716_WinUI.Controls.Generic;
+using FoxyBrowser716_WinUI.Controls.HomePage;
 using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
@@ -239,17 +240,16 @@ public sealed partial class LeftBar : UserControl
             TabManager.SwapActiveTabTo(TabManager.AddTab(tab!.Info.Url));
     }
 
-    private Theme _currentTheme = DefaultThemes.DarkMode;
-
     internal Theme CurrentTheme
     {
-        get => _currentTheme;
+        get;
         set
         {
-            _currentTheme = value;
+            field = value;
             ApplyTheme();
         }
-    }
+    } = DefaultThemes.DarkMode;
+
     private void ApplyTheme()
     {
         Root.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
@@ -376,5 +376,75 @@ public sealed partial class LeftBar : UserControl
     private void Root_OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
         //throw new NotImplementedException();
+    }
+
+    private List<UIElement> _tabsCache = [];
+    private List<UIElement> _pinsCache = [];
+    private bool _editMode;
+    public void ToggleEditMode(bool inEdit, HomePage.HomePage? home)
+    {
+        if (inEdit && home is not null)
+        {
+            _tabsCache.AddRange(Tabs.Children);
+            _pinsCache.AddRange(Pins.Children);
+            
+            _editMode = true;
+            
+            Tabs.Children.Clear();
+            Pins.Children.Clear();
+            
+            HomeCard.Visibility = Visibility.Collapsed;
+            BookmarkCard.Visibility = Visibility.Collapsed;
+            PinCard.Visibility = Visibility.Collapsed;
+
+            var groupedWidgetOptions = home.GetWidgetOptions().OrderBy(w => w.name).GroupBy(w => w.category);
+            var homeOptions = home.GetHomeOptions().OrderBy(o => o.name);
+
+            foreach (var g in groupedWidgetOptions)
+            {
+                var category = g.Key;
+                var widgets = g.ToList();
+
+                var groupCard = new TabGroupCard(category.GetIcon(), category.GetName());
+                foreach (var w in widgets)
+                {
+                    var card = new TabCard(w.icon, w.name);
+                    card.OnClick += async _ => await home.AddWidgetClicked(w.name);
+                    groupCard.AddTabCard(card);
+                }
+
+                groupCard.CurrentTheme = CurrentTheme;
+                Tabs.Children.Add(groupCard);
+            }
+
+            foreach (var o in homeOptions)
+            {
+                var card = new TabCard(o.icon, o.name);
+                card.OnClick += async _ => await home.OptionClicked(o.type);
+                Pins.Children.Add(card);
+            }
+        }
+        else if (!inEdit)
+        {
+            Tabs.Children.Clear();
+            Pins.Children.Clear();
+            
+            _editMode = false;
+            
+            foreach (var c in _tabsCache)
+                Tabs.Children.Add(c);
+            
+            foreach (var c in _pinsCache)
+                Pins.Children.Add(c);
+            
+            _tabsCache.Clear();
+            _pinsCache.Clear();
+            
+            HomeCard.Visibility = Visibility.Visible;
+            BookmarkCard.Visibility = TabManager!.ActiveTabId >= 0 ? Visibility.Visible : Visibility.Collapsed;
+            PinCard.Visibility = TabManager.ActiveTabId >= 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+            throw new Exception("Home is null, cannot enter edit mode");
     }
 }

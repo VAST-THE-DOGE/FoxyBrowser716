@@ -8,7 +8,7 @@
     xmlns:mainWindow="using:FoxyBrowser716_WinUI.Controls.MainWindow"
     xmlns:generic="using:FoxyBrowser716_WinUI.Controls.Generic"
     mc:Ignorable="d" SizeChanged="LeftBar_OnSizeChanged">
-    <Grid x:Name="Root" CornerRadius="0,10,10,10" BorderThickness="2" Width="28" HorizontalAlignment="Left"
+    <Grid x:Name="Root" CornerRadius="0,8,8,8" BorderThickness="2" Width="30" HorizontalAlignment="Left"
           PointerEntered="Root_OnPointerEntered" PointerExited="Root_OnPointerExited" 
           PointerPressed="Root_OnPointerPressed" PointerReleased="Root_OnPointerReleased"
           PointerMoved="Root_OnPointerMoved">

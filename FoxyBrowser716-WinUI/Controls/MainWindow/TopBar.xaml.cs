@@ -24,18 +24,16 @@ public sealed partial class TopBar : UserControl
     public event Action? RefreshClicked;
     public event Action<string>? SearchClicked;
     public event Action? EngineClicked;
-    
-    private Theme _currentTheme = DefaultThemes.DarkMode;
 
     internal Theme CurrentTheme
     {
-        get => _currentTheme;
+        get;
         set
         {
-            _currentTheme = value;
+            field = value;
             ApplyTheme();
         }
-    }
+    } = DefaultThemes.DarkMode;
 
     private void ApplyTheme()
     {
@@ -190,5 +188,11 @@ public sealed partial class TopBar : UserControl
     {
         if (ButtonMaximize.Content is MaterialIcon icon)
             icon.Kind = state == WindowState.Maximized ? MaterialIconKind.CheckboxMultipleBlankOutline : MaterialIconKind.Maximize;
+    }
+
+    public void ToggleEditMode(bool inEdit)
+    {
+        SearchBackground.Visibility = inEdit ? Visibility.Collapsed : Visibility.Visible;
+        ButtonMenu.Visibility = inEdit ? Visibility.Collapsed : Visibility.Visible;
     }
 }

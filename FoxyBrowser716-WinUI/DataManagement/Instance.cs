@@ -29,17 +29,17 @@ public class Instance
 	public MainWindow? CurrentWindow => Windows.FirstOrDefault();
 	
 	public event Action<Theme>? ThemeUpdated;
-	private Theme _currentTheme;
+
 	public Theme CurrentTheme
 	{
-		get => _currentTheme;
+		get;
 		set
 		{
-			_currentTheme = value;
+			field = value;
 			ThemeUpdated?.Invoke(value);
 		}
 	}
-	
+
 	public event Action<Instance>? Focused;
 	
 	private Instance()

@@ -8,6 +8,8 @@ using Windows.Foundation.Collections;
 using FoxyBrowser716_WinUI.Controls.Generic;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
+using Material.Icons;
+using Material.Icons.WinUI3;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -63,7 +65,7 @@ public sealed partial class TabCard : UserControl
     
     public static readonly DependencyProperty ShowDuplicateProperty = DependencyProperty.Register(
         nameof(ShowDuplicate), typeof(bool), typeof(TabCard),
-        new PropertyMetadata(null, ShowDuplicateChanged));
+        new PropertyMetadata(true, ShowDuplicateChanged));
     
     public bool ShowDuplicate
     {
@@ -81,7 +83,7 @@ public sealed partial class TabCard : UserControl
     
     public static readonly DependencyProperty ShowCloseProperty = DependencyProperty.Register(
         nameof(ShowClose), typeof(bool), typeof(TabCard),
-        new PropertyMetadata(null, ShowCloseChanged));
+        new PropertyMetadata(true, ShowCloseChanged));
     
     public bool ShowClose
     {
@@ -118,6 +120,14 @@ public sealed partial class TabCard : UserControl
         websiteInfo.PropertyChanged += (_, _) => RefreshData(websiteInfo);
         RefreshData(websiteInfo);
     }
+    
+    public TabCard(MaterialIconKind icon, string name) : this()
+    {
+        Icon.Child = new MaterialIcon { Kind = icon };
+        Label.Text = name;
+        ShowClose = false;
+        ShowDuplicate = false;
+    }
 
     private void RefreshData(WebviewTab tab)
     {
@@ -144,18 +154,17 @@ public sealed partial class TabCard : UserControl
         };
         Label.Text = websiteInfo.Title;
     }
-    
-    private Theme _currentTheme = DefaultThemes.DarkMode;
 
     internal Theme CurrentTheme
     {
-        get => _currentTheme;
+        get;
         set
         {
-            _currentTheme = value;
+            field = value;
             ApplyTheme();
         }
-    }
+    } = DefaultThemes.DarkMode;
+
     private void ApplyTheme()
     {
         Root.BorderBrush = new SolidColorBrush(ForceHighlight ? CurrentTheme.PrimaryHighlightColor : CurrentTheme.SecondaryBackgroundColor);
@@ -209,5 +218,11 @@ public sealed partial class TabCard : UserControl
         if (ButtonDuplicate.PointerOver || ButtonClose.PointerOver) return;
 
         ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryHighlightColorSlightTransparent, 0.05);
+    }
+
+    private void TabCard_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ButtonClose.Visibility = e.NewSize.Width > Icon.Width + ButtonDuplicate.Width + ButtonClose.Width && ShowClose ? Visibility.Visible : Visibility.Collapsed;
+        ButtonDuplicate.Visibility = e.NewSize.Width > Icon.Width + ButtonDuplicate.Width && ShowDuplicate ? Visibility.Visible : Visibility.Collapsed;
     }
 }

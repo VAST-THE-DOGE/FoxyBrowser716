@@ -211,8 +211,6 @@ public enum SavePriority
 
 public class FoxyAutoSaver : IDisposable
 {
-	private int _tickSpeed = 1000;
-	
 	/// <summary>
 	/// In Milliseconds.
 	/// high priority is every tick
@@ -221,13 +219,13 @@ public class FoxyAutoSaver : IDisposable
 	/// </summary>
 	public int SaveIntervalMs
 	{
-		get => _tickSpeed;
+		get;
 		set
 		{
-			_tickSpeed = value;
+			field = value;
 			_queueTimer.Interval = value;
 		}
-	}
+	} = 1000;
 
 	private bool _runningTick = false;
 	// no new objects to save while saving.

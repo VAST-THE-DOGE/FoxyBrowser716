@@ -48,7 +48,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         var win = new MainWindow();
         await win.Initialize(instance);
-        
         return win;
     }
 
@@ -62,7 +61,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Instance = instance;
         TabManager = await TabManager.Create(Instance);
         
-        await LeftBar.Initialize(TabManager);
+        await Task.WhenAll(LeftBar.Initialize(TabManager), HomePage.Initialize(TabManager, Instance));
         
         // link events from tab manager
         TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;
@@ -72,8 +71,17 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         // link events from the instance
         instance.Cache.PropertyChanged += (_, _) => HandleCacheChanged();
         
+        // link events from home page
+        HomePage.ToggleEditMode += HomePageOnToggleEditMode;
+        
         // refresh all data
         HandleCacheChanged();
+    }
+
+    private void HomePageOnToggleEditMode(bool inEdit)
+    {
+        LeftBar.ToggleEditMode(inEdit, HomePage);
+        TopBar.ToggleEditMode(inEdit);
     }
 
     private void TabManagerOnTabRemoved(WebviewTab tab)
@@ -128,16 +136,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             throw new Exception($"Could not retrieve tab with id '{pair.newId}'");
     }
 
-    private Theme _currentTheme = DefaultThemes.DarkMode;
     internal Theme CurrentTheme
     {
-        get => _currentTheme;
+        get;
         set
         {
-            _currentTheme = value;
+            field = value;
             ApplyTheme();
         }
-    }
+    } = DefaultThemes.DarkMode;
 
     private void ApplyTheme()
     {
@@ -145,6 +152,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         TopBar.CurrentTheme = CurrentTheme;
         LeftBar.CurrentTheme = CurrentTheme;
         ContextMenuPopup.CurrentTheme = CurrentTheme;
+        HomePage.CurrentTheme = CurrentTheme;
         
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
@@ -245,7 +253,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void TopBar_OnMenuClicked()
     {
-        if (ContextMenuPopup.Visibility == Visibility.Visible && !_contextmenuUsedForSearchEngine)
+        if (ContextMenuPopup.Visibility == Visibility.Visible && !_contextmenuUsedForSearchEngine && !HomePage.InEditMode)
         {
             ContextMenuPopup.SetItems([]);
             return;
@@ -268,22 +276,27 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                     .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", () => throw new NotImplementedException()))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", () => throw new NotImplementedException())),
-                    200
+                    115
                 );
                 break;
             case -1:
                 ContextMenuPopup.SetItems(items
                     .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings",() => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Pencil}, 1, "Edit Widgets",() => throw new NotImplementedException())),
-                    200
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Pencil}, 1, "Edit Home", EditHomeClick)),
+                    115
                 );
                 break;
             case -2:
-                ContextMenuPopup.SetItems(items, 200);
+                ContextMenuPopup.SetItems(items, 115);
                 break;
         }
     }
-    
+
+    private void EditHomeClick()
+    {
+        HomePage.EditModeStart();
+    }
+
     private bool _contextmenuUsedForSearchEngine;
     private void TopBar_OnEngineClicked()
     {

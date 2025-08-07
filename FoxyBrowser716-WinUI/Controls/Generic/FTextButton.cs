@@ -82,7 +82,7 @@ public sealed partial class FTextButton : ContentControl
         }
         else
         {
-            Background = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColor : CurrentTheme.PrimaryAccentColorSlightTransparent);
+            Background = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColorSlightTransparent : CurrentTheme.PrimaryAccentColorVeryTransparent);
         }
 
         Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
@@ -100,7 +100,7 @@ public sealed partial class FTextButton : ContentControl
             
             if (ForceHighlight) return;
 
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColor);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
         };
 
         PointerExited += (_, _) =>
@@ -109,7 +109,7 @@ public sealed partial class FTextButton : ContentControl
             
             if (ForceHighlight) return;
             
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorVeryTransparent);
         };
         
         PointerPressed += (_, _) =>
@@ -121,7 +121,7 @@ public sealed partial class FTextButton : ContentControl
 
         PointerReleased += (_, _) =>
         {
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColor, 0.3);
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent, 0.3);
             
             OnClick?.Invoke(this, new RoutedEventArgs());
         };

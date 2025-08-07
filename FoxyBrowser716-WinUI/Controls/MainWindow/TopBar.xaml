@@ -60,7 +60,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Name="Root" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="0" BorderThickness="2" CornerRadius="10,10,10,0">
+    <Grid Name="Root" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="0" BorderThickness="2" CornerRadius="8,8,8,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -91,8 +91,8 @@
                      Style="{StaticResource CustomTextBoxStyle}"
                      Height="20" 
                      MaxHeight="20"
-                     Margin="0,0,0,0" 
-                     Padding="5,0,5,0"
+                     Margin="5,0,5,0" 
+                     Padding="0,0,0,0"
                      IsSpellCheckEnabled="True" 
                      FontSize="16.5" 
                      GotFocus="SearchBox_OnGotFocus" 

@@ -16,8 +16,8 @@
         <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
     </Window.SystemBackdrop>-->
     <Grid x:Name="Root" Background="Black">
-        <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="10">
-            <Grid x:Name="BlurredBackgroundGrid" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="10"/>
+        <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8">
+            <Grid x:Name="BlurredBackgroundGrid" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8"/>
             <mainWindow:TopBar x:Name="TopBar" 
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
                                BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked" MenuClicked="TopBar_OnMenuClicked"
@@ -27,7 +27,7 @@
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
             </Grid>
-            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,30,0,0"/>
+            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,31,0,0"/>
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
         </Grid>
     </Grid>

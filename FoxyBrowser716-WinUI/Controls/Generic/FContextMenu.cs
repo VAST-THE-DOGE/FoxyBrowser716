@@ -14,17 +14,15 @@ public sealed partial class FContextMenu : UserControl
     private List<MenuItem> _currentItems = new();
     public event Action? OnClose;
 
-    private Theme _currentTheme = DefaultThemes.DarkMode;
-
     internal Theme CurrentTheme
     {
-        get => _currentTheme;
+        get;
         set
         {
-            _currentTheme = value;
+            field = value;
             ApplyTheme();
         }
-    }
+    } = DefaultThemes.DarkMode;
 
     public FContextMenu()
     {
