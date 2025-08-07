@@ -42,13 +42,13 @@ public sealed partial class HomePage : UserControl
     public event Action<bool>? ToggleEditMode;
     public bool InEditMode { get; private set; }
 
-    internal static void AddWidget(string name, MaterialIconKind icon, WidgetCategory category, Func<TabManager, Dictionary<string,object>?, Task<WidgetBase>> factory)
+    internal static void AddWidget(string name, MaterialIconKind icon, WidgetCategory category, Func<TabManager, Dictionary<string,object>?, WidgetData, Task<WidgetBase>> factory)
     {
         if (!AvaliableWidgets.TryAdd(name, (icon, category, factory)))
             throw new Exception($"Widget with name '{name}' already registered");
     }
 
-    private static readonly Dictionary<string, (MaterialIconKind Icon, WidgetCategory Category, Func<TabManager, Dictionary<string, object>, Task<WidgetBase>> Factory)>
+    private static readonly Dictionary<string, (MaterialIconKind Icon, WidgetCategory Category, Func<TabManager, Dictionary<string, object>?, WidgetData, Task<WidgetBase>> Factory)>
         AvaliableWidgets = []; // Updated by assembly load. All that is needed is to make the class that inherits from Widget<T>
 
     private System.Timers.Timer _updateTimer;
@@ -233,9 +233,9 @@ public sealed partial class HomePage : UserControl
         }
     }
 
-    private async Task<WidgetBase?> GetWidget(string widgetName, Dictionary<string, object>? settings = null)
+    private async Task<WidgetBase?> GetWidget(string widgetName, Dictionary<string, object>? settings = null, WidgetData? widgetData = null)
     {
-        return AvaliableWidgets.TryGetValue(widgetName, out var value) ? await value.Factory(_manager, settings) : null;
+        return AvaliableWidgets.TryGetValue(widgetName, out var value) ? await value.Factory(_manager, settings,widgetData ?? new WidgetData { Name = widgetName }) : null;
     }
 
     private async Task TryLoadWidgets()
@@ -320,7 +320,7 @@ public sealed partial class HomePage : UserControl
         }
 
         HomeSettings GetDefaults() => new() {
-            BackgroundPath = "https://repository-images.githubusercontent.com/738748647/2edc846e-d2db-40c6-ba53-b9711eada980"/*TODO move to background on website*/,
+            BackgroundPath = "C:\\Users\\penfo\\Downloads\\alone-cyberpunk-morning-4k-xi.jpg"/*TODO move to background on website*/,
         };
     }
 
@@ -346,7 +346,7 @@ public sealed partial class HomePage : UserControl
 
     private async Task AddWidget(WidgetData widgetData)
     {
-        var widget = await GetWidget(widgetData.Name, widgetData.Settings);
+        var widget = await GetWidget(widgetData.Name, widgetData.Settings, widgetData);
         if (widget == null) return; //TODO
         
         Grid.SetRow(widget, widgetData.Row);
@@ -382,10 +382,23 @@ public sealed partial class HomePage : UserControl
 
         foreach (var c in Root.Children)
         {
-            if (c is not WidgetBase w) 
-                continue; //TODO
-            else if (c is Rectangle l)
-                l.Visibility = Visibility.Visible;
+            switch (c)
+            {
+                case WidgetBase w:
+                    var overlay = new WidgetEditOverlay(w);
+                    overlay.CurrentTheme = CurrentTheme;
+                    Grid.SetColumn(overlay, w.LayoutData.Column);
+                    Grid.SetRow(overlay, w.LayoutData.Row);
+                    Grid.SetColumnSpan(overlay, w.LayoutData.ColumnSpan);
+                    Grid.SetRowSpan(overlay, w.LayoutData.RowSpan);
+
+                    Canvas.SetZIndex(overlay, 1000 + w.LayoutData.ZIndex);
+                    Root.Children.Add(overlay);
+                    break;
+                case Rectangle l:
+                    l.Visibility = Visibility.Visible;
+                    break;
+            }
         }
     }
 
@@ -398,10 +411,15 @@ public sealed partial class HomePage : UserControl
 
         foreach (var c in Root.Children)
         {
-            if (c is not WidgetBase w) 
-                continue; //TODO
-            else if (c is Rectangle l)
-                l.Visibility = Visibility.Visible;
+            switch (c)
+            {
+                case WidgetEditOverlay w:
+                    Root.Children.Remove(w);
+                    break;
+                case Rectangle l:
+                    l.Visibility = Visibility.Collapsed;
+                    break;
+            }
         }
     }
 
@@ -442,7 +460,7 @@ public sealed partial class HomePage : UserControl
                 EditModeEnd();
                 break;
             case OptionType.ChangeImage:
-                throw new NotImplementedException();
+                throw new NotImplementedException(); // can be a url, so show a popup with a file picker setting
                 /*var dialog = new OpenFileDialog
                 {
                     Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;|All Files (*.*)|*.*",

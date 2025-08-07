@@ -22,21 +22,11 @@ public sealed partial class FIconButton : ContentControl
     {
         var control = (FIconButton)d;
         control.Background = new SolidColorBrush(control.ForceHighlight 
-            ? control._currentTheme.PrimaryHighlightColorSlightTransparent
-            : control.PointerOver ? control._currentTheme.PrimaryAccentColorSlightTransparent : Colors.Transparent);
+            ? control.CurrentTheme.PrimaryHighlightColorSlightTransparent
+            : control.PointerOver ? control.CurrentTheme.PrimaryAccentColorSlightTransparent : Colors.Transparent);
     }
-
-    private Theme _currentTheme = DefaultThemes.DarkMode;
-
-    internal Theme CurrentTheme
-    {
-        get => _currentTheme;
-        set
-        {
-            _currentTheme = value;
-            ApplyTheme();
-        }
-    }
+    
+    internal Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
 
     private void ApplyTheme()
     {

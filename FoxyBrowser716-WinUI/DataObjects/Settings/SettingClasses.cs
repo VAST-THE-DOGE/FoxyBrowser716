@@ -14,6 +14,6 @@ public class StringSetting(string name, string description, string defaultValue)
 
 // complex types
 public class ColorSetting(string name, string description, Color defaultValue) : Setting<Color>(name, description, defaultValue);
-public class FilePickerSetting(string name, string description, string defaultValue) : Setting<string>(name, description, defaultValue);
+public class FilePickerSetting(string name, string description, string defaultValue, bool supportUrls) : Setting<string>(name, description, defaultValue);
 public class FolderPickerSetting(string name, string description, string defaultValue) : Setting<string>(name, description, defaultValue);
 public class CustomControlSetting(string name, string description, Func<UIElement> controlFactory) : ISetting { public string Name => name; public string Description => description; public Func<UIElement> ControlFactory => controlFactory; }

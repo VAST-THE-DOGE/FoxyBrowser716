@@ -8,6 +8,8 @@ namespace FoxyBrowser716_WinUI.Controls.HomePage;
 
 public abstract class WidgetBase : UserControl
 {
+    internal WidgetData LayoutData { get; set; } = null!;
+    
     public static string GetWidgetName<T>() where T : WidgetBase => 
         typeof(T).GetCustomAttribute<WidgetInfoAttribute>()?.Name
             ?? throw new InvalidOperationException("Widget does not have a WidgetInfoAttribute");
@@ -39,11 +41,12 @@ public abstract class WidgetBase : UserControl
                 attr.Name,
                 attr.Icon,
                 attr.Category,
-                async (manager, settings) => 
+                async (manager, settings, layoutData) => 
                 {
                     var widget = (WidgetBase)Activator.CreateInstance(type, nonPublic: true);
                     await widget.InitializeBase(manager, settings);
                     await widget.Initialize();
+                    widget.LayoutData = layoutData;
                     return widget;
 
                 }
@@ -179,7 +182,7 @@ public static class WidgetCategoryExtensions
             WidgetCategory.TimeDate => "Time & Date",
             WidgetCategory.WebsiteNavigation => "Website Navigation",
             WidgetCategory.FoxyBrowser716 => "FoxyBrowser716",
-            WidgetCategory.Misc => "Misc",
+            WidgetCategory.Misc => "Miscellaneous",
             _ => throw new ArgumentOutOfRangeException(nameof(category), category, null)
         };
     }

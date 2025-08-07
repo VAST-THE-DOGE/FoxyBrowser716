@@ -4,7 +4,7 @@ public class HeightToIconSizeConverter : IValueConverter
 {
 	public object Convert(object value, Type targetType, object parameter, string language)
 	{
-		if (value is double height)
+		if (value is double height and > 0)
 		{
 			// Calculate icon size as a percentage of the control height
 			// Subtract padding and border thickness, then take about 60-70% of remaining height

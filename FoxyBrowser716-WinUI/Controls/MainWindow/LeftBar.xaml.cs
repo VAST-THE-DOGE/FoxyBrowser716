@@ -398,7 +398,7 @@ public sealed partial class LeftBar : UserControl
             PinCard.Visibility = Visibility.Collapsed;
 
             var groupedWidgetOptions = home.GetWidgetOptions().OrderBy(w => w.name).GroupBy(w => w.category);
-            var homeOptions = home.GetHomeOptions().OrderBy(o => o.name);
+            var homeOptions = home.GetHomeOptions();
 
             foreach (var g in groupedWidgetOptions)
             {
