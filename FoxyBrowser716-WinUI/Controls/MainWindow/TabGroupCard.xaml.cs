@@ -71,7 +71,7 @@ public sealed partial class TabGroupCard : UserControl
         IsCollapsed = isCollapsed;
         TabHolder.Visibility = IsCollapsed ? Visibility.Collapsed : Visibility.Visible;
         if (ButtonCollapse.Content is MaterialIcon icon)
-            icon.Kind = IsCollapsed ? MaterialIconKind.ExpandLess : MaterialIconKind.ExpandMore;
+            icon.Kind = IsCollapsed ? MaterialIconKind.ExpandMore : MaterialIconKind.ExpandLess;
     }
 
     public void AddTabCard(TabCard tabCard)

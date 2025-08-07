@@ -90,11 +90,14 @@ public sealed partial class LeftBar : UserControl
                         var card = new TabCard(pinId, websiteInfo);
                         if (PinCards.TryAdd(pinId, card))
                         {
-                            Pins.Children.Add(card);
                             card.ShowDuplicate = false;
                             card.CurrentTheme = CurrentTheme;
                             card.OnClick += PinCardOnClick(websiteInfo);
                             card.CloseRequested += PinCardOnClose(websiteInfo);
+                            if (_editMode)
+                                _pinsCache.Add(card);
+                            else
+                                Pins.Children.Add(card);
                         }
                     }
                 }
@@ -111,7 +114,10 @@ public sealed partial class LeftBar : UserControl
                             var pinId = PinCards.FirstOrDefault(kvp => kvp.Value == cardToRemove).Key;
                             if (PinCards.Remove(pinId))
                             {
-                                Pins.Children.Remove(cardToRemove);
+                                if (_editMode)
+                                    _pinsCache.Remove(cardToRemove);
+                                else
+                                    Pins.Children.Remove(cardToRemove);
                             }
                         }
                     }
@@ -129,7 +135,10 @@ public sealed partial class LeftBar : UserControl
                             var pinId = PinCards.FirstOrDefault(kvp => kvp.Value == cardToRemove).Key;
                             if (PinCards.Remove(pinId))
                             {
-                                Pins.Children.Remove(cardToRemove);
+                                if (_editMode)
+                                    _pinsCache.Remove(cardToRemove);
+                                else
+                                    Pins.Children.Remove(cardToRemove);
                             }
                         }
                     }
@@ -140,11 +149,14 @@ public sealed partial class LeftBar : UserControl
                         var card = new TabCard(pinId, newWebsiteInfo);
                         if (PinCards.TryAdd(pinId, card))
                         {
-                            Pins.Children.Add(card);
                             card.ShowDuplicate = false;
                             card.CurrentTheme = CurrentTheme;
                             card.OnClick += PinCardOnClick(newWebsiteInfo);
                             card.CloseRequested += PinCardOnClose(newWebsiteInfo);
+                            if (_editMode)
+                                _pinsCache.Add(card);
+                            else
+                                Pins.Children.Add(card);
                         }
                     }
                 }
@@ -158,8 +170,17 @@ public sealed partial class LeftBar : UserControl
                             kvp.Value.Tag == websiteInfo).Value;
                         if (card != null)
                         {
-                            Pins.Children.Remove(card);
-                            Pins.Children.Insert(e.NewStartingIndex, card);
+                            if (_editMode)
+                            {
+                                _pinsCache.Remove(card);
+                                _pinsCache.Insert(e.NewStartingIndex, card);
+                            }
+                            else
+                            {
+                                Pins.Children.Remove(card);
+                                Pins.Children.Insert(e.NewStartingIndex, card);
+                            }
+                            
                         }
                     }
                 }
@@ -167,6 +188,7 @@ public sealed partial class LeftBar : UserControl
             case NotifyCollectionChangedAction.Reset:
                 PinCards.Clear();
                 Pins.Children.Clear();
+                _pinsCache.Clear();
                 break;
         }
     }
@@ -220,8 +242,11 @@ public sealed partial class LeftBar : UserControl
 
     private void TabManagerOnTabRemoved(WebviewTab tab)
     {
-        if (TabCards.Remove(tab.Id, out var card))
-            Tabs.Children.Remove(card);
+        if (TabCards.Remove(tab.Id, out var card)) 
+            if (_editMode)
+                _tabsCache.Remove(card);
+            else
+                Tabs.Children.Remove(card);
     }
 
     private void TabManagerOnTabAdded(WebviewTab tab)
@@ -231,7 +256,10 @@ public sealed partial class LeftBar : UserControl
         card.DuplicateRequested += CardOnDuplicateRequested;
         card.OnClick += TabManager!.SwapActiveTabTo;
         if (TabCards.TryAdd(tab.Id, card))
-            Tabs.Children.Add(card);
+            if (_editMode)
+                _tabsCache.Add(card);
+            else
+                Tabs.Children.Add(card);
     }
 
     private void CardOnDuplicateRequested(int id)
@@ -261,10 +289,19 @@ public sealed partial class LeftBar : UserControl
         PinCard.CurrentTheme = CurrentTheme;
         BookmarkCard.CurrentTheme = CurrentTheme;
         
-        foreach (TabCard card in Tabs.Children)
-            card.CurrentTheme = CurrentTheme;
-        foreach (TabCard card in Pins.Children)
-            card.CurrentTheme = CurrentTheme;
+        foreach (var card in Tabs.Children)
+            switch (card)
+            {
+                case TabGroupCard groupCard:
+                    groupCard.CurrentTheme = CurrentTheme;
+                    break;
+                case TabCard tabCard:
+                    tabCard.CurrentTheme = CurrentTheme;
+                    break;
+            }
+        foreach (var card in Pins.Children)
+            if (card is TabCard tabCard)
+                tabCard.CurrentTheme = CurrentTheme;
     }
 
     //TODO: test
@@ -320,7 +357,6 @@ public sealed partial class LeftBar : UserControl
         SideOpen = true;
     
         Root.Width = 260; //TODO: temp
-
     }
 
     internal void CloseSideBar()
