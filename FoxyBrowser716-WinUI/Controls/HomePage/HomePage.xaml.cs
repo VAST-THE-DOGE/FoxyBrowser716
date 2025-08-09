@@ -462,304 +462,381 @@ public sealed partial class HomePage : UserControl
     private void Root_OnPointerMoved(object s, PointerRoutedEventArgs e)
     {
         if (!_isMouseDown || _hoveredOverlay is null) return;
-        
-        var mousePosition = e.GetCurrentPoint(Root).Position;
 
-        var columnWidth = Root.ActualWidth / ColumnCount;
-        var rowHeight = Root.ActualHeight / RowCount;
-
-        if (_currentBorder == "")
+        var originalLayout = _hoveredOverlay.AttachedWidget.LayoutData;
+        var originalBorder = _currentBorder;
+        try
         {
-            var offsetColumnIndex = Math.Max(
+            var mousePosition = e.GetCurrentPoint(Root).Position;
+
+            var columnWidth = Root.ActualWidth / ColumnCount;
+            var rowHeight = Root.ActualHeight / RowCount;
+
+            if (_currentBorder == "")
+            {
+                var offsetColumnIndex = Math.Max(
+                    Math.Min(
+                        (int)Math.Floor((mousePosition.X - _mouseOffset?.X ?? 0) / columnWidth),
+                        ColumnCount - _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan),
+                    0);
+                var offsetRowIndex = Math.Max(
+                    Math.Min(
+                        (int)Math.Floor((mousePosition.Y - _mouseOffset?.Y ?? 0) / rowHeight),
+                        RowCount - _hoveredOverlay.AttachedWidget.LayoutData.RowSpan),
+                    0);
+                
+                Grid.SetColumn(_hoveredOverlay, offsetColumnIndex);
+                Grid.SetRow(_hoveredOverlay, offsetRowIndex);
+                Grid.SetColumn(_hoveredOverlay.AttachedWidget, offsetColumnIndex);
+                Grid.SetRow(_hoveredOverlay.AttachedWidget, offsetRowIndex);
+
+                _hoveredOverlay.AttachedWidget.LayoutData.Column = offsetColumnIndex;
+                _hoveredOverlay.AttachedWidget.LayoutData.Row = offsetRowIndex;
+                return;
+            }
+            
+            var mouseColumnIndex = Math.Max(
                 Math.Min(
-                    (int)Math.Floor((mousePosition.X - _mouseOffset?.X ?? 0) / columnWidth),
-                    ColumnCount - _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan),
+                    (int)Math.Floor((mousePosition.X) / columnWidth),
+                    ColumnCount),
                 0);
-            var offsetRowIndex = Math.Max(
+            var mouseRowIndex = Math.Max(
                 Math.Min(
-                    (int)Math.Floor((mousePosition.Y - _mouseOffset?.Y ?? 0) / rowHeight),
-                    RowCount - _hoveredOverlay.AttachedWidget.LayoutData.RowSpan),
+                    (int)Math.Floor((mousePosition.Y) / rowHeight),
+                    RowCount),
                 0);
             
-            Grid.SetColumn(_hoveredOverlay, offsetColumnIndex);
-            Grid.SetRow(_hoveredOverlay, offsetRowIndex);
-            Grid.SetColumn(_hoveredOverlay.AttachedWidget, offsetColumnIndex);
-            Grid.SetRow(_hoveredOverlay.AttachedWidget, offsetRowIndex);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Column = offsetColumnIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.Row = offsetRowIndex;
-            return;
-        }
-        
-        var mouseColumnIndex = Math.Max(
-            Math.Min(
-                (int)Math.Floor((mousePosition.X) / columnWidth),
-                ColumnCount),
-            0);
-        var mouseRowIndex = Math.Max(
-            Math.Min(
-                (int)Math.Floor((mousePosition.Y) / rowHeight),
-                RowCount),
-            0);
-        
-        var mouseColumnIndexInclusive = Math.Max(
-            Math.Min(
-                (int)Math.Ceiling((mousePosition.X) / columnWidth),
-                ColumnCount),
-            0);
-        var mouseRowIndexInclusive = Math.Max(
-            Math.Min(
-                (int)Math.Ceiling((mousePosition.Y) / rowHeight),
-                RowCount),
-            0);
-        
-        if (_currentBorder == "T")
-        {
-            if (mouseRowIndex < _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan)
-                goto borderT;
-            else
+            var mouseColumnIndexInclusive = Math.Max(
+                Math.Min(
+                    (int)Math.Ceiling((mousePosition.X) / columnWidth),
+                    ColumnCount),
+                0);
+            var mouseRowIndexInclusive = Math.Max(
+                Math.Min(
+                    (int)Math.Ceiling((mousePosition.Y) / rowHeight),
+                    RowCount),
+                0);
+            
+            if (_currentBorder == "T")
             {
-                _currentBorder = "B";
+                if (mouseRowIndex < _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan)
+                    goto borderT;
+                else
+                {
+                    _currentBorder = "B";
 
-                var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row +
-                             _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-                
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
-                Grid.SetRow(_hoveredOverlay, newRow);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
+                    var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row +
+                                 _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                    
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
+                    Grid.SetRow(_hoveredOverlay, newRow);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
 
-                goto borderB;
+                    goto borderB;
+                }
             }
-        }
-        else if (_currentBorder == "B")
-        {
-            if (mouseRowIndexInclusive >= _hoveredOverlay.AttachedWidget.LayoutData.Row)
-                goto borderB;
-            else
+            else if (_currentBorder == "B")
             {
-                _currentBorder = "T";
-                
-                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
-                
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-                Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-                Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-                Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-                
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                if (mouseRowIndexInclusive >= _hoveredOverlay.AttachedWidget.LayoutData.Row)
+                    goto borderB;
+                else
+                {
+                    _currentBorder = "T";
+                    
+                    var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+                    
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                    Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                    Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                    Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                    
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                }
             }
-        }
-        else if (_currentBorder == "L")
-        {
-            if (mouseColumnIndex < _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan)
-                goto borderL;
-            else
+            else if (_currentBorder == "L")
             {
-                _currentBorder = "R";
+                if (mouseColumnIndex < _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan)
+                    goto borderL;
+                else
+                {
+                    _currentBorder = "R";
 
-                var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column +
-                               _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-                
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
-                Grid.SetColumn(_hoveredOverlay, newColumn);
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
+                    var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column +
+                                   _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+                    
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
+                    Grid.SetColumn(_hoveredOverlay, newColumn);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
 
-                goto borderR;
+                    goto borderR;
+                }
             }
-        }
-        else if (_currentBorder == "R")
-        {
-            if (mouseColumnIndexInclusive >= _hoveredOverlay.AttachedWidget.LayoutData.Column)
-                goto borderR;
-            else
+            else if (_currentBorder == "R")
             {
-                _currentBorder = "L";
-                
-                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
-                
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-                Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-                
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                if (mouseColumnIndexInclusive >= _hoveredOverlay.AttachedWidget.LayoutData.Column)
+                    goto borderR;
+                else
+                {
+                    _currentBorder = "L";
+                    
+                    var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+                    
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                    Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                    Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                    
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                }
             }
-        }
-        else if (_currentBorder == "TL")
-        {
-            var atRowBoundary = mouseRowIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-            var atColumnBoundary = mouseColumnIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-        
-            if (!atRowBoundary && !atColumnBoundary) 
-                goto borderTL;
-            else if (atRowBoundary && !atColumnBoundary) 
-            { 
-                _currentBorder = "BL"; 
-                RefreshCursor();
-                var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
-                Grid.SetRow(_hoveredOverlay, newRow);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
-                goto borderBL; 
+            else if (_currentBorder == "TL")
+            {
+                var atRowBoundary = mouseRowIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                var atColumnBoundary = mouseColumnIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+            
+                if (!atRowBoundary && !atColumnBoundary) 
+                    goto borderTL;
+                else if (atRowBoundary && !atColumnBoundary) 
+                { 
+                    _currentBorder = "BL"; 
+                    RefreshCursor();
+                    var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
+                    Grid.SetRow(_hoveredOverlay, newRow);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
+                    goto borderBL; 
+                }
+                else if (!atRowBoundary && atColumnBoundary) 
+                { 
+                    _currentBorder = "TR"; 
+                    RefreshCursor();
+                    var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
+                    Grid.SetColumn(_hoveredOverlay, newColumn);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
+                    goto borderTR; 
+                }
+                else 
+                { 
+                    _currentBorder = "BR"; 
+                    var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                    var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
+                    Grid.SetRow(_hoveredOverlay, newRow);
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
+                    Grid.SetColumn(_hoveredOverlay, newColumn);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
+                    goto borderBR; 
+                }
             }
-            else if (!atRowBoundary && atColumnBoundary) 
-            { 
-                _currentBorder = "TR"; 
-                RefreshCursor();
-                var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
-                Grid.SetColumn(_hoveredOverlay, newColumn);
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
-                goto borderTR; 
+            else if (_currentBorder == "TR")
+            {
+                var atRowBoundary = mouseRowIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                var atColumnBoundary = mouseColumnIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Column;
+            
+                if (!atRowBoundary && !atColumnBoundary) 
+                    goto borderTR;
+                else if (atRowBoundary && !atColumnBoundary) 
+                { 
+                    _currentBorder = "BR"; 
+                    RefreshCursor();
+                    var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
+                    Grid.SetRow(_hoveredOverlay, newRow);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
+                    goto borderBR; 
+                }
+                else if (!atRowBoundary && atColumnBoundary) 
+                { 
+                    _currentBorder = "TL"; 
+                    RefreshCursor();
+                    var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                    Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                    Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                    goto borderTL; 
+                }
+                else 
+                { 
+                    _currentBorder = "BL"; 
+                    var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
+                    var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
+                    Grid.SetRow(_hoveredOverlay, newRow);
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                    Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                    Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                    goto borderBL; 
+                }
             }
-            else 
-            { 
-                _currentBorder = "BR"; 
-                var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-                var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
-                Grid.SetRow(_hoveredOverlay, newRow);
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
-                Grid.SetColumn(_hoveredOverlay, newColumn);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
-                goto borderBR; 
+            else if (_currentBorder == "BL")
+            {
+                var atRowBoundary = mouseRowIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Row;
+                var atColumnBoundary = mouseColumnIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+            
+                if (!atRowBoundary && !atColumnBoundary) 
+                    goto borderBL;
+                else if (atRowBoundary && !atColumnBoundary) 
+                { 
+                    _currentBorder = "TL"; 
+                    RefreshCursor();
+                    var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                    Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                    Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                    Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                    goto borderTL; 
+                }
+                else if (!atRowBoundary && atColumnBoundary) 
+                { 
+                    _currentBorder = "BR"; 
+                    RefreshCursor();
+                    var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
+                    Grid.SetColumn(_hoveredOverlay, newColumn);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
+                    goto borderBR; 
+                }
+                else 
+                { 
+                    _currentBorder = "TR"; 
+                    var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+                    var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                    Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
+                    Grid.SetColumn(_hoveredOverlay, newColumn);
+                    Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                    Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
+                    _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                    goto borderTR; 
+                }
             }
-        }
-        else if (_currentBorder == "TR")
-        {
-            var atRowBoundary = mouseRowIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-            var atColumnBoundary = mouseColumnIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Column;
-        
-            if (!atRowBoundary && !atColumnBoundary) 
-                goto borderTR;
-            else if (atRowBoundary && !atColumnBoundary) 
-            { 
-                _currentBorder = "BR"; 
-                RefreshCursor();
-                var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
-                Grid.SetRow(_hoveredOverlay, newRow);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
-                goto borderBR; 
+            else if (_currentBorder == "BR")
+            {
+                var atRowBoundary = mouseRowIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Row;
+                var atColumnBoundary = mouseColumnIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Column;
+            
+                if (!atRowBoundary && !atColumnBoundary) 
+                    goto borderBR;
+                else if (atRowBoundary && !atColumnBoundary) 
+                { 
+                    _currentBorder = "TR"; 
+                    RefreshCursor();
+                    var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                    Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                    Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                    Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                    goto borderTR; 
+                }
+                else if (!atRowBoundary && atColumnBoundary) 
+                { 
+                    _currentBorder = "BL"; 
+                    RefreshCursor();
+                    var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                    Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                    Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                    goto borderBL; 
+                }
+                else 
+                { 
+                    _currentBorder = "TL"; 
+                    var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+                    var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+                    Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                    Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                    Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                    Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                    Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                    Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                    Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                    _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                    _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                    _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                    goto borderTL; 
+                }
             }
-            else if (!atRowBoundary && atColumnBoundary) 
-            { 
-                _currentBorder = "TL"; 
-                RefreshCursor();
-                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-                Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-                goto borderTL; 
-            }
-            else 
-            { 
-                _currentBorder = "BL"; 
-                var newRow = _hoveredOverlay.AttachedWidget.LayoutData.Row + _hoveredOverlay.AttachedWidget.LayoutData.RowSpan;
-                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, newRow);
-                Grid.SetRow(_hoveredOverlay, newRow);
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-                Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = newRow;
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-                goto borderBL; 
-            }
-        }
-        else if (_currentBorder == "BL")
-        {
-            var atRowBoundary = mouseRowIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Row;
-            var atColumnBoundary = mouseColumnIndex >= _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-        
-            if (!atRowBoundary && !atColumnBoundary) 
-                goto borderBL;
-            else if (atRowBoundary && !atColumnBoundary) 
-            { 
-                _currentBorder = "TL"; 
-                RefreshCursor();
-                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
+
+            
+            return;
+
+            #region SimpleBorderCases
+            borderT:
+            {
+                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
+                                 (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
+
                 Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
                 Grid.SetRow(_hoveredOverlay, mouseRowIndex);
                 Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
                 Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+
                 _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
                 _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-                goto borderTL; 
+                return;
             }
-            else if (!atRowBoundary && atColumnBoundary) 
-            { 
-                _currentBorder = "BR"; 
-                RefreshCursor();
-                var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
-                Grid.SetColumn(_hoveredOverlay, newColumn);
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
-                goto borderBR; 
-            }
-            else 
-            { 
-                _currentBorder = "TR"; 
-                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
-                var newColumn = _hoveredOverlay.AttachedWidget.LayoutData.Column + _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-                Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-                Grid.SetColumn(_hoveredOverlay.AttachedWidget, newColumn);
-                Grid.SetColumn(_hoveredOverlay, newColumn);
+            borderB:
+            {
+                var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
+                if (newRowSpan <= 0) return;
                 Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
                 Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.Column = newColumn;
                 _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-                goto borderTR; 
+                return;
             }
-        }
-        else if (_currentBorder == "BR")
-        {
-            var atRowBoundary = mouseRowIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Row;
-            var atColumnBoundary = mouseColumnIndexInclusive <= _hoveredOverlay.AttachedWidget.LayoutData.Column;
-        
-            if (!atRowBoundary && !atColumnBoundary) 
-                goto borderBR;
-            else if (atRowBoundary && !atColumnBoundary) 
-            { 
-                _currentBorder = "TR"; 
-                RefreshCursor();
-                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
-                Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-                Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-                Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-                Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-                _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-                _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-                goto borderTR; 
-            }
-            else if (!atRowBoundary && atColumnBoundary) 
-            { 
-                _currentBorder = "BL"; 
-                RefreshCursor();
-                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+            borderL:
+            {
+                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
+                                   (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
+
                 Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
                 Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
                 Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
                 Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+
                 _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
                 _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-                goto borderBL; 
+                return;
             }
-            else 
-            { 
-                _currentBorder = "TL"; 
-                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex;
-                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex;
+            borderR:
+            {
+                var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
+                if (newColumnSpan <= 0) return;
+                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                return;
+            }
+            borderTL:
+            {
+                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
+                                 (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
+                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
+                                   (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
+
                 Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
                 Grid.SetRow(_hoveredOverlay, mouseRowIndex);
                 Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
@@ -768,145 +845,89 @@ public sealed partial class HomePage : UserControl
                 Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
                 Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
                 Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+
                 _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
                 _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
                 _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
                 _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-                goto borderTL; 
+                return;
             }
+            borderTR:
+            {
+                var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
+                                 (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
+                var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
+                if (newColumnSpan <= 0) return;
+
+                Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
+                Grid.SetRow(_hoveredOverlay, mouseRowIndex);
+                Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+
+                _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
+                _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                return;
+            }
+            
+            borderBL:
+            {
+                var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
+                var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
+                                   (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
+                if (newRowSpan <= 0) return;
+
+                Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
+                Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
+                Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+
+                _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
+                _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                return;
+            }
+            borderBR:
+            {
+                var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
+                var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
+                if (newRowSpan <= 0 || newColumnSpan <= 0) return;
+
+                Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
+                Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
+                Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
+                Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
+
+                _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
+                _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
+                return;
+            }
+            #endregion
         }
-
-        
-        return;
-
-        #region SimpleBorderCases
-        borderT:
+        catch (Exception exception)
         {
-            var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
-                             (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
+            //TODO: log error
+            // there are errors, but might not matter too much
+            
+            // just reset
+            _currentBorder = originalBorder;
+            RefreshCursor();
 
-            Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-            Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            return;
+            _hoveredOverlay.AttachedWidget.LayoutData = originalLayout;
+            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, originalLayout.RowSpan);
+            Grid.SetRowSpan(_hoveredOverlay, originalLayout.RowSpan);
+            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, originalLayout.ColumnSpan);
+            Grid.SetColumnSpan(_hoveredOverlay, originalLayout.ColumnSpan);
+            Grid.SetRow(_hoveredOverlay.AttachedWidget, originalLayout.Row);
+            Grid.SetRow(_hoveredOverlay, originalLayout.Row);
+            Grid.SetColumn(_hoveredOverlay.AttachedWidget, originalLayout.Column);
+            Grid.SetColumn(_hoveredOverlay, originalLayout.Column);
         }
-        borderB:
-        {
-            var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
-            if (newRowSpan <= 0) return;
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            return;
-        }
-        borderL:
-        {
-            var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
-                               (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
-
-            Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-            Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        borderR:
-        {
-            var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
-            if (newColumnSpan <= 0) return;
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        borderTL:
-        {
-            var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
-                             (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
-            var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
-                               (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
-
-            Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-            Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-            Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-            Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        borderTR:
-        {
-            var newRowSpan = _hoveredOverlay.AttachedWidget.LayoutData.RowSpan +
-                             (_hoveredOverlay.AttachedWidget.LayoutData.Row - mouseRowIndex);
-            var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
-            if (newColumnSpan <= 0) return;
-
-            Grid.SetRow(_hoveredOverlay.AttachedWidget, mouseRowIndex);
-            Grid.SetRow(_hoveredOverlay, mouseRowIndex);
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Row = mouseRowIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        
-        borderBL:
-        {
-            var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
-            var newColumnSpan = _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan +
-                               (_hoveredOverlay.AttachedWidget.LayoutData.Column - mouseColumnIndex);
-            if (newRowSpan <= 0) return;
-
-            Grid.SetColumn(_hoveredOverlay.AttachedWidget, mouseColumnIndex);
-            Grid.SetColumn(_hoveredOverlay, mouseColumnIndex);
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.Column = mouseColumnIndex;
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        borderBR:
-        {
-            var newRowSpan = mouseRowIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Row;
-            var newColumnSpan = mouseColumnIndexInclusive - _hoveredOverlay.AttachedWidget.LayoutData.Column;
-            if (newRowSpan <= 0 || newColumnSpan <= 0) return;
-
-            Grid.SetRowSpan(_hoveredOverlay.AttachedWidget, newRowSpan);
-            Grid.SetRowSpan(_hoveredOverlay, newRowSpan);
-            Grid.SetColumnSpan(_hoveredOverlay.AttachedWidget, newColumnSpan);
-            Grid.SetColumnSpan(_hoveredOverlay, newColumnSpan);
-
-            _hoveredOverlay.AttachedWidget.LayoutData.RowSpan = newRowSpan;
-            _hoveredOverlay.AttachedWidget.LayoutData.ColumnSpan = newColumnSpan;
-            return;
-        }
-        #endregion
     }
-
-    
-
     #endregion
     
     private void Root_OnPointerReleased(object sender, PointerRoutedEventArgs e)
