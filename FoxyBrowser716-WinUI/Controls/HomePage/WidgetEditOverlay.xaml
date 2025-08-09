@@ -9,12 +9,15 @@
     xmlns:winUi3="using:Material.Icons.WinUI3"
     mc:Ignorable="d" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
     <Grid x:Name="Root" CornerRadius="5" BorderThickness="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" 
-          PointerPressed="Root_OnPointerPressed" PointerReleased="Root_OnPointerReleased" PointerMoved="Root_OnPointerMoved">
+          PointerPressed="Root_OnPointerPressed" PointerReleased="Root_OnPointerReleased" PointerEntered="Root_OnPointerEntered"
+          PointerExited="Root_OnPointerExited" SizeChanged="WidgetEditOverlay_OnSizeChanged">
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="3" Spacing="3">
-            <generic:FTextButton x:Name="ButtonSettings" ButtonText="Settings"  OnClick="ButtonSettings_OnOnClick"/>
-            <generic:FTextButton x:Name="ButtonRemove" ButtonText="Remove"  OnClick="ButtonRemove_OnOnClick"/>
+            <generic:FIconButton x:Name="ButtonIconSettings" Content="{winUi3:MaterialIconExt Kind=Cog}" OnClick="ButtonSettings_OnOnClick" Width="20" Height="20" PointerExited="ButtonIconSettings_OnPointerExited" PointerEntered="ButtonIconSettings_OnPointerEntered"/>
+            <generic:FIconButton x:Name="ButtonIconRemove" Content="{winUi3:MaterialIconExt Kind=TrashCan}" OnClick="ButtonRemove_OnOnClick" Width="20" Height="20" PointerExited="ButtonIconSettings_OnPointerExited" PointerEntered="ButtonIconSettings_OnPointerEntered"/>
+            <generic:FTextButton x:Name="ButtonTextSettings" ButtonText="Settings" Icon="{winUi3:MaterialIconExt Kind=Cog}" CornerRadius="5" OnClick="ButtonSettings_OnOnClick" PointerExited="ButtonIconSettings_OnPointerExited" PointerEntered="ButtonIconSettings_OnPointerEntered"/>
+            <generic:FTextButton x:Name="ButtonTextRemove" ButtonText="Remove" Icon="{winUi3:MaterialIconExt Kind=TrashCan}" CornerRadius="5" OnClick="ButtonRemove_OnOnClick" PointerExited="ButtonIconSettings_OnPointerExited" PointerEntered="ButtonIconSettings_OnPointerEntered"/>
         </StackPanel>
-        <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="-2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -25,15 +28,15 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Rectangle Grid.Row="0" Grid.Column="1" x:Name="T" Height="5" HorizontalAlignment="Stretch" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="1" Grid.Column="0" x:Name="L" Width="5"  VerticalAlignment="Stretch"   PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="2" Grid.Column="0" x:Name="B" Height="5" HorizontalAlignment="Stretch" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="1" Grid.Column="2" x:Name="R" Width="5"  VerticalAlignment="Stretch"   PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="0" Grid.Column="1" x:Name="T" Height="7" HorizontalAlignment="Stretch" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="1" Grid.Column="0" x:Name="L" Width="7"  VerticalAlignment="Stretch"   PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="2" Grid.Column="1" x:Name="B" Height="7" HorizontalAlignment="Stretch" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="1" Grid.Column="2" x:Name="R" Width="7"  VerticalAlignment="Stretch"   PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
 
-            <Rectangle Grid.Row="0" Grid.Column="0" x:Name="TL" Height="5" Width="5" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="2" Grid.Column="0" x:Name="BL" Height="5" Width="5" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="2" Grid.Column="2" x:Name="BR" Height="5" Width="5" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
-            <Rectangle Grid.Row="0" Grid.Column="2" x:Name="TR" Height="5" Width="5" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="0" Grid.Column="0" x:Name="TL" Height="7" Width="7" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="2" Grid.Column="0" x:Name="BL" Height="7" Width="7" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="2" Grid.Column="2" x:Name="BR" Height="7" Width="7" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
+            <Rectangle Fill="#01000000" Grid.Row="0" Grid.Column="2" x:Name="TR" Height="7" Width="7" PointerEntered="Border_OnPointerEntered" PointerExited="Border_OnPointerExited"/>
         </Grid>
     </Grid>
 </UserControl>

@@ -7,7 +7,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:homePage="using:FoxyBrowser716_WinUI.Controls.HomePage"
     mc:Ignorable="d" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Red" Padding="5">
-
     <Grid x:Name="Root" Margin="5" Background="DimGray" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <TextBlock Text="Example Widget"/>
     </Grid>

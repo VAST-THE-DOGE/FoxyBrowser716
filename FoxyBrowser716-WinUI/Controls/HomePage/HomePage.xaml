@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid x:Name="Root">
+    <Grid x:Name="Root" PointerMoved="Root_OnPointerMoved" PointerReleased="Root_OnPointerReleased">
 
     </Grid>
 </UserControl>

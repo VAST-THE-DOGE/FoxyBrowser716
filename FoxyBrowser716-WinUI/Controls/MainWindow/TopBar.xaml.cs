@@ -6,6 +6,12 @@ using Material.Icons;
 using Material.Icons.WinUI3;
 using WinUIEx;
 
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
+using Windows.Win32.Graphics.Dwm;
+
+
 namespace FoxyBrowser716_WinUI.Controls.MainWindow;
 
 public sealed partial class TopBar : UserControl
@@ -24,6 +30,8 @@ public sealed partial class TopBar : UserControl
     public event Action? RefreshClicked;
     public event Action<string>? SearchClicked;
     public event Action? EngineClicked;
+    
+    public event Action<bool>? RequestSnapLayout;
 
     internal Theme CurrentTheme
     {
@@ -194,5 +202,10 @@ public sealed partial class TopBar : UserControl
     {
         SearchBackground.Visibility = inEdit ? Visibility.Collapsed : Visibility.Visible;
         ButtonMenu.Visibility = inEdit ? Visibility.Collapsed : Visibility.Visible;
+    }
+    
+    private void ButtonToggleSidebarExpand_OnOnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
     }
 }

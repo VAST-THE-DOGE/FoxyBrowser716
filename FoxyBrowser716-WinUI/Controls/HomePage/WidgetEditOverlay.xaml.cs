@@ -3,20 +3,38 @@
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
+using Windows.UI.Core;
+using Microsoft.UI.Input;
+using Microsoft.UI.Xaml.Shapes;
+
 namespace FoxyBrowser716_WinUI.Controls.HomePage;
 
 public sealed partial class WidgetEditOverlay : UserControl
 {
     public Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
-    internal WidgetBase AttachedWidget { get; set; }
+    
+    internal WidgetBase AttachedWidget;
+    
+    public Action<WidgetEditOverlay>? SettingsClicked;
+    public Action<WidgetEditOverlay>? DeleteClicked;
 
+    public Action<WidgetEditOverlay>? PointerRefreshRequested;
+
+    public Action<WidgetEditOverlay>? RootEntered;
+    public Action<WidgetEditOverlay>? RootExited;
+    public Action<WidgetEditOverlay, PointerRoutedEventArgs>? MouseDown;
+    public Action<WidgetEditOverlay>? MouseUp;
+    
+    public string? CurrentBorder { get; private set; } = "";
+    
     private void ApplyTheme()
     {
         Root.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
-        ButtonSettings.CurrentTheme = CurrentTheme;
-        ButtonRemove.CurrentTheme = CurrentTheme with { PrimaryForegroundColor = CurrentTheme.NoColor };
-        //TODO: need normal icon button and between them depending on size.
+        ButtonTextSettings.CurrentTheme = CurrentTheme;
+        ButtonTextRemove.CurrentTheme = CurrentTheme with { PrimaryForegroundColor = CurrentTheme.NoColor };
+        ButtonIconSettings.CurrentTheme = CurrentTheme;
+        ButtonIconRemove.CurrentTheme = CurrentTheme with { PrimaryForegroundColor = CurrentTheme.NoColor };
     }
 
     public WidgetEditOverlay()
@@ -33,36 +51,78 @@ public sealed partial class WidgetEditOverlay : UserControl
 
     private void ButtonSettings_OnOnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        SettingsClicked?.Invoke(this);
     }
 
     private void ButtonRemove_OnOnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        DeleteClicked?.Invoke(this);
     }
 
     private void Border_OnPointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        // throw new NotImplementedException();
+        if (sender is not Rectangle border || border.Name == CurrentBorder) return;
+        CurrentBorder = border.Name;
+        PointerRefreshRequested?.Invoke(this);
     }
 
     private void Border_OnPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        // throw new NotImplementedException();
+        if (sender is not Rectangle border || border.Name != CurrentBorder) return;
+        CurrentBorder = OverButtons() ? null : "";
+        PointerRefreshRequested?.Invoke(this);
     }
 
+    private bool _pointerPressed;
     private void Root_OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        if (OverButtons())
+            return;
+        
+        MouseDown?.Invoke(this, e);
+    }
+
+    private bool OverButtons()
+    {
+        return ButtonIconRemove.PointerOver || ButtonIconRemove.PointerOver ||
+               ButtonTextRemove.PointerOver || ButtonTextRemove.PointerOver;
     }
 
     private void Root_OnPointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        MouseUp?.Invoke(this);
     }
 
-    private void Root_OnPointerMoved(object sender, PointerRoutedEventArgs e)
+    private void WidgetEditOverlay_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        // throw new NotImplementedException();
+        // actual width is zero when collapsed, it must be hard-codded
+        // button + button + extra space
+        const int buttonMinWidth = 87 + 87 + 10;
+        ButtonTextRemove.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Collapsed : Visibility.Visible;
+        ButtonTextSettings.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Collapsed : Visibility.Visible;
+        ButtonIconRemove.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Visible : Visibility.Collapsed;
+        ButtonIconSettings.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Root_OnPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        RootEntered?.Invoke(this);
+    }
+
+    private void Root_OnPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        RootExited?.Invoke(this);
+    }
+
+    private void ButtonIconSettings_OnPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        CurrentBorder = "";
+        PointerRefreshRequested?.Invoke(this);
+    }
+
+    private void ButtonIconSettings_OnPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        CurrentBorder = null;
+        PointerRefreshRequested?.Invoke(this);
     }
 }

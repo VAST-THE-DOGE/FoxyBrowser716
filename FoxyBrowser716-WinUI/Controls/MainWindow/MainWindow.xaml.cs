@@ -1,3 +1,5 @@
+using Windows.Graphics.Display;
+using Windows.UI.ViewManagement;
 using FoxyBrowser716_WinUI.Controls.Generic;
 using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
@@ -7,6 +9,11 @@ using Material.Icons.WinUI3;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUIEx;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
+using Windows.Win32.Graphics.Dwm;
+
 
 // using CommunityToolkit.WinUI.Helpers;
 //
@@ -352,9 +359,19 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         _contextmenuUsedForSearchEngine = false;
     }
+    
+    private void OnWindowClosed(object sender, WindowEventArgs args)
+    {
+        //TODO
+    }
 
     private void MainWindow_OnWindowStateChanged(object? sender, WindowState e)
     {
         TopBar.UpdateMaximizeRestore(e);
+    }
+    
+    private void MainWindow_OnActivated(object sender, WindowActivatedEventArgs args)
+    {
+        
     }
 }

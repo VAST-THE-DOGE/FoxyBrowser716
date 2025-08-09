@@ -11,7 +11,10 @@
     xmlns:material="using:Material.Icons.WinUI3"
     xmlns:winUiEx="using:WinUIEx" mc:Ignorable="d" 
     MinWidth="253" MinHeight="43"
-    Title="FoxyBrowser716-WinUI" WindowStateChanged="MainWindow_OnWindowStateChanged">
+    Title="FoxyBrowser716-WinUI" 
+    WindowStateChanged="MainWindow_OnWindowStateChanged"
+    Activated="MainWindow_OnActivated"
+    Closed="OnWindowClosed">
     <!--<Window.SystemBackdrop>
         <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
     </Window.SystemBackdrop>-->
@@ -22,7 +25,7 @@
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
                                BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked" MenuClicked="TopBar_OnMenuClicked"
                                BackClicked="TopBar_OnBackClicked" EngineClicked="TopBar_OnEngineClicked" ForwardClicked="TopBar_OnForwardClicked"
-                               RefreshClicked="TopBar_OnRefreshClicked"/>
+                               RefreshClicked="TopBar_OnRefreshClicked" />
             <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,30,0,0">
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
