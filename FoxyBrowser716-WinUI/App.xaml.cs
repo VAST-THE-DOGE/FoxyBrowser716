@@ -62,7 +62,7 @@ public partial class App : Application
                 if (args.Data is ILaunchActivatedEventArgs launchArgs)
                 {
                     var arguments = launchArgs.Arguments;
-                    await AppServer.HandleLaunchEvent(arguments?.Split(" ") ?? [], isFirst);
+                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
                 }
                 break;
             case ExtendedActivationKind.Protocol:
@@ -76,7 +76,7 @@ public partial class App : Application
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
                     var arguments = commandArgs.Operation.Arguments;
-                    await AppServer.HandleLaunchEvent(arguments?.Split(" ") ?? [], isFirst);
+                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
                 }
                 break;
         }

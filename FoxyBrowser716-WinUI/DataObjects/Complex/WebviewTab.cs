@@ -55,7 +55,7 @@ public class WebviewTab
 		Core.CoreWebView2.FaviconChanged += OnFaviconChanged;
 		Core.CoreWebView2.SourceChanged += CoreWebView2OnSourceChanged;
 		
-		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl));
+		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl, true));
 	}
 
 	private void CoreWebView2OnSourceChanged(CoreWebView2 sender, CoreWebView2SourceChangedEventArgs args)
@@ -63,9 +63,11 @@ public class WebviewTab
 		Info.Url = Core.CoreWebView2.Source;
 	}
 
-	public async Task NavigateOrSearch(string url)
+	public async Task NavigateOrSearch(string url) => await NavigateOrSearch(url, false);
+	
+	private async Task NavigateOrSearch(string url, bool forceNav)
 	{
-		if (!InitializeTask.IsCompleted)
+		if (!InitializeTask.IsCompleted && !forceNav)
 		{
 			_startingUrl = url;
 			return;

@@ -10,7 +10,9 @@ public class DefaultThemes
 		["Dark Mode"] = DarkMode,
 		["Light Mode"] = LightMode,
 		["Foxy Theme"] = FoxyTheme,
-		["Vast Theme"] = VastTheme,
+		["Vast Seas"] = VastSea,
+		["Vast Skies"] = VastSky,
+
 	};
 
 	public static Theme DarkMode = new()
@@ -52,16 +54,29 @@ public class DefaultThemes
 		YesColor = Color.FromArgb(255, 0, 225, 0),
 		NoColor = Color.FromArgb(255, 225, 0, 0),
 	};
-	public static Theme VastTheme = new()
+	public static Theme VastSea = new()
 	{
-		PrimaryBackgroundColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryBackgroundColor = Color.FromArgb(255, 0, 0, 0),
+		PrimaryBackgroundColor = Color.FromArgb(255, 40, 60, 80),
+		SecondaryBackgroundColor = Color.FromArgb(255, 20, 40, 60),
 		PrimaryForegroundColor = Color.FromArgb(255, 255, 255, 255),
 		SecondaryForegroundColor = Color.FromArgb(255, 200, 200, 200),
-		PrimaryAccentColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryAccentColor = Color.FromArgb(255, 0, 0, 0),
-		PrimaryHighlightColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryHighlightColor = Color.FromArgb(255, 0, 0, 0),
+		PrimaryAccentColor = Color.FromArgb(255, 105, 135, 165),
+		SecondaryAccentColor = Color.FromArgb(255, 85, 115, 145),
+		PrimaryHighlightColor = Color.FromArgb(255, 11, 190, 255),
+		SecondaryHighlightColor = Color.FromArgb(255, 94, 168, 248),
+		YesColor = Color.FromArgb(255, 0, 225, 0),
+		NoColor = Color.FromArgb(255, 225, 0, 0),
+	};
+	public static Theme VastSky = new()
+	{
+		PrimaryBackgroundColor = Color.FromArgb(255, 205, 230, 255),
+		SecondaryBackgroundColor = Color.FromArgb(255, 185, 210, 235),
+		PrimaryForegroundColor = Color.FromArgb(255, 0,0,0),
+		SecondaryForegroundColor = Color.FromArgb(255, 50,50,50),
+		PrimaryAccentColor = Color.FromArgb(255, 105, 135, 165),
+		SecondaryAccentColor = Color.FromArgb(255, 85, 115, 145),
+		PrimaryHighlightColor = Color.FromArgb(255, 11, 190, 255),
+		SecondaryHighlightColor = Color.FromArgb(255, 94, 168, 248),
 		YesColor = Color.FromArgb(255, 0, 225, 0),
 		NoColor = Color.FromArgb(255, 225, 0, 0),
 	};

@@ -252,6 +252,7 @@ public sealed partial class LeftBar : UserControl
     private void TabManagerOnTabAdded(WebviewTab tab)
     {
         var card = new TabCard(tab);
+        card.CurrentTheme = CurrentTheme;
         card.CloseRequested += TabManager!.RemoveTab;
         card.DuplicateRequested += CardOnDuplicateRequested;
         card.OnClick += TabManager!.SwapActiveTabTo;
@@ -445,6 +446,7 @@ public sealed partial class LeftBar : UserControl
                 foreach (var w in widgets)
                 {
                     var card = new TabCard(w.icon, w.name);
+                    card.CurrentTheme = CurrentTheme;
                     card.OnClick += async _ => await home.AddWidgetClicked(w.name);
                     groupCard.AddTabCard(card);
                 }
@@ -456,6 +458,7 @@ public sealed partial class LeftBar : UserControl
             foreach (var o in homeOptions)
             {
                 var card = new TabCard(o.icon, o.name);
+                card.CurrentTheme = CurrentTheme;
                 card.OnClick += async _ => await home.OptionClicked(o.type);
                 Pins.Children.Add(card);
             }

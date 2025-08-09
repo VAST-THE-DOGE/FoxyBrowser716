@@ -24,6 +24,8 @@ public sealed partial class WidgetEditOverlay : UserControl
     public Action<WidgetEditOverlay>? RootExited;
     public Action<WidgetEditOverlay, PointerRoutedEventArgs>? MouseDown;
     public Action<WidgetEditOverlay>? MouseUp;
+
+    private bool _showSettings;
     
     public string? CurrentBorder { get; private set; } = "";
     
@@ -42,10 +44,11 @@ public sealed partial class WidgetEditOverlay : UserControl
         InitializeComponent();
     }
     
-    public WidgetEditOverlay(WidgetBase widget)
+    public WidgetEditOverlay(WidgetBase widget, bool showSettings)
     {
         InitializeComponent();
         AttachedWidget = widget;
+        _showSettings = showSettings;
         ApplyTheme();
     }
 
@@ -99,9 +102,9 @@ public sealed partial class WidgetEditOverlay : UserControl
         // button + button + extra space
         const int buttonMinWidth = 87 + 87 + 10;
         ButtonTextRemove.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Collapsed : Visibility.Visible;
-        ButtonTextSettings.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Collapsed : Visibility.Visible;
+        ButtonTextSettings.Visibility = buttonMinWidth > e.NewSize.Width || !_showSettings ? Visibility.Collapsed : Visibility.Visible;
         ButtonIconRemove.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Visible : Visibility.Collapsed;
-        ButtonIconSettings.Visibility = buttonMinWidth > e.NewSize.Width ? Visibility.Visible : Visibility.Collapsed;
+        ButtonIconSettings.Visibility = buttonMinWidth > e.NewSize.Width && _showSettings ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Root_OnPointerEntered(object sender, PointerRoutedEventArgs e)

@@ -23,6 +23,6 @@
             <TextBlock Grid.Column="1" Height="22" Margin="2,0" x:Name="Label" x:FieldModifier="public" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
             <generic:FIconButton Grid.Column="2" Width="21" Height="21" Margin="0,0,1,0" x:Name="ButtonCollapse" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=ExpandLess}" OnClick="ButtonCollapse_OnOnClick"/>
         </Grid>
-        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,5"/>
+        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,2"/>
     </Grid>
 </UserControl>

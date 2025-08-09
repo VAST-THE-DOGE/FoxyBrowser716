@@ -369,7 +369,7 @@ public sealed partial class HomePage : UserControl
 
         if (InEditMode)
         {
-            var overlay = new WidgetEditOverlay(widget)
+            var overlay = new WidgetEditOverlay(widget, widget.WidgetSettings.Count > 0)
             {
                 CurrentTheme = CurrentTheme
             };
@@ -410,7 +410,7 @@ public sealed partial class HomePage : UserControl
             switch (c)
             {
                 case WidgetBase w:
-                    var overlay = new WidgetEditOverlay(w)
+                    var overlay = new WidgetEditOverlay(w, w.WidgetSettings.Count > 0)
                     {
                         CurrentTheme = CurrentTheme
                     };

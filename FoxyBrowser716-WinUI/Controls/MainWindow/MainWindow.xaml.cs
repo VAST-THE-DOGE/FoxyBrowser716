@@ -81,6 +81,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         // link events from home page
         HomePage.ToggleEditMode += HomePageOnToggleEditMode;
         
+        TabManager.TryGetTab(TabManager.ActiveTabId, out var tab);
+        RefreshCurrentTabUi(tab, TabManager.ActiveTabId < 0 ? TabManager.ActiveTabId : null);
+        
         // refresh all data
         HandleCacheChanged();
     }
@@ -151,7 +154,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             field = value;
             ApplyTheme();
         }
-    } = DefaultThemes.DarkMode;
+    } = DefaultThemes.VastSea;
 
     private void ApplyTheme()
     {
@@ -275,7 +278,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", () => throw new NotImplementedException()),
         ];
         
-        ContextMenuPopup.Margin = new Thickness(32, 32, 0, 0);
+        ContextMenuPopup.Margin = new Thickness(32, 28, 0, 0);
         switch (TabManager.ActiveTabId)
         {
             case >= 0:
@@ -334,7 +337,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                         null/*InfoGetter.GetSearchEngineName(se)*/, 
                         () => SearchEngineChangeRequested?.Invoke(se)
                     )
-                ), 24);
+                ), 22);
     }
 
     private void TopBar_OnBackClicked()
