@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using CommunityToolkit.WinUI.Animations;
 using FoxyBrowser716_WinUI.Controls.Generic;
 using FoxyBrowser716_WinUI.Controls.HomePage;
 using FoxyBrowser716_WinUI.DataManagement;
@@ -73,8 +75,6 @@ public sealed partial class LeftBar : UserControl
                 card.CloseRequested += PinCardOnClose(newWebsiteInfo);
             }
         }
-        
-        //TODO: load pins + tabs
     }
 
     private void PinsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -351,13 +351,34 @@ public sealed partial class LeftBar : UserControl
         }
     }
     
+    public bool LockSideBar { get; set; }
+    
     internal void OpenSideBar()
     {
         if (SideOpen) return;
 
         SideOpen = true;
-    
-        Root.Width = 260; //TODO: temp
+
+        // var animation = AnimationBuilder.Create()
+        //     .Size(Axis.X, 260, 20, TimeSpan.FromSeconds(0.5))
+        //     .StartAsync();
+            // .Width(from: 100, to: 300, duration: TimeSpan.FromSeconds(0.5))
+            // .EasingType(EasingType.Cubic);
+
+       _ = AnimationBuilder.Create()
+           .Size(Axis.X, 260, null, null, TimeSpan.FromSeconds(0.3), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml)
+           .StartAsync(Root);
+            
+        // await myControl.StartAsync(animation);
+        // var s = new Storyboard();
+        // s.Children.Add(a);
+        // s.Begin();
+        // s.Completed += (s1, e1) =>
+        // {
+        //     Debug.WriteLine("hey");
+        // };
+        
+        //Root.Width = 260; //TODO: temp
     }
 
     internal void CloseSideBar()
@@ -365,8 +386,10 @@ public sealed partial class LeftBar : UserControl
         if (!SideOpen) return;
 
         SideOpen = false;
-
-        Root.Width = 30; //TODO: temp
+        
+        _ = AnimationBuilder.Create()
+            .Size(Axis.X, 30, null, null, TimeSpan.FromSeconds(0.3), null, EasingType.Quintic, EasingMode.EaseIn, FrameworkLayer.Xaml)
+            .StartAsync(Root);
     }
 
     private bool MouseOver;
@@ -374,6 +397,9 @@ public sealed partial class LeftBar : UserControl
     private void Root_OnPointerEntered(object sender, PointerRoutedEventArgs e)
     {
         MouseOver = true;
+        
+        if (LockSideBar) return;
+        
         var click = false;
 
         void LeftDown(object s, PointerRoutedEventArgs e)
@@ -382,7 +408,7 @@ public sealed partial class LeftBar : UserControl
         }
         PointerPressed += LeftDown;
 		
-        Task.Delay(250).ContinueWith(_ =>
+        Task.Delay(200).ContinueWith(_ =>
         {
             AppServer.UiDispatcherQueue.TryEnqueue(() => PointerPressed -= LeftDown);
             if (MouseOver && !SideOpen && !click)
@@ -393,6 +419,9 @@ public sealed partial class LeftBar : UserControl
     private void Root_OnPointerExited(object sender, PointerRoutedEventArgs e)
     {
         MouseOver = false;
+        
+        if (LockSideBar) return;
+        
         Task.Delay(300).ContinueWith(_ =>
         {
             if (!MouseOver && SideOpen)

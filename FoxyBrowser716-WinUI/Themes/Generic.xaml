@@ -59,13 +59,12 @@
             <Setter.Value>
                 <ControlTemplate TargetType="local:FIconButton">
                     <ContentPresenter
+                        x:Name="presenter"
                         Background="{TemplateBinding Background}"
                         HorizontalContentAlignment="Stretch"
                         VerticalContentAlignment="Stretch"
                         Padding="{TemplateBinding Padding}"
-                        CornerRadius="{Binding Width,
-                                   RelativeSource={RelativeSource TemplatedParent},
-                                   Converter={StaticResource HalfValueConverter}}"/>
+                        CornerRadius="{TemplateBinding CornerRadius}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

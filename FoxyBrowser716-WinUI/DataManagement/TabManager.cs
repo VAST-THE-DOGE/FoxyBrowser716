@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
 using Microsoft.Web.WebView2.Core;
 
@@ -37,10 +38,36 @@ public class TabManager
 		{
 			AreBrowserExtensionsEnabled = true,
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
+			EnableTrackingPrevention = true,
+			//TODO: look into these flags and make sure each are secure
+			AdditionalBrowserArguments = 
+				"--enable-gpu " +
+				"--enable-gpu-rasterization " +
+				"--enable-hardware-overlays " +
+				"--enable-webgl2-compute-context " +
+				"--enable-accelerated-2d-canvas " +
+				// "--enable-gpu-memory-buffer " +
+				// "--enable-native-gpu-memory-buffers " +
+				// "--site-per-process " +
+				"--disable-background-timer-throttling " +
+				// "--disable-backgrounding-occluded-windows " +
+				"--disable-renderer-backgrounding " +
+				"--enable-features=UseSkiaRenderer,CanvasOopRasterization " +
+				"--disable-frame-rate-limit " +
+				// "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder " +
+				"--enable-quic " +
+				// "--enable-experimental-web-platform-features " +
+				"--memory-pressure-on " +
+				"--max-gum-fps=144 " + 
+				// "--max-unused-resource-memory-usage-percentage=5 " +
+				"--disable-background-media-suspend " //+
+				// "--disable-low-res-tiling " +
+				// "--enable-lcd-text "
 		};
+			
 		WebsiteEnvironment ??= await CoreWebView2Environment.CreateWithOptionsAsync(null, FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.WebView2, Instance.Name), options);
 	}
-
+	
 	public bool TryGetTab(int tabId, out WebviewTab? tab)
 	{
 		if (_tabs.GetValueOrDefault(tabId) is { } t)
@@ -57,7 +84,9 @@ public class TabManager
 	
 	public Dictionary<int,WebviewTab> GetAllTabs() => _tabs.ToDictionary();
 	
-	public void RemoveTab(int tabId) {
+	public void RemoveTab(int tabId) => RemoveTab(tabId, false);
+	
+	public void RemoveTab(int tabId, bool keepCore) {
 		if (_tabs.Count > 1)
 		{
 			var newId = ActiveTabId == tabId ? _tabs.First(t => t.Key != tabId).Key : ActiveTabId;
@@ -73,6 +102,10 @@ public class TabManager
 			if (tab.Core.Parent is Grid g)
 			{
 				g.Children.Remove(tab.Core);
+				if (!keepCore)
+				{
+					tab.Core.Close();
+				}
 			}			
 			else
 				throw new Exception($"Tab (Id = {tabId}) could not be removed. Unknown Core Parent.");
@@ -91,6 +124,7 @@ public class TabManager
 	// tab management
 	private int? _nextToSwap;
 	private bool _swaping;
+	
 	public void SwapActiveTabTo(int tabId) => _ = SwapActiveTabTo(tabId, true);
 	
 	public async Task SwapActiveTabTo(int tabId, bool waitForTabToInitialize)

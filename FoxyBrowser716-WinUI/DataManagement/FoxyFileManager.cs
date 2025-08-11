@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+
 namespace FoxyBrowser716_WinUI.DataManagement;
 
 /// <summary>
@@ -298,7 +301,12 @@ public static class FoxyFileManager
 	#endregion
 
 	#region FileManagment
-
+		private static readonly JsonSerializerOptions _options = new()
+		{
+			WriteIndented = true,
+			TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+		};
+	
 		#region ReadFromFile
 		/// <summary>
 		/// Reads all content from a file as plain text.
@@ -326,6 +334,7 @@ public static class FoxyFileManager
 			catch (Exception)
 			{
 				//TODO: log this error
+				throw;
 				return (ReturnCode.UnknownError, null);
 			}
 		}
@@ -355,6 +364,7 @@ public static class FoxyFileManager
 			catch (Exception)
 			{
 				//TODO: log this error
+				throw;
 				return (ReturnCode.UnknownError, null);
 			}
 		}
@@ -378,7 +388,7 @@ public static class FoxyFileManager
 
 			try
 			{
-				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content));
+				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, _options));
 			}
 			catch (Exception)
 			{
@@ -404,10 +414,11 @@ public static class FoxyFileManager
 
 			try
 			{
-				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content));
+				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, _options));
 			}
 			catch (Exception)
 			{
+				throw;
 				return (ReturnCode.UnknownError, null);
 			}
 		}
@@ -491,7 +502,7 @@ public static class FoxyFileManager
 			if (!filePath.EndsWith(".json"))
 				return ReturnCode.InvalidPath;
 			
-			var jsonContent = JsonSerializer.Serialize(content);
+			var jsonContent = JsonSerializer.Serialize(content, _options);
 			return SaveToFile(filePath, jsonContent);
 		}
 		
@@ -508,7 +519,7 @@ public static class FoxyFileManager
 			if (!filePath.EndsWith(".json"))
 				return ReturnCode.InvalidPath;
 			
-			var jsonContent = JsonSerializer.Serialize(content);
+			var jsonContent = JsonSerializer.Serialize(content, _options);
 			return await SaveToFileAsync(filePath, jsonContent);
 		}
 		#endregion

@@ -26,6 +26,23 @@ public sealed partial class FIconButton : ContentControl
             : control.PointerOver ? control.CurrentTheme.PrimaryAccentColorSlightTransparent : Colors.Transparent);
     }
     
+    public static readonly DependencyProperty RoundedProperty = DependencyProperty.Register(
+        nameof(Rounded), typeof(bool), typeof(FIconButton),
+        new PropertyMetadata(true, RoundedChanged));
+    
+    public bool Rounded
+    {
+        get => (bool)GetValue(RoundedProperty);
+        set { SetValue(RoundedProperty, value);
+            RoundedChanged(this, null);
+        }
+    }
+
+    private static void RoundedChanged(DependencyObject d, DependencyPropertyChangedEventArgs? e)
+    {
+        ((FIconButton)d).CornerRadius = new CornerRadius(((FIconButton)d).Rounded ? (Math.Min(((FIconButton)d).ActualWidth, ((FIconButton)d).ActualHeight) / 2 ) : 0);
+    }
+    
     internal Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
 
     private void ApplyTheme()
@@ -46,6 +63,12 @@ public sealed partial class FIconButton : ContentControl
     public FIconButton()
     {
         DefaultStyleKey = typeof(FIconButton);
+
+        SizeChanged += (_, _) =>
+        {
+            var minSize = Math.Min(ActualWidth, ActualHeight);
+            CornerRadius = new CornerRadius(Rounded ? minSize / 2 : 0);
+        };
         
         PointerEntered += (_,_) =>
         {

@@ -13,6 +13,8 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
+using CommunityToolkit.WinUI.Animations;
+using Microsoft.UI.Xaml.Media.Animation;
 
 
 // using CommunityToolkit.WinUI.Helpers;
@@ -144,6 +146,51 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             RefreshCurrentTabUi(tab);
         else
             throw new Exception($"Could not retrieve tab with id '{pair.newId}'");
+        
+        //TODO test and fine tune
+        
+        // apply fading:
+        // var fadeOut = AnimationBuilder.Create();
+        var fadeIn = AnimationBuilder.Create();
+        
+        // already collapsed?
+        // if (pair.oldId == -1)
+        // {
+        //     Canvas.SetZIndex(HomePage, 0);
+        //     fadeOut.Opacity(0, null, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeOut.StartAsync(HomePage);
+        // }
+        // else if (pair.oldId == -2)
+        // {
+        //     Canvas.SetZIndex(SettingsPage, 0);
+        //     fadeOut.Opacity(0, null, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeOut.StartAsync(SettingsPage);
+        // } 
+        // else if (TabManager.TryGetTab(pair.oldId, out var oldTab))
+        // {
+        //     Canvas.SetZIndex(oldTab!.Core, 0);
+        //     fadeOut.Opacity(0, null, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeOut.StartAsync(oldTab!.Core);
+        // }
+        
+        if (pair.newId == -1)
+        {
+            Canvas.SetZIndex(HomePage, 1);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            _ = fadeIn.StartAsync(HomePage);
+        }
+        else if (pair.newId == -2)
+        {
+            Canvas.SetZIndex(SettingsPage, 1);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            _ = fadeIn.StartAsync(SettingsPage);
+        } 
+        else if (TabManager.TryGetTab(pair.newId, out var newTab))
+        {
+            Canvas.SetZIndex(newTab!.Core, 1);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            _ = fadeIn.StartAsync(newTab!.Core);
+        }
     }
 
     internal Theme CurrentTheme
@@ -273,9 +320,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
         List<FContextMenu.MenuItem> items =
         [
-            new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", () => throw new NotImplementedException()),
-            new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", () => throw new NotImplementedException()),
-            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", () => throw new NotImplementedException()),
+            new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", InstancesClick),
+            new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", BookmarkClick),
+            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
         ];
         
         ContextMenuPopup.Margin = new Thickness(32, 28, 0, 0);
@@ -284,8 +331,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             case >= 0:
                 ContextMenuPopup.SetItems(items
                     .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", () => throw new NotImplementedException()))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", () => throw new NotImplementedException())),
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", DownloadClick))
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick)),
                     115
                 );
                 break;
@@ -300,6 +347,52 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 ContextMenuPopup.SetItems(items, 115);
                 break;
         }
+    }
+
+    private void InstancesClick()
+    {
+        var openNewWindow = TabManager.GetAllTabs().Count > 0;
+        ContextMenuPopup.SetItems(AppServer.Instances
+            .Where(i => i.Name != Instance.Name)
+            .Select(i => new FContextMenu.MenuItem(
+                null,
+                0,
+                $"{(openNewWindow ? "Open" : "Swap To")} {i.Name}",
+                async () =>
+                {
+                    if (openNewWindow)
+                        await i.CreateWindow();
+                    else
+                    {
+                        await i.CreateWindow(null, new Rect(AppWindow.Position.X, AppWindow.Position.Y,
+                            AppWindow.Size.Width, AppWindow.Size.Height), StateFromWindow());
+                        Close();
+                    }
+                })
+            ), 115);
+    }
+
+    private void BookmarkClick()
+    {
+        // throw new NotImplementedException();
+    }
+
+    private void HistoryClick()
+    {
+        // throw new NotImplementedException();
+    }
+
+    private async void ExtensionsClick()
+    {
+        ContextMenuPopup.SetItems((await Instance.GetExtensions()).Select(e => new FContextMenu.MenuItem(null, 0, e.Name, () => {/*TODO*/})));
+    }
+
+    private void DownloadClick()
+    {
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+            if (tab.Core.CoreWebView2.IsDefaultDownloadDialogOpen) 
+                tab.Core.CoreWebView2.CloseDefaultDownloadDialog();
+            else tab.Core.CoreWebView2.OpenDefaultDownloadDialog();
     }
 
     private void EditHomeClick()

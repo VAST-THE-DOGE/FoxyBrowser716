@@ -103,7 +103,11 @@ public static class AppServer
 			UiDispatcherQueue.TryEnqueue(async () =>
 			{
 				if (uris.Length > 0)
-					await Task.WhenAll(uris.Select(uri => CurrentInstance.CreateWindow(uri)));
+					if (CurrentInstance.CurrentWindow is { } window)
+						foreach (var uri in uris)
+							window.TabManager.SwapActiveTabTo(window.TabManager.AddTab(uri)); //TODO: NEED TO BE ASYNC
+					else
+						await Task.WhenAll(uris.Select(uri => CurrentInstance.CreateWindow(uri)));
 				else
 					await CurrentInstance.CreateWindow();
 			});

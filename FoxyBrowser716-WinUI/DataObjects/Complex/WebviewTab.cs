@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Windows.Foundation;
 using FoxyBrowser716_WinUI.DataManagement;
@@ -46,16 +48,72 @@ public class WebviewTab
 
 		Core.AllowDrop = true;
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
+		Core.CoreWebView2.DefaultDownloadDialogMargin = new Point(0, 0);
 		Core.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
-		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = true;
-		// Core.CoreWebView2.Profile.IsGeneralAutofillEnabled = true;
 		Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
+		
+		// Add after Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
+		Core.CoreWebView2.Settings.IsWebMessageEnabled = false;     
+		Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
+		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
+
+		Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Strict;
+		Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
+
 		
 		Core.CoreWebView2.DocumentTitleChanged += OnDocumentTitleChanged;
 		Core.CoreWebView2.FaviconChanged += OnFaviconChanged;
 		Core.CoreWebView2.SourceChanged += CoreWebView2OnSourceChanged;
+		Core.CoreWebView2.NewWindowRequested += CoreWebView2OnNewWindowRequested;
+		Core.CoreWebView2.WindowCloseRequested += CoreWebView2OnWindowCloseRequested;
+		Core.CoreWebView2.ProcessFailed += CoreWebView2OnProcessFailed;
+		
+		//performance stuff
+		var processId = Core.CoreWebView2.BrowserProcessId;
+		var process = Process.GetProcessById((int)processId);
+        
+		process.PriorityClass = ProcessPriorityClass.High;
+		
+		// process.ProcessorAffinity = 0x0F; // Use first 4 cores
+		
+		try
+		{
+			var gpuProcesses = Process.GetProcessesByName("msedgewebview2")
+				.Where(p => p.Id != process.Id);
+    
+			foreach (var gpuProcess in gpuProcesses)
+			{
+				try
+				{
+					gpuProcess.PriorityClass = ProcessPriorityClass.High;
+				}
+				catch { /* Ignore */ }
+			}
+		}
+		catch { /* Ignore */ }
+
 		
 		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl, true));
+	}
+
+	private void CoreWebView2OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs args)
+	{
+		//TODO: log this error
+		
+		//try a recovery
+		TabManager.RemoveTab(Id);
+		TabManager.SwapActiveTabTo(TabManager.AddTab(Core.Source.ToString()));
+	}
+
+	private void CoreWebView2OnWindowCloseRequested(CoreWebView2 sender, object args)
+	{
+		TabManager.RemoveTab(Id);
+	}
+
+	private void CoreWebView2OnNewWindowRequested(CoreWebView2 sender, CoreWebView2NewWindowRequestedEventArgs args)
+	{
+		TabManager.SwapActiveTabTo(TabManager.AddTab(args.Uri));
+		args.Handled = true;
 	}
 
 	private void CoreWebView2OnSourceChanged(CoreWebView2 sender, CoreWebView2SourceChangedEventArgs args)

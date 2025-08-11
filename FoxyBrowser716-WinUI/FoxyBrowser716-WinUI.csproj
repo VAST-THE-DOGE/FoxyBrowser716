@@ -17,6 +17,9 @@
     <IsPackable>false</IsPackable>
     <Version />
     <LangVersion>preview</LangVersion>
+    <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
+    <Company>FoxyBrowser716</Company>
+    <Product>FoxyBrowser716</Product>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,6 +51,10 @@
 
 
 
+    <PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
+
+
+
     <PackageReference Include="Material.Icons.WinUI3" Version="2.4.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3415-prerelease" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
@@ -70,15 +77,48 @@
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
-  
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <PublishReadyToRun >true</PublishReadyToRun>
+    <PublishTrimmed >false</PublishTrimmed>
+    <Optimize >true</Optimize>
+    <TieredPGO >true</TieredPGO>
+    <TrimMode>partial</TrimMode>
+    <PublishAot>true</PublishAot>
+
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <!-- Preserve XAML-related assemblies -->
+<!--    <TrimmerRootAssembly Include="Microsoft.UI.Xaml" />-->
+<!--    <TrimmerRootAssembly Include="WinRT.Runtime" />-->
+  </PropertyGroup>
+
   <!-- Publish Properties -->
   <PropertyGroup>
-    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
     <DefaultLanguage>en</DefaultLanguage>
     <PackageCertificateThumbprint>70149FF93F8243837A4A6FE6AE5C0C77565FB803</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|ARM64' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|ARM64' ">
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 </Project>
