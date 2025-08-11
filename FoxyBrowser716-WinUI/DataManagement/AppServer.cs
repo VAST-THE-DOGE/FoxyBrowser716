@@ -24,23 +24,19 @@ public static class AppServer
 	
 	public static List<Instance> Instances = [];
 	
-	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded)
+	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded, bool fromStartup = false)
 	{
-		//TODO
-		/*var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
-    
+		var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
+		
 		switch (startupTask.State)
 		{
 			case StartupTaskState.Disabled:
 				var newState = await startupTask.RequestEnableAsync();
 				break;
 			case StartupTaskState.DisabledByUser:
-				// User has disabled it in settings
+				//TODO: popup to re-enable
 				break;
-			case StartupTaskState.Enabled:
-				// Already enabled
-				break;
-		}*/
+		}
 
 		
 		if (setupNeeded)
@@ -95,7 +91,7 @@ public static class AppServer
 
 			if (uris.Length > 0)
 				await Task.WhenAll(uris.Select(uri => CurrentInstance.CreateWindow(uri)));
-			else
+			else if (!fromStartup)
 				await CurrentInstance.CreateWindow();
 		}
 		else

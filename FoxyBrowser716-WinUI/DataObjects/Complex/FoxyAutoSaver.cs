@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Timers;
+using Windows.ApplicationModel.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FoxyBrowser716_WinUI.DataManagement;
 
@@ -240,9 +241,15 @@ public class FoxyAutoSaver : IDisposable
 	private readonly Timer _queueTimer = new();
 	
 	private readonly HashSet<IFoxyAutoSaverItem> _items = [];
-	
+
 	private FoxyAutoSaver()
 	{ }
+
+	//TODO: this event is not called, need to find another event to hook into
+	private async void CoreApplicationOnExiting(object? sender, object e)
+	{
+		await Task.WhenAll(SaveQueue(_lowQueue, SavePriority.Low), SaveQueue(_normalQueue, SavePriority.Normal), SaveQueue(_highQueue, SavePriority.High));
+	}
 
 	public async Task<bool> AddItem(IFoxyAutoSaverItem item, bool loadItem = true)
 	{

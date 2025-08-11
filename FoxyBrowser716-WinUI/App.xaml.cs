@@ -21,7 +21,6 @@ public partial class App : Application
 #else
             "FoxyBrowser716-WinUI-Prod";
 #endif
-            
 
     public App()
     {
@@ -108,6 +107,12 @@ public partial class App : Application
     {
         switch (args.Kind)
         {
+            case ExtendedActivationKind.StartupTask:
+                if (args.Data is IStartupTaskActivatedEventArgs startupArgs)
+                {
+                    await AppServer.HandleLaunchEvent([], isFirst, true);
+                }
+                break;
             case ExtendedActivationKind.Launch:
                 if (args.Data is ILaunchActivatedEventArgs launchArgs)
                 {
@@ -126,7 +131,7 @@ public partial class App : Application
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
                     var arguments = commandArgs.Operation.Arguments;
-                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
+                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Skip(1 /*command name, such as FoxyBrowser716.exe or FoxyBrowser716*/).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
                 }
                 break;
         }
