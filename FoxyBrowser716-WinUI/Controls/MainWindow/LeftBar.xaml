@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
         <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1"/>
         <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Auto" 
+                      VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
                       ZoomMode="Disabled">
@@ -30,14 +30,14 @@
         </ScrollViewer>
         <Border Grid.Row="2" x:Name="Div" Height="2" Margin="2,2" CornerRadius="1" HorizontalAlignment="Stretch" />
         <ScrollViewer Grid.Row="3"
-                      VerticalScrollBarVisibility="Auto" 
+                      VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
                       ZoomMode="Disabled">
             <StackPanel x:Name="Pins" HorizontalAlignment="Stretch"/>
         </ScrollViewer>
 
-        <mainWindow:TabCard Grid.Row="4" x:Name="PinCard" ShowClose="False" ShowDuplicate="False"/>
-        <mainWindow:TabCard Grid.Row="5" x:Name="BookmarkCard" ShowClose="False" ShowDuplicate="False"/>
+        <mainWindow:TabCard Grid.Row="4" x:Name="PinCard" ShowClose="False" ShowDuplicate="False" OnClick="PinCard_OnOnClick" Visibility="Collapsed"/>
+        <mainWindow:TabCard Grid.Row="5" x:Name="BookmarkCard" ShowClose="False" ShowDuplicate="False" OnClick="BookmarkCard_OnOnClick" Visibility="Collapsed"/>
     </Grid>
 </UserControl>

@@ -58,6 +58,7 @@ public sealed partial class TopBar : UserControl
         ButtonRefresh.CurrentTheme = CurrentTheme;
         ButtonSearch.CurrentTheme = CurrentTheme;
         ButtonEngine.CurrentTheme = CurrentTheme;
+        ButtonToggleSidebarExpand.CurrentTheme = CurrentTheme;
         
         SearchBackground.Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent);
         SearchBackground.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
@@ -206,6 +207,14 @@ public sealed partial class TopBar : UserControl
     
     private void ButtonToggleSidebarExpand_OnOnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        ToggleSidebarLock?.Invoke(!SidebarLocked);
+    }
+
+    public event Action<bool>? ToggleSidebarLock;
+    private bool SidebarLocked;
+    public void SetSidebarLockedState(bool sl)
+    {
+        SidebarLocked = sl;
+        ButtonToggleSidebarExpand.ForceHighlight = !SidebarLocked;
     }
 }

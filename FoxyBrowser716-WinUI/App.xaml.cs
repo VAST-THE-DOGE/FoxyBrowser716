@@ -33,7 +33,7 @@ public partial class App : Application
         Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
         
         // other performance optimizations:
-        // GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes?
+        GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
         ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
@@ -51,7 +51,6 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
         TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
 #endif
-
         
         // Check if this is the first instance
         var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);

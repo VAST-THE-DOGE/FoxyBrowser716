@@ -72,7 +72,7 @@ public class Instance
 		]);
 	}
 	
-	public async Task<MainWindow> CreateWindow(string? url = null, Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
+	public async Task<MainWindow> CreateWindow(string[]? urls = null, Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
 	{
 		var newWindow = await MainWindow.Create(this);
 		
@@ -108,11 +108,8 @@ public class Instance
 			Cache.CurrentSearchEngine = se;
 		};
 
-		if (url != null)
-		{
-			newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url));
-		}
-		
+		urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
+
 		newWindow.Activate();
 		return newWindow;
 	}

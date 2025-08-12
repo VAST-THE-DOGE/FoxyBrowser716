@@ -71,7 +71,7 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <generic:FIconButton Grid.Column="0" x:Name="ButtonToggleSidebarExpand" Height="22" Width="22" Content="{material:MaterialIconExt Kind=ArrowExpandRight}" OnClick="ButtonToggleSidebarExpand_OnOnClick"/>
+        <generic:FIconButton Grid.Column="0" x:Name="ButtonToggleSidebarExpand" Padding="3" Height="22" Width="22" Content="{material:MaterialIconExt Kind=ArrowExpandRight}" OnClick="ButtonToggleSidebarExpand_OnOnClick"/>
         <generic:FIconButton Grid.Column="1" x:Name="ButtonMenu" Height="22" Width="22" Content="{material:MaterialIconExt Kind=Menu}" OnClick="ButtonMenu_OnClick"/>
         <Grid Grid.Column="2" x:Name="SearchBackground" Height="22" BorderThickness="2" CornerRadius="11" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
@@ -107,6 +107,5 @@
         <generic:FIconButton Grid.Column="5" x:Name="ButtonMaximize" Height="22" Width="22" Padding="1" Content="{material:MaterialIconExt Kind=Maximize}" OnClick="ButtonMaximize_OnClick"/>
         <generic:FIconButton Grid.Column="6" x:Name="ButtonBorderlessToggle" Height="22" Width="22" OnClick="BorderlessToggle_OnClick" Content="{material:MaterialIconExt Kind=ArrowExpand}"/>
         <generic:FIconButton Grid.Column="7" x:Name="ButtonClose" Height="22" Width="22" Content="{material:MaterialIconExt Kind=Close}" OnClick="ButtonClose_OnClick"/>
-
     </Grid>
 </UserControl>

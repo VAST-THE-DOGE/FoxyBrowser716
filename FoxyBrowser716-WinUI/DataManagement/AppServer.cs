@@ -90,7 +90,7 @@ public static class AppServer
 			}
 
 			if (uris.Length > 0)
-				await Task.WhenAll(uris.Select(uri => CurrentInstance.CreateWindow(uri)));
+				await CurrentInstance.CreateWindow(uris);
 			else if (!fromStartup)
 				await CurrentInstance.CreateWindow();
 		}
@@ -103,7 +103,7 @@ public static class AppServer
 						foreach (var uri in uris)
 							window.TabManager.SwapActiveTabTo(window.TabManager.AddTab(uri)); //TODO: NEED TO BE ASYNC
 					else
-						await Task.WhenAll(uris.Select(uri => CurrentInstance.CreateWindow(uri)));
+						await CurrentInstance.CreateWindow(uris);
 				else
 					await CurrentInstance.CreateWindow();
 			});

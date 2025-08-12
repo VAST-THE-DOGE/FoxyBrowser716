@@ -63,6 +63,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void HandleCacheChanged()
     {
         TopBar.UpdateSearchEngineIcon(Instance.Cache.CurrentSearchEngine);
+        TopBar.SetSidebarLockedState(Instance.Cache.LeftBarLocked);
+        LeftBar.SetLockedState(Instance.Cache.LeftBarLocked);
     }
 
     private async Task Initialize(Instance instance)
@@ -211,6 +213,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         ContextMenuPopup.CurrentTheme = CurrentTheme;
         HomePage.CurrentTheme = CurrentTheme;
         
+        PopupRoot.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        PopupRoot.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         TabHolder.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
@@ -351,30 +356,46 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void InstancesClick()
     {
-        var openNewWindow = TabManager.GetAllTabs().Count > 0;
-        ContextMenuPopup.SetItems(AppServer.Instances
-            .Where(i => i.Name != Instance.Name)
-            .Select(i => new FContextMenu.MenuItem(
-                null,
-                0,
-                $"{(openNewWindow ? "Open" : "Swap To")} {i.Name}",
-                async () =>
-                {
-                    if (openNewWindow)
-                        await i.CreateWindow();
-                    else
-                    {
-                        await i.CreateWindow(null, new Rect(AppWindow.Position.X, AppWindow.Position.Y,
-                            AppWindow.Size.Width, AppWindow.Size.Height), StateFromWindow());
-                        Close();
-                    }
-                })
-            ), 115);
+        ContextMenuPopup.SetItems([]);
+        
+        PopupContainer.Children.Clear();
+        AppServer.Instances.Select(i =>
+        {
+            var ic = new InstanceCard(i, i.Name == Instance.Name);
+            ic.OpenRequested += async () => await i.CreateWindow();
+            ic.TransferRequested += async () => await i.CreateWindow(
+                TabManager.GetAllTabs().Select(t => t.Value.Info.Url).ToArray(),
+                new Rect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height),
+                StateFromWindow());
+            ic.CurrentTheme = CurrentTheme;
+            return ic;
+        }).ToList().ForEach(ic => PopupContainer.Children.Add(ic));
+        
+        PopupRoot.Visibility = Visibility.Visible;
+        PopupRoot.Focus(FocusState.Programmatic);
     }
 
     private void BookmarkClick()
     {
-        // throw new NotImplementedException();
+        ContextMenuPopup.SetItems([]);
+        
+        PopupContainer.Children.Clear();
+        Instance.Bookmarks.Select(b =>
+        {
+            var bc = new BookmarkCard(b);
+            bc.NoteChanged += s => b.Note = s;
+            bc.RemoveRequested += () =>
+            {
+                Instance.Bookmarks.Remove(b);
+                PopupContainer.Children.Remove(bc);
+            };
+            bc.OnClick += () => TabManager.SwapActiveTabTo(TabManager.AddTab(b.Url));
+            bc.CurrentTheme = CurrentTheme;
+            return bc;
+        }).ToList().ForEach(bc => PopupContainer.Children.Add(bc));
+        
+        PopupRoot.Visibility = Visibility.Visible;
+        PopupRoot.Focus(FocusState.Programmatic); //TODO: can't edit notes with this
     }
 
     private void HistoryClick()
@@ -469,5 +490,16 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void MainWindow_OnActivated(object sender, WindowActivatedEventArgs args)
     {
         
+    }
+
+    private void PopupRoot_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        PopupRoot.Visibility = Visibility.Collapsed;
+        PopupContainer.Children.Clear(); //TODO: find a good way to make sure the focus is not on a bookmark card
+    }
+
+    private void TopBar_OnToggleSidebarLock(bool isLocked)
+    {
+        Instance.Cache.LeftBarLocked = isLocked;
     }
 }

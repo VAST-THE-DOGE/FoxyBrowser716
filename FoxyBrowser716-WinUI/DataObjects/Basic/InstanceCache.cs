@@ -7,4 +7,7 @@ public partial class InstanceCache
 {
 	[ObservableProperty]
 	private InfoGetter.SearchEngine _currentSearchEngine;
+	
+	[ObservableProperty]
+	private bool _leftBarLocked;
 }

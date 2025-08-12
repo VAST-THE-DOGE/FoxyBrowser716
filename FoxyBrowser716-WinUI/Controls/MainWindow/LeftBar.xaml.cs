@@ -108,7 +108,7 @@ public sealed partial class LeftBar : UserControl
                     foreach (WebsiteInfo websiteInfo in e.OldItems)
                     {
                         var cardToRemove = PinCards.FirstOrDefault(kvp => 
-                            kvp.Value.Tag == websiteInfo).Value;
+                            kvp.Value.Tag is WebsiteInfo wi && wi.Url == websiteInfo.Url).Value;
                         if (cardToRemove != null)
                         {
                             var pinId = PinCards.FirstOrDefault(kvp => kvp.Value == cardToRemove).Key;
@@ -208,8 +208,19 @@ public sealed partial class LeftBar : UserControl
         PinCard.Visibility = pair.newId < 0 ? Visibility.Collapsed : Visibility.Visible;
         BookmarkCard.Visibility = pair.newId < 0 ? Visibility.Collapsed : Visibility.Visible;
         
-        //TODO: update if it is pin or unpin here
-
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+        {
+            if (BookmarkCard.Icon.Child is MaterialIcon mi)
+                mi.Kind = TabManager.Instance.Bookmarks.Any(b => b.Url == tab.Info.Url)
+                    ? MaterialIconKind.Bookmark
+                    : MaterialIconKind.BookmarkOutline;
+       
+            if (PinCard.Icon.Child is MaterialIcon mi2)
+                mi2.Kind = TabManager.Instance.Pins.Any(p => p.Url == tab.Info.Url)
+                    ? MaterialIconKind.Pin
+                    : MaterialIconKind.PinOutline;
+        }    
+        
         switch (pair.oldId)
         {
             case -2:
@@ -306,6 +317,8 @@ public sealed partial class LeftBar : UserControl
     }
 
     //TODO: test
+    //TODO: not working, bookmarks take up 100% of space
+    // max height is not actually acting like max height???
     private double oldHeight;
     private void LeftBar_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -323,7 +336,7 @@ public sealed partial class LeftBar : UserControl
 
         
         var tabs = Tabs.Children.Count;
-        var pins = Tabs.Children.Count;
+        var pins = Pins.Children.Count;
         
         var tabRequestedHeight = tabs * controlHeight;
         var pinRequestedHeight = pins * controlHeight;
@@ -514,5 +527,42 @@ public sealed partial class LeftBar : UserControl
         }
         else
             throw new Exception("Home is null, cannot enter edit mode");
+    }
+
+    private void BookmarkCard_OnOnClick(int obj)
+    {
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+        {
+            if (TabManager.Instance.Bookmarks.FirstOrDefault(b => b.Url == tab.Info.Url) is { } bookmarkToRemove)
+                TabManager.Instance.Bookmarks.Remove(bookmarkToRemove);
+            else
+                TabManager.Instance.Bookmarks.Add(tab.Info);
+
+            if (BookmarkCard.Icon.Child is MaterialIcon mi)
+                mi.Kind = TabManager.Instance.Bookmarks.Any(b => b.Url == tab.Info.Url)
+                    ? MaterialIconKind.Bookmark
+                    : MaterialIconKind.BookmarkOutline;
+        }
+    }
+
+    private void PinCard_OnOnClick(int obj)
+    {
+        if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+        {
+            if (TabManager.Instance.Pins.FirstOrDefault(b => b.Url == tab.Info.Url) is { } pinToRemove)
+                TabManager.Instance.Pins.Remove(pinToRemove);
+            else
+                TabManager.Instance.Pins.Add(tab.Info);
+
+            if (PinCard.Icon.Child is MaterialIcon mi)
+                mi.Kind = TabManager.Instance.Pins.Any(p => p.Url == tab.Info.Url)
+                    ? MaterialIconKind.Pin
+                    : MaterialIconKind.PinOutline;
+        }    
+    }
+    
+    public void SetLockedState(bool locked)
+    {
+        LockSideBar = locked;
     }
 }

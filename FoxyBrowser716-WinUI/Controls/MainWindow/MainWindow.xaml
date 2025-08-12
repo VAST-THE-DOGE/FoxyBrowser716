@@ -25,13 +25,22 @@
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
                                BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked" MenuClicked="TopBar_OnMenuClicked"
                                BackClicked="TopBar_OnBackClicked" EngineClicked="TopBar_OnEngineClicked" ForwardClicked="TopBar_OnForwardClicked"
-                               RefreshClicked="TopBar_OnRefreshClicked" />
+                               RefreshClicked="TopBar_OnRefreshClicked" ToggleSidebarLock="TopBar_OnToggleSidebarLock" />
             <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,26,0,0">
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
             </Grid>
             <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
+            <ScrollViewer x:Name="PopupRoot" LostFocus="PopupRoot_OnLostFocus"
+                          CornerRadius="5" BorderThickness="2"
+                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
+                          HorizontalAlignment="Left" VerticalAlignment="Top"
+                          Width="350" MaxHeight="600" Margin="32,28,0,0"
+                          ZoomMode="Disabled"
+                          Visibility="Collapsed">
+                <StackPanel x:Name="PopupContainer" HorizontalAlignment="Stretch"/>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </winUiEx:WindowEx>
