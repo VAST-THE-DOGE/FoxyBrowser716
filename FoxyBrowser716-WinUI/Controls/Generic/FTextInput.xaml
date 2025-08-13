@@ -70,7 +70,7 @@
                  FontSize="18" 
                  GotFocus="SearchBox_OnGotFocus" 
                  LostFocus="SearchBox_OnLostFocus" 
-                 KeyDown="SearchBox_OnKeyDown"
+                 KeyUp="SearchBox_OnKeyUp"
                  PlaceholderText=""/>
         <Border Grid.Row="1" x:Name="BottomBar" Height="2" CornerRadius="1"/>
     </Grid>

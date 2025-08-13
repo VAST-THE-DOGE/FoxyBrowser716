@@ -1,6 +1,7 @@
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 
 namespace FoxyBrowser716_WinUI.Controls.Generic;
@@ -9,25 +10,15 @@ public sealed partial class FContextMenu : UserControl
 {
     private StackPanel _stackPanel;
     private Border _border;
+    private Popup _popup;
     private double _menuWidth;
-    private bool _isFocused;
-    private List<MenuItem> _currentItems = new();
     public event Action? OnClose;
 
-    internal Theme CurrentTheme
-    {
-        get;
-        set
-        {
-            field = value;
-            ApplyTheme();
-        }
-    } = DefaultThemes.DarkMode;
+    internal Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
 
     public FContextMenu()
     {
         InitializeComponent();
-        Visibility = Visibility.Collapsed;
     }
 
     private void InitializeComponent()
@@ -39,8 +30,8 @@ public sealed partial class FContextMenu : UserControl
         {
             Orientation = Orientation.Vertical,
             Spacing = 0,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Top,
+            HorizontalAlignment = HorizontalAlignment.Left,
         };
         
         _border = new Border
@@ -49,28 +40,22 @@ public sealed partial class FContextMenu : UserControl
             CornerRadius = new CornerRadius(10),
             VerticalAlignment = VerticalAlignment.Top,
             HorizontalAlignment = HorizontalAlignment.Left,
-            Width = _menuWidth > 4 ? _menuWidth : 4,
             Child = _stackPanel,
         };
 
-        Content = _border;
-        ApplyTheme();
-        
-        GotFocus += (_, _) => _isFocused = true;
-        LostFocus += (_, _) => 
+        _popup = new Popup
         {
-            _isFocused = false;
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-            timer.Tick += (s, e) =>
-            {
-                timer.Stop();
-                if (!_isFocused)
-                {
-                    CloseMenu();
-                }
-            };
-            timer.Start();
+            Child = _border,
+            VerticalAlignment = VerticalAlignment.Top,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            IsLightDismissEnabled = true,
+            LightDismissOverlayMode = LightDismissOverlayMode.On,
         };
+
+        _popup.Closed += (_, _) => OnClose?.Invoke();
+        
+        Content = _popup;
+        ApplyTheme();
     }
 
     private void ApplyTheme()
@@ -92,25 +77,20 @@ public sealed partial class FContextMenu : UserControl
             }
     }
 
-    public void SetItems(IEnumerable<MenuItem> items, double maxWidth = 30)
+    public void SetItems(IEnumerable<MenuItem> items, double iconWidth = 1000) // quick refactor, but this is changed to only affect icons
     {
         var itemsA = items.ToArray();
         
-        Width = maxWidth;
-        _menuWidth = maxWidth;
-        _border.Width = maxWidth;
+        _menuWidth = iconWidth;
             
         _stackPanel.Children.Clear();
-        _currentItems.Clear();
 
         if (itemsA.Length == 0)
         {
-            CloseMenu();
+            _popup.IsOpen = false;
             return;
         }
-
-        _currentItems.AddRange(itemsA);
-
+        
         var allIconOnly = itemsA.All(item => item.IsIconOnly);
 
         if (allIconOnly)
@@ -122,16 +102,7 @@ public sealed partial class FContextMenu : UserControl
             CreateMixedLayout(itemsA);
         }
         
-        Visibility = Visibility.Visible;
-
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-        timer.Tick += (s, e) =>
-        {
-            timer.Stop();
-            Focus(FocusState.Programmatic);
-            _isFocused = true;
-        };
-        timer.Start();
+        _popup.IsOpen = true;
     }
 
     private void CreateIconOnlyLayout(MenuItem[] items)
@@ -153,7 +124,8 @@ public sealed partial class FContextMenu : UserControl
             button.OnClick += (_, _) =>
             {
                 item.OnClick?.Invoke();
-                CloseMenu();
+                if (item.CloseOnClick)
+                    _popup.IsOpen = false;
             };
 
             _stackPanel.Children.Add(button);
@@ -169,7 +141,7 @@ public sealed partial class FContextMenu : UserControl
                 Icon = item.Icon,
                 Padding = new Thickness(item.IconPadding),
                 ButtonText = item.Text ?? string.Empty,
-                Width = _menuWidth - 4,
+                //Width = _menuWidth - 4,
                 Margin = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 CurrentTheme = CurrentTheme,
@@ -180,33 +152,27 @@ public sealed partial class FContextMenu : UserControl
             button.OnClick += (_, _) =>
             {
                 item.OnClick?.Invoke();
-                CloseMenu();
+                if (item.CloseOnClick)
+                    _popup.IsOpen = false;
             };
 
             _stackPanel.Children.Add(button);
         }
     }
-
-    private void CloseMenu()
-    {
-        Visibility = Visibility.Collapsed;
-        _stackPanel.Children.Clear();
-        _currentItems.Clear();
-        _isFocused = false;
-        OnClose?.Invoke();
-    }
-
-    public bool IsFocused => _isFocused;
     
     public class MenuItem
     {
         public UIElement? Icon { get; set; }
+        public string? IconUri { get; set; }
+
         public double IconPadding { get; set; }
 
         public string? Text { get; set; }
         public Action? OnClick { get; set; }
+        
+        public bool CloseOnClick { get; set; }
 
-        public MenuItem(UIElement? icon, double iconPadding, string? text, Action? onClick)
+        public MenuItem(UIElement? icon, double iconPadding, string? text, Action? onClick, bool closeOnClick = true)
         {
             if (icon == null && string.IsNullOrEmpty(text))
             {
@@ -215,6 +181,18 @@ public sealed partial class FContextMenu : UserControl
 
             Icon = icon;
             IconPadding = iconPadding;
+            Text = text;
+            OnClick = onClick;
+            CloseOnClick = closeOnClick;
+        }
+        
+        public MenuItem(string text, Action? onClick)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new ArgumentException("MenuItem cannot have both null icon and null/empty text");
+            }
+            
             Text = text;
             OnClick = onClick;
         }

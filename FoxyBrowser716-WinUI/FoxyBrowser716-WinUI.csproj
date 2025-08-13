@@ -20,6 +20,7 @@
     <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
     <Company>FoxyBrowser716</Company>
     <Product>FoxyBrowser716</Product>
+    <AssemblyVersion>0.5.1.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -80,11 +81,9 @@
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <PublishReadyToRun >true</PublishReadyToRun>
-    <PublishTrimmed >false</PublishTrimmed>
     <Optimize >true</Optimize>
     <TieredPGO >true</TieredPGO>
-    <TrimMode>partial</TrimMode>
-    <PublishAot>true</PublishAot>
+<!--    <PublishAot>true</PublishAot>-->
 
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>

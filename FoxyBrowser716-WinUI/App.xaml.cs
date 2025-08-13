@@ -46,11 +46,11 @@ public partial class App : Application
         // Get the current app instance
         var currentInstance = AppInstance.GetCurrent();
 
-#if !DEBUG
+// #if !DEBUG
         this.UnhandledException += OnUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
         TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
-#endif
+// #endif
         
         // Check if this is the first instance
         var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);

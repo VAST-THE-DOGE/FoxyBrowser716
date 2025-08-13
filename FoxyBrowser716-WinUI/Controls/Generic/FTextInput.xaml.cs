@@ -81,7 +81,7 @@ public sealed partial class FTextInput : UserControl
         ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
     }
 
-    private void SearchBox_OnKeyDown(object sender, KeyRoutedEventArgs e)
+    private void SearchBox_OnKeyUp(object sender, KeyRoutedEventArgs e)
     {
         OnTextChanged?.Invoke(SearchBox.Text);
         

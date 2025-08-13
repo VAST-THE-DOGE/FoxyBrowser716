@@ -301,7 +301,7 @@ public static class FoxyFileManager
 	#endregion
 
 	#region FileManagment
-		private static readonly JsonSerializerOptions _options = new()
+		public static readonly JsonSerializerOptions FoxyJsonSerializerOptions = new()
 		{
 			WriteIndented = true,
 			TypeInfoResolver = new DefaultJsonTypeInfoResolver()
@@ -388,7 +388,7 @@ public static class FoxyFileManager
 
 			try
 			{
-				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, _options));
+				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, FoxyJsonSerializerOptions));
 			}
 			catch (Exception)
 			{
@@ -414,7 +414,7 @@ public static class FoxyFileManager
 
 			try
 			{
-				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, _options));
+				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, FoxyJsonSerializerOptions));
 			}
 			catch (Exception)
 			{
@@ -502,7 +502,7 @@ public static class FoxyFileManager
 			if (!filePath.EndsWith(".json"))
 				return ReturnCode.InvalidPath;
 			
-			var jsonContent = JsonSerializer.Serialize(content, _options);
+			var jsonContent = JsonSerializer.Serialize(content, FoxyJsonSerializerOptions);
 			return SaveToFile(filePath, jsonContent);
 		}
 		
@@ -519,7 +519,7 @@ public static class FoxyFileManager
 			if (!filePath.EndsWith(".json"))
 				return ReturnCode.InvalidPath;
 			
-			var jsonContent = JsonSerializer.Serialize(content, _options);
+			var jsonContent = JsonSerializer.Serialize(content, FoxyJsonSerializerOptions);
 			return await SaveToFileAsync(filePath, jsonContent);
 		}
 		#endregion

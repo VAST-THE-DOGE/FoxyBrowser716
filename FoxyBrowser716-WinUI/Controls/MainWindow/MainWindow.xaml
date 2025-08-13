@@ -19,7 +19,7 @@
         <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
     </Window.SystemBackdrop>-->
     <Grid x:Name="Root" Background="Black">
-        <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8">
+        <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8" PointerReleased="BorderGrid_OnPointerReleased">
             <Grid x:Name="BlurredBackgroundGrid" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8"/>
             <mainWindow:TopBar x:Name="TopBar" 
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
@@ -30,17 +30,24 @@
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
             </Grid>
-            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
+            
+            <Popup x:Name="ExtensionPopupRoot" Width="350" MaxHeight="600" Margin="34,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
+                <WebView2 x:Name="ExtensionPopupWebview" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </Popup>
+            
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
-            <ScrollViewer x:Name="PopupRoot" LostFocus="PopupRoot_OnLostFocus"
-                          CornerRadius="5" BorderThickness="2"
-                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
-                          HorizontalAlignment="Left" VerticalAlignment="Top"
-                          Width="350" MaxHeight="600" Margin="32,28,0,0"
-                          ZoomMode="Disabled"
-                          Visibility="Collapsed">
-                <StackPanel x:Name="PopupContainer" HorizontalAlignment="Stretch"/>
-            </ScrollViewer>
+            
+            <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
+                <ScrollViewer x:Name="PopupRoot"
+                              CornerRadius="5" BorderThickness="2"
+                              VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
+                              HorizontalAlignment="Stretch"
+                              ZoomMode="Disabled">
+                    <StackPanel x:Name="PopupContainer" HorizontalAlignment="Stretch"/>
+                </ScrollViewer>
+            </Popup>
+            
+            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
         </Grid>
     </Grid>
 </winUiEx:WindowEx>

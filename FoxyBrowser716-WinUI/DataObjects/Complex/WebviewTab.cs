@@ -44,7 +44,7 @@ public class WebviewTab
 	{
 		await Core.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 
-		var extensionSetupTask = TabManager.Instance.GetExtensions().ContinueWith(SetupExtensions);
+		var extensionSetupTask = TabManager.Instance.AddExtensions(Core);
 
 		Core.AllowDrop = true;
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
@@ -166,17 +166,5 @@ public class WebviewTab
 	private void OnFaviconChanged(object sender, object e)
 	{
 		Info.FavIconUrl = Core.CoreWebView2.FaviconUri ?? "";
-	}
-
-	
-	private async Task SetupExtensions(Task<List<Extension>> extensionsTask)
-	{
-		var extensions = await extensionsTask;
-		List<Task<CoreWebView2BrowserExtension>> tasks = [];
-		tasks.AddRange(
-			extensions.Select(ext => Core.CoreWebView2.Profile.AddBrowserExtensionAsync(ext.FolderPath).AsTask())
-			);
-
-		await Task.WhenAll(tasks);
 	}
 }

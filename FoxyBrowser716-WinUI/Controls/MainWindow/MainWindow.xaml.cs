@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Windows.Graphics.Display;
 using Windows.UI.ViewManagement;
 using FoxyBrowser716_WinUI.Controls.Generic;
@@ -15,6 +16,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
 using CommunityToolkit.WinUI.Animations;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.Web.WebView2.Core;
 
 
 // using CommunityToolkit.WinUI.Helpers;
@@ -88,6 +90,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         TabManager.TryGetTab(TabManager.ActiveTabId, out var tab);
         RefreshCurrentTabUi(tab, TabManager.ActiveTabId < 0 ? TabManager.ActiveTabId : null);
         
+        await ExtensionPopupWebview.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+        
         // refresh all data
         HandleCacheChanged();
     }
@@ -124,11 +128,38 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         };
     }
 
-    private void RefreshCurrentTabUi(WebviewTab? tab, int? browserWindowId = null)
+
+    private record PopupSize(double width, double height);
+    private async void RefreshCurrentTabUi(WebviewTab? tab, int? browserWindowId = null)
     {
         if (tab is not null)
         {
             TopBar.UpdateSearchBar(true, tab.Core.CanGoBack, tab.Core.CanGoForward, tab.Info.Url);
+
+            
+            ExtensionPopupWebview.CoreWebView2.NewWindowRequested +=
+                (_, args) =>
+                {
+                    TabManager.SwapActiveTabTo(TabManager.AddTab(args.Uri));
+                    args.Handled = true;
+                };
+            ExtensionPopupWebview.NavigationCompleted += async (_, _) =>
+            {
+                //TODO: not working as expected (crazy high width + height)
+                /*var result = await ExtensionPopupWebview.ExecuteScriptAsync(
+                    """
+                    (function(){
+                        return {
+                            width: document.documentElement.scrollWidth,
+                            height: document.documentElement.scrollHeight
+                        };
+                    })();
+                    """
+                    );*/
+                //var size = JsonSerializer.Deserialize<PopupSize>(result);
+                ExtensionPopupWebview.Width = 350;//size.width;
+                ExtensionPopupWebview.Height = 700; //size.height;
+            };
         }
         else if (browserWindowId is not null)
         {
@@ -315,9 +346,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void TopBar_OnMenuClicked()
     {
-        if (ContextMenuPopup.Visibility == Visibility.Visible && !_contextmenuUsedForSearchEngine && !HomePage.InEditMode)
+        if (HomePage.InEditMode)
         {
-            ContextMenuPopup.SetItems([]);
             return;
         }
         
@@ -337,65 +367,64 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 ContextMenuPopup.SetItems(items
                     .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", DownloadClick))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick)),
-                    115
-                );
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false)));
                 break;
             case -1:
                 ContextMenuPopup.SetItems(items
                     .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings",() => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Pencil}, 1, "Edit Home", EditHomeClick)),
-                    115
-                );
+                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Pencil}, 1, "Edit Home", EditHomeClick)));
                 break;
             case -2:
-                ContextMenuPopup.SetItems(items, 115);
+                ContextMenuPopup.SetItems(items);
                 break;
         }
     }
 
     private void InstancesClick()
     {
-        ContextMenuPopup.SetItems([]);
-        
         PopupContainer.Children.Clear();
-        AppServer.Instances.Select(i =>
-        {
-            var ic = new InstanceCard(i, i.Name == Instance.Name);
-            ic.OpenRequested += async () => await i.CreateWindow();
-            ic.TransferRequested += async () => await i.CreateWindow(
-                TabManager.GetAllTabs().Select(t => t.Value.Info.Url).ToArray(),
-                new Rect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height),
-                StateFromWindow());
-            ic.CurrentTheme = CurrentTheme;
-            return ic;
-        }).ToList().ForEach(ic => PopupContainer.Children.Add(ic));
+        AppServer.Instances
+            .Select(i =>
+                {
+                    var ic = new InstanceCard(i, i.Name == Instance.Name);
+                    ic.OpenRequested += async () => await i.CreateWindow();
+                    ic.TransferRequested += async () => await i.CreateWindow(
+                        TabManager.GetAllTabs().Select(t => t.Value.Info.Url).ToArray(),
+                        new Rect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height),
+                        StateFromWindow());
+                    ic.CurrentTheme = CurrentTheme;
+                    return ic;
+                })
+            .ToList()
+            .ForEach(ic => PopupContainer.Children.Add(ic));
         
-        PopupRoot.Visibility = Visibility.Visible;
-        PopupRoot.Focus(FocusState.Programmatic);
     }
 
     private void BookmarkClick()
     {
-        ContextMenuPopup.SetItems([]);
-        
         PopupContainer.Children.Clear();
-        Instance.Bookmarks.Select(b =>
-        {
-            var bc = new BookmarkCard(b);
-            bc.NoteChanged += s => b.Note = s;
-            bc.RemoveRequested += () =>
-            {
-                Instance.Bookmarks.Remove(b);
-                PopupContainer.Children.Remove(bc);
-            };
-            bc.OnClick += () => TabManager.SwapActiveTabTo(TabManager.AddTab(b.Url));
-            bc.CurrentTheme = CurrentTheme;
-            return bc;
-        }).ToList().ForEach(bc => PopupContainer.Children.Add(bc));
+        Instance.Bookmarks
+            .Select(b =>
+                {
+                    var bc = new BookmarkCard(b);
+                    bc.NoteChanged += s => b.Note = s;
+                    bc.RemoveRequested += () =>
+                    {
+                        Instance.Bookmarks.Remove(b);
+                        PopupContainer.Children.Remove(bc);
+                    };
+                    bc.OnClick += () =>
+                    {
+                        TabManager.SwapActiveTabTo(TabManager.AddTab(b.Url));
+                        PopupRootRoot.IsOpen = false;
+                    };
+                    bc.CurrentTheme = CurrentTheme;
+                    return bc;
+                })
+            .ToList()
+            .ForEach(bc => PopupContainer.Children.Add(bc));
         
-        PopupRoot.Visibility = Visibility.Visible;
-        PopupRoot.Focus(FocusState.Programmatic); //TODO: can't edit notes with this
+        PopupRootRoot.IsOpen = true;
     }
 
     private void HistoryClick()
@@ -403,9 +432,56 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         // throw new NotImplementedException();
     }
 
-    private async void ExtensionsClick()
+    private void ExtensionsClick()
     {
-        ContextMenuPopup.SetItems((await Instance.GetExtensions()).Select(e => new FContextMenu.MenuItem(null, 0, e.Name, () => {/*TODO*/})));
+        ContextMenuPopup.SetItems(
+            Instance
+                .GetExtensions()
+                .Select(e =>
+                    {
+                        if (e.Manifest is ExtensionManifestV3 manifestV3)
+                        {
+                            return new FContextMenu.MenuItem(
+                                new Image
+                                {
+                                    Source = new BitmapImage(new Uri(Path.Combine(e.FolderPath, manifestV3.Icons?.Values?.FirstOrDefault()
+                                                                                  ?? manifestV3.Action?.DefaultIcon?.Values?.FirstOrDefault()
+                                                                                  ?? throw new Exception("No icon found for extension")))),
+                                    Stretch = Stretch.Uniform,
+                                    VerticalAlignment = VerticalAlignment.Stretch,
+                                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                                }, 1, 
+                                manifestV3.Action.DefaultTitle??manifestV3.ShortName??manifestV3.Name,
+                                () =>
+                                {
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
+                                    ExtensionPopupRoot.IsOpen = true;
+                                });
+                        }
+                        else if (e.Manifest is ExtensionManifestV2 manifestV2)
+                        {
+                            return new FContextMenu.MenuItem(
+                                new Image
+                                {
+                                    Source = new BitmapImage(new Uri(Path.Combine(e.FolderPath, manifestV2.Icons?.Values?.FirstOrDefault() ??
+                                        manifestV2.BrowserAction?.DefaultIcon?.Values?.FirstOrDefault()
+                                        ?? throw new Exception("No icon found for extension")))),
+                                    Stretch = Stretch.Uniform,
+                                    VerticalAlignment = VerticalAlignment.Stretch,
+                                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                                }, 1, 
+                                manifestV2.BrowserAction.DefaultTitle??manifestV2.ShortName??manifestV2.Name,
+                                () =>
+                                {
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
+                                    ExtensionPopupRoot.IsOpen = true;
+                                });
+                        }
+                        else
+                            throw new Exception("Unknown extension manifest type");
+                    }
+                )
+        );
     }
 
     private void DownloadClick()
@@ -492,14 +568,13 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         
     }
 
-    private void PopupRoot_OnLostFocus(object sender, RoutedEventArgs e)
-    {
-        PopupRoot.Visibility = Visibility.Collapsed;
-        PopupContainer.Children.Clear(); //TODO: find a good way to make sure the focus is not on a bookmark card
-    }
-
     private void TopBar_OnToggleSidebarLock(bool isLocked)
     {
         Instance.Cache.LeftBarLocked = isLocked;
+    }
+
+    private void BorderGrid_OnPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine(sender);
     }
 }
