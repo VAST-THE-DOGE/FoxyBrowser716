@@ -454,7 +454,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                 manifestV3.Action.DefaultTitle??manifestV3.ShortName??manifestV3.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }
@@ -473,7 +473,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                 manifestV2.BrowserAction.DefaultTitle??manifestV2.ShortName??manifestV2.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }

@@ -60,14 +60,15 @@ public class WebviewTab
 		Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Strict;
 		Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
 
-		
+		// handle events
 		Core.CoreWebView2.DocumentTitleChanged += OnDocumentTitleChanged;
 		Core.CoreWebView2.FaviconChanged += OnFaviconChanged;
 		Core.CoreWebView2.SourceChanged += CoreWebView2OnSourceChanged;
 		Core.CoreWebView2.NewWindowRequested += CoreWebView2OnNewWindowRequested;
 		Core.CoreWebView2.WindowCloseRequested += CoreWebView2OnWindowCloseRequested;
 		Core.CoreWebView2.ProcessFailed += CoreWebView2OnProcessFailed;
-		
+
+		Core.CoreWebView2.PermissionRequested += CoreWebView2OnPermissionRequested;
 		//performance stuff
 		var processId = Core.CoreWebView2.BrowserProcessId;
 		var process = Process.GetProcessById((int)processId);
@@ -94,6 +95,15 @@ public class WebviewTab
 
 		
 		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl, true));
+	}
+
+	private void CoreWebView2OnPermissionRequested(CoreWebView2 sender, CoreWebView2PermissionRequestedEventArgs args)
+	{
+		//temp to get rid of the camera request
+		if (args.PermissionKind == CoreWebView2PermissionKind.Camera)
+			args.Handled = true;
+		
+		//TODO handle this properly
 	}
 
 	private void CoreWebView2OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs args)

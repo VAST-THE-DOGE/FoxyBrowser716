@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
+using FoxyBrowser716_WinUI.DataObjects.Complex;
 
 namespace FoxyBrowser716_WinUI.DataManagement;
 
@@ -13,64 +15,6 @@ namespace FoxyBrowser716_WinUI.DataManagement;
 // L build url from store and id.
 // L get extension from url and unpack to a file.
 
-
-
-public abstract class ExtensionManifestBase
-{
-    [JsonPropertyName("manifest_version")]
-    public int ManifestVersion { get; set; }
-
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("short_name")]
-    public string? ShortName { get; set; }
-
-    [JsonPropertyName("version")]
-    public string? Version { get; set; }
-
-    [JsonPropertyName("version_name")]
-    public string? VersionName { get; set; }
-
-    [JsonPropertyName("description")]
-    public string? Description { get; set; }
-
-    [JsonPropertyName("default_locale")]
-    public string? DefaultLocale { get; set; }
-
-    [JsonPropertyName("update_url")]
-    public string? UpdateUrl { get; set; }
-
-    [JsonPropertyName("minimum_chrome_version")]
-    public string? MinimumChromeVersion { get; set; }
-
-    [JsonPropertyName("content_security_policy")]
-    public string? ContentSecurityPolicy { get; set; }
-
-    [JsonExtensionData]
-    public Dictionary<string, JsonElement>? ExtraData { get; set; }
-
-    public T? GetExtraValue<T>(string key)
-    {
-        if (ExtraData == null) return default;
-        if (!ExtraData.TryGetValue(key, out var el)) return default;
-        try
-        {
-            return JsonSerializer.Deserialize<T>(el.GetRawText(), DefaultOptions);
-        }
-        catch
-        {
-            return default;
-        }
-    }
-
-    protected static JsonSerializerOptions DefaultOptions => new JsonSerializerOptions
-    {
-        PropertyNameCaseInsensitive = true,
-        AllowTrailingCommas = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-    };
-}
 
 // ---------- Shared helper types ----------
 public class Icons : Dictionary<string, string> { }
@@ -293,7 +237,179 @@ public class WebAccessibleResourcesConverter : JsonConverter<List<WebAccessibleR
     }
 }
 
-// ---------- Parser ----------
+public class LocalizedMessages
+{
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Messages { get; set; }
+
+    public string? GetMessage(string key)
+    {
+        if (Messages == null) return null;
+        
+        if (Messages.TryGetValue(key, out var element))
+        {
+            if (element.ValueKind == JsonValueKind.Object && 
+                element.TryGetProperty("message", out var messageElement))
+            {
+                return messageElement.GetString();
+            }
+            else if (element.ValueKind == JsonValueKind.String)
+            {
+                return element.GetString();
+            }
+        }
+        return null;
+    }
+}
+
+// Add localization helper methods to ExtensionManifestBase
+public abstract class ExtensionManifestBase
+{
+    [JsonPropertyName("manifest_version")]
+    public int ManifestVersion { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("short_name")]
+    public string? ShortName { get; set; }
+
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+    [JsonPropertyName("version_name")]
+    public string? VersionName { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("default_locale")]
+    public string? DefaultLocale { get; set; }
+
+    [JsonPropertyName("update_url")]
+    public string? UpdateUrl { get; set; }
+
+    [JsonPropertyName("minimum_chrome_version")]
+    public string? MinimumChromeVersion { get; set; }
+
+    [JsonPropertyName("content_security_policy")]
+    public string? ContentSecurityPolicy { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtraData { get; set; }
+
+    // Store the extension folder path for localization
+    [JsonIgnore]
+    public string? ExtensionFolderPath { get; set; }
+
+    public T? GetExtraValue<T>(string key)
+    {
+        if (ExtraData == null) return default;
+        if (!ExtraData.TryGetValue(key, out var el)) return default;
+        try
+        {
+            return JsonSerializer.Deserialize<T>(el.GetRawText(), DefaultOptions);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
+    // Get localized version of a field value
+    public string? GetLocalizedValue(string? value, string language = "en")
+    {
+        if (string.IsNullOrEmpty(value) || !IsLocalizedString(value))
+            return value;
+
+        return ExtractLocalizedString(value, language) ?? value;
+    }
+
+    // Get localized name
+    public string? GetLocalizedName(string language = "en")
+    {
+        return GetLocalizedValue(Name, language);
+    }
+
+    // Get localized short name
+    public string? GetLocalizedShortName(string language = "en")
+    {
+        return GetLocalizedValue(ShortName, language);
+    }
+
+    // Get localized description
+    public string? GetLocalizedDescription(string language = "en")
+    {
+        return GetLocalizedValue(Description, language);
+    }
+
+    // Check if a string is a localization key
+    private static bool IsLocalizedString(string? value)
+    {
+        return !string.IsNullOrEmpty(value) && 
+               value.StartsWith("__MSG_") && 
+               value.EndsWith("__");
+    }
+
+    // Extract the actual localized string
+    private string? ExtractLocalizedString(string localizedKey, string language = "en")
+    {
+        if (string.IsNullOrEmpty(ExtensionFolderPath) || !IsLocalizedString(localizedKey))
+            return null;
+
+        // Extract the message key (remove __MSG_ and __)
+        var messageKey = localizedKey.Substring(6, localizedKey.Length - 8);
+        
+        // Try to get the localized message
+        var localizedMessage = GetLocalizedMessage(messageKey, language);
+        
+        // Fallback to default locale if specified and different from requested language
+        if (localizedMessage == null && !string.IsNullOrEmpty(DefaultLocale) && DefaultLocale != language)
+        {
+            localizedMessage = GetLocalizedMessage(messageKey, DefaultLocale);
+        }
+        
+        // Final fallback to "en" if not already tried
+        if (localizedMessage == null && language != "en" && DefaultLocale != "en")
+        {
+            localizedMessage = GetLocalizedMessage(messageKey, "en");
+        }
+
+        return localizedMessage;
+    }
+
+    // Get a specific message from the locales files
+    private string? GetLocalizedMessage(string messageKey, string language)
+    {
+        if (string.IsNullOrEmpty(ExtensionFolderPath))
+            return null;
+
+        var messagesPath = Path.Combine(ExtensionFolderPath, "_locales", language, "messages.json");
+        
+        if (!File.Exists(messagesPath))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(messagesPath);
+            var messages = JsonSerializer.Deserialize<LocalizedMessages>(json, DefaultOptions);
+            return messages?.GetMessage(messageKey);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    protected static JsonSerializerOptions DefaultOptions => new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+    };
+}
+
+// Update the parser to set the extension folder path
 public static class ExtensionManifestParser
 {
     private static JsonSerializerOptions Options
@@ -312,7 +428,7 @@ public static class ExtensionManifestParser
         }
     }
 
-    public static ExtensionManifestBase Parse(string json)
+    public static ExtensionManifestBase Parse(string json, string? extensionFolderPath = null)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -324,24 +440,30 @@ public static class ExtensionManifestParser
             else if (mv.ValueKind == JsonValueKind.String && int.TryParse(mv.GetString(), out var sval)) manifestVersion = sval;
         }
 
+        ExtensionManifestBase result;
         if (manifestVersion >= 3)
         {
             var v3 = JsonSerializer.Deserialize<ExtensionManifestV3>(json, Options);
-            return v3 ?? throw new InvalidOperationException("Failed to deserialize as V3.");
+            result = v3 ?? throw new InvalidOperationException("Failed to deserialize as V3.");
         }
         else
         {
             var v2 = JsonSerializer.Deserialize<ExtensionManifestV2>(json, Options);
-            return v2 ?? throw new InvalidOperationException("Failed to deserialize as V2.");
+            result = v2 ?? throw new InvalidOperationException("Failed to deserialize as V2.");
         }
+
+        // Set the extension folder path for localization
+        result.ExtensionFolderPath = extensionFolderPath;
+        return result;
     }
 
     public static async Task<ExtensionManifestBase> ParseFromFileAsync(string path)
     {
-	    //TODO: move to using FoxyFileManager
-	    
+        //TODO: move to using FoxyFileManager
+        
         var json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
-        return Parse(json);
+        var extensionFolderPath = Path.GetDirectoryName(path);
+        return Parse(json, extensionFolderPath);
     }
 }
 
@@ -352,9 +474,10 @@ public static class ExtensionManifestParser
 
 
 
-
 public static class ExtensionManager
 {
+	readonly static string[] _whitelist = ["Microsoft Clipboard Extension", "Microsoft Edge PDF Viewer"];
+	
 	/// <summary>
 	/// Instance name to extension list
 	/// </summary>
@@ -372,31 +495,78 @@ public static class ExtensionManager
 				await webview.CoreWebView2.Profile.AddBrowserExtensionAsync(e.FolderPath)));
 		else
 		{
+			var currentExtensions = await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+			currentExtensions = currentExtensions.Where(e => !_whitelist.Contains(e.Name)).ToList();
+			
 			var extensionFolder = FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Extension, instance.Name);
-
-			List<Task> tasks = [];
+			
 			List<Extension> extensionsList = [];
-			await foreach (var ex in GetExtension(extensionFolder))
+			if (currentExtensions.Any())
 			{
-				tasks.Add(
-					webview.CoreWebView2.Profile
-						.AddBrowserExtensionAsync(ex.FolderPath)
-						.AsTask()
-						.ContinueWith(T => 
-							extensionsList.Add(new Extension
-								{
-									FolderPath = ex.FolderPath,
-									Manifest = ex.Manifest,
-									Id = T.Result.Id
-								}
-							)
-						)
-				);
+				await foreach (var ex in GetExtension(extensionFolder))
+				{
+					var webviewEx = currentExtensions.FirstOrDefault(e => IsNamesEqual(e.Name, ex.Manifest));
+					
+					if (webviewEx is null) continue;
+					
+					//TODO: THIS IS TEMP, make sure it is enabled for now and just keep a reference to this from the extension.
+					await webviewEx.EnableAsync(true);
+					
+					extensionsList.Add(new Extension
+					{
+						FolderPath = ex.FolderPath,
+						Manifest = ex.Manifest,
+						WebviewName = webviewEx.Name,
+						Id = webviewEx.Id
+					});
+				}
 			}
-			await Task.WhenAll(tasks);
+			else
+			{
+				List<Task> tasks = [];
+				await foreach (var ex in GetExtension(extensionFolder))
+				{
+					tasks.Add(
+						webview.CoreWebView2.Profile
+							.AddBrowserExtensionAsync(ex.FolderPath)
+							.AsTask()
+							.ContinueWith(T => 
+								extensionsList.Add(new Extension
+									{
+										FolderPath = ex.FolderPath,
+										Manifest = ex.Manifest,
+										WebviewName = T.Result.Name,
+										Id = T.Result.Id
+									}
+								)
+							)
+					);
+				}
+				await Task.WhenAll(tasks);
+			}
 			_extensions[instance.Name] = extensionsList;
 		}
 	}
+
+	private static bool IsNamesEqual(string name, ExtensionManifestBase manifest, string language = "en")
+	{
+		var localizedName = manifest.GetLocalizedName(language);
+		var localizedShortName = manifest.GetLocalizedShortName(language);
+    
+		if (manifest is ExtensionManifestV2 v2)
+		{
+			var localizedTitle = manifest.GetLocalizedValue(v2.BrowserAction?.DefaultTitle, language);
+			return name == localizedTitle || name == localizedName || name == localizedShortName;
+		}
+		else if (manifest is ExtensionManifestV3 v3)
+		{
+			var localizedTitle = manifest.GetLocalizedValue(v3.Action?.DefaultTitle, language);
+			return name == localizedTitle || name == localizedName || name == localizedShortName;
+		}
+		else
+			return false;
+	}
+
 
 	private static async IAsyncEnumerable<Extension> GetExtension(string extensionFolder)
 	{
@@ -410,7 +580,7 @@ public static class ExtensionManager
 			if (manifestFile is null || FoxyFileManager.ReadFromFile(manifestFile) is not 
 				    { code: FoxyFileManager.ReturnCode.Success, content: not null } result) continue;
 			
-			var manifest = ExtensionManifestParser.Parse(result.content);
+			var manifest = ExtensionManifestParser.Parse(result.content, item.path);
 			yield return new Extension { FolderPath = item.path, Manifest = manifest};
 		}
 	}
