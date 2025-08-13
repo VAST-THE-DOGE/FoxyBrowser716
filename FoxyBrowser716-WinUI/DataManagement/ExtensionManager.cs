@@ -406,6 +406,7 @@ public abstract class ExtensionManifestBase
         PropertyNameCaseInsensitive = true,
         AllowTrailingCommas = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
     };
 }
 
