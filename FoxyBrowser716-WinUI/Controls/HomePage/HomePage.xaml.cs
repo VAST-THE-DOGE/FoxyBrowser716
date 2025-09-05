@@ -326,11 +326,11 @@ public sealed partial class HomePage : UserControl
         else
         {
             _settings = GetDefaults();
-            await SaveWidgetsToJson();
+            await SaveSettingsToJson();
         }
 
         HomeSettings GetDefaults() => new() {
-            BackgroundPath = "C:\\Users\\penfo\\Downloads\\alone-cyberpunk-morning-4k-xi.jpg"/*TODO move to background on website*/,
+            BackgroundPath = "C:\\Users\\penfo\\Pictures\\alone-cyberpunk-morning-4k-xi-3840x2160-remixed.jpg"/*TODO move to background on website*/,
         };
     }
 

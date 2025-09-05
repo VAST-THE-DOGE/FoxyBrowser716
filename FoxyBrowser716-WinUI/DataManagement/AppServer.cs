@@ -61,8 +61,12 @@ public static class AppServer
 			}
 			else if (result.code == FoxyFileManager.ReturnCode.NotFound)
 			{
+				// TODO this is running on laptop:
+				
 				//TODO: first time setup
-				throw new NotImplementedException();
+				//throw new NotImplementedException();
+				
+				Instances.Add(await Instance.Create("Default"));
 			}
 			else
 				throw new Exception($"Failed to get instances in {instanceFolderPath}: {result.code}");

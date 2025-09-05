@@ -23,8 +23,8 @@ public static class InfoGetter
 
     #region URLs
 
-    public const string GitHubURL = "https://github.com/VAST-THE-DOGE/FoxyBrowser716";
-
+    public const string GitHubUrl = "https://github.com/VAST-THE-DOGE/FoxyBrowser716";
+    public const string WebsiteUrl = "https://FoxyBrowser716.com";
     #endregion
 
     #region SearchEngines

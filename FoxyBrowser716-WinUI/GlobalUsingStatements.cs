@@ -25,3 +25,4 @@ global using Windows.Foundation;
 global using FoxyBrowser716_WinUI.DataObjects.Basic;
 global using Microsoft.UI.Xaml.Input;
 global using Microsoft.UI.Xaml.Media.Imaging;
+global using Material.Icons;

@@ -1,5 +1,3 @@
-using Material.Icons;
-
 namespace FoxyBrowser716_WinUI.Controls.HomePage.Widgets;
 
 [WidgetInfo("Example Widget", MaterialIconKind.PuzzleEdit, WidgetCategory.Misc)]

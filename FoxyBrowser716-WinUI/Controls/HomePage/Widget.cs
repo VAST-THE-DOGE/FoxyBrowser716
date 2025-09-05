@@ -63,8 +63,8 @@ public abstract class WidgetBase : UserControl
     protected abstract void ApplyTheme();
     
     public List<ISetting> WidgetSettings = [];
-    
-    private protected WidgetBase() {}
+
+    private protected WidgetBase() { }
 
     protected async Task InitializeBase(TabManager manager, Dictionary<string, object>? settingsMap = null)
     {
