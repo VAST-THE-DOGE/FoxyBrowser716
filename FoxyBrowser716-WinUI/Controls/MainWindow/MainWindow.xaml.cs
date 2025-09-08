@@ -15,6 +15,7 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
 using CommunityToolkit.WinUI.Animations;
+using FoxyBrowser716_WinUI.DataObjects.Settings;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Web.WebView2.Core;
 
@@ -74,12 +75,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Instance = instance;
         TabManager = await TabManager.Create(Instance);
         
-        await Task.WhenAll(LeftBar.Initialize(TabManager), HomePage.Initialize(TabManager, Instance));
+        await Task.WhenAll(LeftBar.Initialize(TabManager), HomePage.Initialize(this), ChatWindow.Initialize(this));
         
         // link events from tab manager
         TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;
         TabManager.TabAdded += TabManagerOnTabAdded;
         TabManager.TabRemoved += TabManagerOnTabRemoved;
+        
+        // link events from chat window
+        ChatWindow.CloseRequested += () => TabHolder.Margin = TabHolder.Margin with { Right = 0 };
         
         // link events from the instance
         instance.Cache.PropertyChanged += (_, _) => HandleCacheChanged();
@@ -157,8 +161,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                     """
                     );*/
                 //var size = JsonSerializer.Deserialize<PopupSize>(result);
-                ExtensionPopupWebview.Width = 350;//size.width;
-                ExtensionPopupWebview.Height = 700; //size.height;
+                ExtensionPopupWebview.Width = 300;//size.width;
+                ExtensionPopupWebview.Height = 500; //size.height;
             };
         }
         else if (browserWindowId is not null)
@@ -243,9 +247,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         LeftBar.CurrentTheme = CurrentTheme;
         ContextMenuPopup.CurrentTheme = CurrentTheme;
         HomePage.CurrentTheme = CurrentTheme;
+        ChatWindow.CurrentTheme = CurrentTheme;
+
         
         PopupRoot.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
         PopupRoot.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        
+        CenterPopupRoot.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        CenterPopupRoot.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        CenterPopupCloseButton.CurrentTheme = CurrentTheme;
         
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
@@ -355,9 +365,12 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
         List<FContextMenu.MenuItem> items =
         [
+            //TODO: not stable enough.
+            //new(new MaterialIcon {Kind = MaterialIconKind.Assistant}, 1, "Chat Window", AssistantClick),
             new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", InstancesClick),
             new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", BookmarkClick),
-            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
+            //TODO: not implemented yet.
+            //new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
         ];
         
         ContextMenuPopup.Margin = new Thickness(32, 28, 0, 0);
@@ -365,7 +378,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         {
             case >= 0:
                 ContextMenuPopup.SetItems(items
-                    .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
+                    //TODO not implemented yet.
+                    //.Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", DownloadClick))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false)));
                 break;
@@ -378,6 +392,12 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 ContextMenuPopup.SetItems(items);
                 break;
         }
+    }
+
+    private void AssistantClick()
+    {
+        ChatWindow.Visibility = Visibility.Visible;
+        TabHolder.Margin = TabHolder.Margin with { Right = 450 };
     }
 
     private void InstancesClick()
@@ -398,6 +418,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             .ToList()
             .ForEach(ic => PopupContainer.Children.Add(ic));
         
+        PopupRootRoot.IsOpen = true;
     }
 
     private void BookmarkClick()
@@ -429,6 +450,31 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void HistoryClick()
     {
+        
+        CenterPopupContainer.Children.Clear();
+        ////////////////////////////////////////
+        /// TESTING TEMP STUFF
+        new List<ISetting>
+        {
+            new BoolSetting("test", "test test some more test...", true),
+            new BoolSetting("test2", "test test some more test...", false),
+            new ComboSetting("test3", "test test", 1, ("a", 0), ("b", 1), ("c", 2), ("d", 3)),
+            new ColorSetting("test4", "test test some more test...", Colors.Red),
+            new DecimalSetting("test5a", "test test some more test...", 1.23m),
+            new IntSetting("test5b", "test test some more test...", 123),
+            new DividerSetting(),
+            new SliderSetting("test6", "test test some more test...", 50, 1, 100),
+            new FilePickerSetting("test7", "test test some more test...", "test", true),
+        }
+        .ForEach(s =>
+        {
+            var e = s.GetEditor(this);
+            e.CurrentTheme = CurrentTheme;
+            CenterPopupContainer.Children.Add(e);
+        });
+        
+        CenterPopupRootRoot.IsOpen = true;
+
         // throw new NotImplementedException();
     }
 
@@ -576,5 +622,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void BorderGrid_OnPointerReleased(object sender, PointerRoutedEventArgs e)
     {
         Debug.WriteLine(sender);
+    }
+
+    private void CenterPopupCloseButton_OnOnClick(object sender, RoutedEventArgs e)
+    {
+        CenterPopupRootRoot.IsOpen = false;
+    }
+
+    private void CenterPopupRootRoot_OnClosed(object? sender, object e)
+    {
+        //throw new NotImplementedException();
     }
 }
