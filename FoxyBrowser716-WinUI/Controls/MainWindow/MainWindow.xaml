@@ -51,7 +51,7 @@
                 </ScrollViewer>
             </Popup>
             
-            <Popup x:Name="CenterPopupRootRoot" Margin="50,50" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="False" Closed="CenterPopupRootRoot_OnClosed">
+            <Popup x:Name="CenterPopupRootRoot" Margin="50,50" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True" Closed="CenterPopupRootRoot_OnClosed">
                 <StackPanel x:Name="CenterPopupRoot" CornerRadius="5" BorderThickness="2">
                     <generic:FTextButton x:Name="CenterPopupCloseButton" OnClick="CenterPopupCloseButton_OnOnClick" HorizontalAlignment="Right" Icon="{material:MaterialIconExt Kind=Close}" ButtonText="Close" CornerRadius="5"/>
                     <ScrollViewer 

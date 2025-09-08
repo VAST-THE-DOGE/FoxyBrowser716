@@ -629,8 +629,25 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         CenterPopupRootRoot.IsOpen = false;
     }
 
+    public event Action? PopupClosed;
     private void CenterPopupRootRoot_OnClosed(object? sender, object e)
     {
-        //throw new NotImplementedException();
+        PopupClosed?.Invoke();
+    }
+    
+    public void OpenSettings(List<ISetting> settings)
+    {
+        CenterPopupContainer.Children.Clear();
+        
+        if (settings.Count == 0) return;
+        
+        settings.ForEach(s =>
+            {
+                var e = s.GetEditor(this);
+                e.CurrentTheme = CurrentTheme;
+                CenterPopupContainer.Children.Add(e);
+            });
+        
+        CenterPopupRootRoot.IsOpen = true;
     }
 }

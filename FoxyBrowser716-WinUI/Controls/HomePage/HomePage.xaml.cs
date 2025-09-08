@@ -8,6 +8,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml.Shapes;
 using WinRT.Interop;
 using WinUIEx;
+using Path = System.IO.Path;
 
 namespace FoxyBrowser716_WinUI.Controls.HomePage;
 
@@ -51,6 +52,15 @@ public sealed partial class HomePage : UserControl
     public async Task Initialize(MainWindow.MainWindow window)
     {
         _mainWindow = window;
+
+        _mainWindow.PopupClosed += () =>
+        {
+            if (inSettings)
+            {
+                ApplySettings();
+                inSettings = false;
+            }
+        };
         
         // setup columns/rows
         const double percentagePerColumn = 100.0 / ColumnCount;
@@ -136,9 +146,9 @@ public sealed partial class HomePage : UserControl
     private Task TimerTick()
     {
         //TODO
-        /*if (_settings.DoSlideshow)
+        if (_settings.DoSlideshow)
         {
-            var i = (int)Math.Ceiling((DateTime.Now.Hour * 3600d + DateTime.Now.Minute * 60 + DateTime.Now.Second + (DateTime.Now.Millisecond / 1000d)) / (_settings.DisplayTime <= 0 ? 0.01 : _settings.DisplayTime));
+            var i = (int)Math.Ceiling((DateTime.Now.Hour * 3600m + DateTime.Now.Minute * 60 + DateTime.Now.Second + (DateTime.Now.Millisecond / 1000m)) / (_settings.DisplayTime <= 0 ? 0.01m : _settings.DisplayTime));
             if (_imageIndex != i)
             {
                 _imageIndex = i;
@@ -152,10 +162,9 @@ public sealed partial class HomePage : UserControl
                     return Task.CompletedTask;
                 }
 
-                string[] extensions = [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".avi", ".mov", ".wmv"];
+                string[] extensions = [".jpg", ".jpeg", ".png", ".bmp", ".gif"];
 
-                List<string> images = [];
-                images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
+                var images = Directory.EnumerateFiles(_settings.FolderPath, "*.*", SearchOption.AllDirectories)
                     .Where(file => extensions.Contains(Path.GetExtension(file).ToLower())).Order().ToList();
 
                 if (images.Count == 0)
@@ -187,7 +196,7 @@ public sealed partial class HomePage : UserControl
                     }
                 });
             }
-        }*/
+        }
 
         return Task.CompletedTask;
     }
@@ -1058,7 +1067,7 @@ public sealed partial class HomePage : UserControl
             (MaterialIconKind.ContentSaveMove, OptionType.SaveExit, "Save and Exit"),
             (MaterialIconKind.Logout, OptionType.Exit, "Exit Without Saving"), 
             (MaterialIconKind.Image, OptionType.ChangeImage, "Change Background Image"),
-            //(MaterialIconKind.FolderImage, OptionType.ChangeSlideshow, "Change Slideshow Settings"), TODO
+            (MaterialIconKind.FolderImage, OptionType.ChangeSlideshow, "Change Slideshow Settings"),
         ];
     }
 
@@ -1111,7 +1120,11 @@ public sealed partial class HomePage : UserControl
                     }*/
                 break;
             case OptionType.ChangeSlideshow:
-                throw new NotImplementedException();
+                var settings = GetSlideshowSettings();
+                
+                _mainWindow.OpenSettings(settings); //TODO folder picker closes this, need custom backdrop on main window
+                
+                //throw new NotImplementedException();
                 /*var adornerLayer = AdornerLayer.GetAdornerLayer(this);
             
                 if (adornerLayer != null)
@@ -1137,13 +1150,38 @@ public sealed partial class HomePage : UserControl
         }
     }
 
-    private Dictionary<int, ISetting> SlideshowSettings => new()
+    private bool inSettings = false;
+    
+    private List<ISetting> GetSlideshowSettings()
     {
-        [0] = new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow),
-        [1] = new BoolSetting("Pick Random Images (will pick in alphabetical order when off)", "", _settings.RandomPicking),
-        [2] = new DecimalSetting("Display Interval (in seconds)", "", _settings.DisplayTime),
-        [3] = new FolderPickerSetting("FolderPath (can have nested folders)", "", _settings.FolderPath),
-    };
+        var settings = new List<ISetting>();
+        
+        var onOffSet = new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow);
+        onOffSet.PropertyChanged += (_, _) => _settings.DoSlideshow = onOffSet.Value; 
+        settings.Add(onOffSet);
+
+        var alphaBoolSet = new BoolSetting("Pick Random Images", "will pick in alphabetical order when off", _settings.RandomPicking);
+        alphaBoolSet.PropertyChanged += (_, _) => _settings.RandomPicking = alphaBoolSet.Value; 
+        settings.Add(alphaBoolSet);
+
+        var displayIntervalSet = new DecimalSetting("Display Interval", "in seconds", _settings.DisplayTime);
+        displayIntervalSet.PropertyChanged += (_, _) => _settings.DisplayTime = displayIntervalSet.Value; 
+        settings.Add(displayIntervalSet);
+
+        var folderSet = new FolderPickerSetting("FolderPath", "can have nested folders", _settings.FolderPath);
+        folderSet.PropertyChanged += (_, _) => _settings.FolderPath = folderSet.Value; 
+        settings.Add(folderSet);
+        
+        return settings;
+    }
+    
+    // private Dictionary<int, ISetting> SlideshowSettings => new()
+    // {
+    //     [0] = new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow),
+    //     [1] = new BoolSetting("Pick Random Images (will pick in alphabetical order when off)", "", _settings.RandomPicking),
+    //     [2] = new DecimalSetting("Display Interval (in seconds)", "", _settings.DisplayTime),
+    //     [3] = new FolderPickerSetting("FolderPath (can have nested folders)", "", _settings.FolderPath),
+    // };
     
     public async Task AddWidgetClicked(string name)
     {
