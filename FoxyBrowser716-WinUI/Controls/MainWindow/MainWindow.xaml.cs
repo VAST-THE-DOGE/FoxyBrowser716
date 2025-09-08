@@ -451,29 +451,29 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void HistoryClick()
     {
         
-        CenterPopupContainer.Children.Clear();
-        ////////////////////////////////////////
-        /// TESTING TEMP STUFF
-        new List<ISetting>
-        {
-            new BoolSetting("test", "test test some more test...", true),
-            new BoolSetting("test2", "test test some more test...", false),
-            new ComboSetting("test3", "test test", 1, ("a", 0), ("b", 1), ("c", 2), ("d", 3)),
-            new ColorSetting("test4", "test test some more test...", Colors.Red),
-            new DecimalSetting("test5a", "test test some more test...", 1.23m),
-            new IntSetting("test5b", "test test some more test...", 123),
-            new DividerSetting(),
-            new SliderSetting("test6", "test test some more test...", 50, 1, 100),
-            new FilePickerSetting("test7", "test test some more test...", "test", true),
-        }
-        .ForEach(s =>
-        {
-            var e = s.GetEditor(this);
-            e.CurrentTheme = CurrentTheme;
-            CenterPopupContainer.Children.Add(e);
-        });
-        
-        CenterPopupRootRoot.IsOpen = true;
+        // CenterPopupContainer.Children.Clear();
+        // ////////////////////////////////////////
+        // /// TESTING TEMP STUFF
+        // new List<ISetting>
+        // {
+        //     new BoolSetting("test", "test test some more test...", true),
+        //     new BoolSetting("test2", "test test some more test...", false),
+        //     new ComboSetting("test3", "test test", 1, ("a", 0), ("b", 1), ("c", 2), ("d", 3)),
+        //     new ColorSetting("test4", "test test some more test...", Colors.Red),
+        //     new DecimalSetting("test5a", "test test some more test...", 1.23m),
+        //     new IntSetting("test5b", "test test some more test...", 123),
+        //     new DividerSetting(),
+        //     new SliderSetting("test6", "test test some more test...", 50, 1, 100),
+        //     new FilePickerSetting("test7", "test test some more test...", "test", true),
+        // }
+        // .ForEach(s =>
+        // {
+        //     var e = s.GetEditor(this);
+        //     e.CurrentTheme = CurrentTheme;
+        //     CenterPopupContainer.Children.Add(e);
+        // });
+        //
+        // CenterPopupRootRoot.IsOpen = true;
 
         // throw new NotImplementedException();
     }

@@ -55,10 +55,10 @@ public sealed partial class HomePage : UserControl
 
         _mainWindow.PopupClosed += () =>
         {
-            if (inSettings)
+            if (_inSettings)
             {
                 ApplySettings();
-                inSettings = false;
+                _inSettings = false;
             }
         };
         
@@ -1150,38 +1150,18 @@ public sealed partial class HomePage : UserControl
         }
     }
 
-    private bool inSettings = false;
+    private bool _inSettings = false;
     
     private List<ISetting> GetSlideshowSettings()
     {
-        var settings = new List<ISetting>();
-        
-        var onOffSet = new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow);
-        onOffSet.PropertyChanged += (_, _) => _settings.DoSlideshow = onOffSet.Value; 
-        settings.Add(onOffSet);
-
-        var alphaBoolSet = new BoolSetting("Pick Random Images", "will pick in alphabetical order when off", _settings.RandomPicking);
-        alphaBoolSet.PropertyChanged += (_, _) => _settings.RandomPicking = alphaBoolSet.Value; 
-        settings.Add(alphaBoolSet);
-
-        var displayIntervalSet = new DecimalSetting("Display Interval", "in seconds", _settings.DisplayTime);
-        displayIntervalSet.PropertyChanged += (_, _) => _settings.DisplayTime = displayIntervalSet.Value; 
-        settings.Add(displayIntervalSet);
-
-        var folderSet = new FolderPickerSetting("FolderPath", "can have nested folders", _settings.FolderPath);
-        folderSet.PropertyChanged += (_, _) => _settings.FolderPath = folderSet.Value; 
-        settings.Add(folderSet);
-        
-        return settings;
+        return 
+            [
+                new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow, b => _settings.DoSlideshow = b),
+                new BoolSetting("Pick Random Images", "will pick in alphabetical order when off", _settings.RandomPicking, b => _settings.RandomPicking = b),
+                new DecimalSetting("Display Interval", "in seconds", _settings.DisplayTime, d => _settings.DisplayTime = d),
+                new FolderPickerSetting("FolderPath", "can have nested folders", _settings.FolderPath, s => _settings.FolderPath = s),
+            ];
     }
-    
-    // private Dictionary<int, ISetting> SlideshowSettings => new()
-    // {
-    //     [0] = new BoolSetting("Enable Slideshow", "", _settings.DoSlideshow),
-    //     [1] = new BoolSetting("Pick Random Images (will pick in alphabetical order when off)", "", _settings.RandomPicking),
-    //     [2] = new DecimalSetting("Display Interval (in seconds)", "", _settings.DisplayTime),
-    //     [3] = new FolderPickerSetting("FolderPath (can have nested folders)", "", _settings.FolderPath),
-    // };
     
     public async Task AddWidgetClicked(string name)
     {
