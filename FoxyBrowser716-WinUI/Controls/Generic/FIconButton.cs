@@ -97,9 +97,11 @@ public sealed partial class FIconButton : ContentControl
 
         PointerReleased += (_, _) =>
         {
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent, 0.3);
-            
             OnClick?.Invoke(this, new RoutedEventArgs());
+            
+            if (ForceHighlight) return;
+            
+            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent, 0.3);
         };
 
         ApplyTheme();

@@ -37,6 +37,10 @@
             
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
             
+            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
+
+            <mainWindow:AiChatWindow x:Name="ChatWindow" Margin="0,26,0,0" Visibility="Collapsed"/>
+            
             <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
                 <ScrollViewer x:Name="PopupRoot"
                               CornerRadius="5" BorderThickness="2"
@@ -47,7 +51,16 @@
                 </ScrollViewer>
             </Popup>
             
-            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
+            <Popup x:Name="CenterPopupRootRoot" Margin="50,50" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="False" Closed="CenterPopupRootRoot_OnClosed">
+                <StackPanel x:Name="CenterPopupRoot" CornerRadius="5" BorderThickness="2">
+                    <generic:FTextButton x:Name="CenterPopupCloseButton" OnClick="CenterPopupCloseButton_OnOnClick" HorizontalAlignment="Right" Icon="{material:MaterialIconExt Kind=Close}" ButtonText="Close" CornerRadius="5"/>
+                    <ScrollViewer 
+                        VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" 
+                        ZoomMode="Disabled">
+                        <StackPanel x:Name="CenterPopupContainer" HorizontalAlignment="Stretch"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Popup>
         </Grid>
     </Grid>
 </winUiEx:WindowEx>

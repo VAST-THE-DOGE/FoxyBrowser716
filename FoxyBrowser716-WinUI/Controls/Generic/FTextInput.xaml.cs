@@ -31,6 +31,17 @@ public sealed partial class FTextInput : UserControl
             PlaceHolderTextChanged(this, null);
         }
     }
+    
+    public static readonly DependencyProperty InputMiddlewareProperty = DependencyProperty.Register(
+        nameof(InputMiddleware), typeof(Func<string, string, string>), typeof(FTextInput),
+        new PropertyMetadata(null));
+
+    public Func<string, string, string>? InputMiddleware
+    {
+        get => (Func<string, string, string>?)GetValue(InputMiddlewareProperty);
+        set => SetValue(InputMiddlewareProperty, value);
+    }
+
 
     private static void PlaceHolderTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs? e)
     {
@@ -41,6 +52,10 @@ public sealed partial class FTextInput : UserControl
     public void SetText(string text)
     {
         SearchBox.Text = text;
+    }
+    public string GetText()
+    {
+        return SearchBox.Text;
     }
     
     public event Action<string>? OnTextChanged;
@@ -87,6 +102,18 @@ public sealed partial class FTextInput : UserControl
         
         if (e.Key == Windows.System.VirtualKey.Enter)
             EnterPressed?.Invoke();
-            
+    }
+    
+    private void SearchBox_TextChanging(object sender, TextBoxBeforeTextChangingEventArgs e)
+    {
+        if (InputMiddleware is null) return; // let the text change like normal
+        
+        // call the middleware to see what to set the text to
+        var newText = InputMiddleware(SearchBox.Text, e.NewText);
+        
+        if (newText == e.NewText) return; // let the text change like normal. it is valid.
+        
+        e.Cancel = true;
+        SearchBox.Text = newText;
     }
 }

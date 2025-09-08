@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    x:Class="FoxyBrowser716_WinUI.Controls.Generic.FTextInput"
+    x:Class="FoxyBrowser716_WinUI.Controls.Generic.FRGBInput"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    xmlns:generic="using:FoxyBrowser716_WinUI.Controls.Generic"
+    mc:Ignorable="d" Width="200">
     <UserControl.Resources>
-        <Style x:Key="CustomTextBoxStyle2" TargetType="TextBox">
+        <Style x:Key="CustomTextBoxStyle3" TargetType="TextBox">
             <Setter Property="MinHeight" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -48,6 +49,7 @@
                                            Text="{TemplateBinding PlaceholderText}"
                                            Foreground="{ThemeResource TextControlPlaceholderForeground}"
                                            Margin="{TemplateBinding Padding}"
+                                           TextAlignment="Center"
                                            IsHitTestVisible="False"/>
                             </Grid>
                         </Grid>
@@ -57,22 +59,60 @@
         </Style>
     </UserControl.Resources>
     
-    <Grid x:Name="Root" CornerRadius="5">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TextBox x:Name="SearchBox" 
-                 Style="{StaticResource CustomTextBoxStyle2}"
+    <Grid x:Name="Root" Height="22" BorderThickness="2" CornerRadius="11" Margin="0,0,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <generic:FIconButton Grid.Column="0" VerticalAlignment="Stretch" MinWidth="10" x:Name="ColorPreview" ForceHighlight="True" SizeChanged="ColorPreview_OnSizeChanged"/>
+        <TextBox Grid.Column="1" x:Name="ABox" 
+                 Style="{StaticResource CustomTextBoxStyle3}"
+                 Height="18" 
+                 MaxHeight="18"
                  Margin="5,0,5,0" 
                  Padding="0,0,0,0"
-                 IsSpellCheckEnabled="True" 
-                 FontSize="18" 
-                 GotFocus="SearchBox_OnGotFocus" 
-                 LostFocus="SearchBox_OnLostFocus" 
-                 KeyUp="SearchBox_OnKeyUp"
-                 BeforeTextChanging="SearchBox_TextChanging"
-                 PlaceholderText=""/>
-        <Border Grid.Row="1" x:Name="BottomBar" Height="2" CornerRadius="1"/>
+                 IsSpellCheckEnabled="False" 
+                 FontSize="14" 
+                 PlaceholderText="A"
+                 TextAlignment="Center"/>
+        <Border Grid.Column="2" x:Name="Div1" Width="2" CornerRadius="1"/>
+        <TextBox Grid.Column="3" x:Name="RBox" 
+                 Style="{StaticResource CustomTextBoxStyle3}"
+                 Height="18" 
+                 MaxHeight="18"
+                 Margin="5,0,5,0" 
+                 Padding="0,0,0,0"
+                 IsSpellCheckEnabled="False" 
+                 FontSize="14" 
+                 PlaceholderText="R"
+                 TextAlignment="Center"/>
+        <Border Grid.Column="4" x:Name="Div2" Width="2" CornerRadius="1"/>
+        <TextBox Grid.Column="5" x:Name="GBox" 
+                 Style="{StaticResource CustomTextBoxStyle3}"
+                 Height="18" 
+                 MaxHeight="18"
+                 Margin="5,0,5,0" 
+                 Padding="0,0,0,0"
+                 IsSpellCheckEnabled="False" 
+                 FontSize="14" 
+                 PlaceholderText="G"
+                 TextAlignment="Center"/>
+        <Border Grid.Column="6" x:Name="Div3" Width="2" CornerRadius="1"/>
+        <TextBox Grid.Column="7" x:Name="BBox" 
+                 Style="{StaticResource CustomTextBoxStyle3}"
+                 Height="18" 
+                 MaxHeight="18"
+                 Margin="5,0,5,0" 
+                 Padding="0,0,0,0"
+                 IsSpellCheckEnabled="False" 
+                 FontSize="14" 
+                 PlaceholderText="B"
+                 TextAlignment="Center"/>
     </Grid>
 </UserControl>

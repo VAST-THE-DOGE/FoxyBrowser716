@@ -1,30 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Windows.Storage.Pickers;
 using Windows.UI.Core;
 using FoxyBrowser716_WinUI.Controls.HomePage.Widgets;
-using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Settings;
 using Material.Icons;
-using Material.Icons.WinUI3;
 using Microsoft.UI.Input;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using WinRT.Interop;
+using WinUIEx;
 
 namespace FoxyBrowser716_WinUI.Controls.HomePage;
 
@@ -35,8 +18,7 @@ public sealed partial class HomePage : UserControl
     // private const string DefaultBackgroundName = "FoxyBrowserDefaultBackground.jpg";
     private List<WidgetData> _savedWidgets;
     private HomeSettings _settings;
-    private TabManager _manager;
-    private Instance _instanceData;
+    private MainWindow.MainWindow _mainWindow;
     
     private WidgetEditOverlay? _hoveredOverlay;
     
@@ -66,10 +48,9 @@ public sealed partial class HomePage : UserControl
         InitializeComponent();
     }
 
-    public async Task Initialize(TabManager manager, Instance instanceManager)
+    public async Task Initialize(MainWindow.MainWindow window)
     {
-        _manager = manager; // save manager for later use
-        _instanceData = instanceManager;
+        _mainWindow = window;
         
         // setup columns/rows
         const double percentagePerColumn = 100.0 / ColumnCount;
@@ -245,12 +226,12 @@ public sealed partial class HomePage : UserControl
 
     private async Task<WidgetBase?> GetWidget(string widgetName, Dictionary<string, object>? settings = null, WidgetData? widgetData = null)
     {
-        return AvaliableWidgets.TryGetValue(widgetName, out var value) ? await value.Factory(_manager, settings,widgetData ?? new WidgetData { Name = widgetName }) : null;
+        return AvaliableWidgets.TryGetValue(widgetName, out var value) ? await value.Factory(_mainWindow.TabManager, settings,widgetData ?? new WidgetData { Name = widgetName }) : null;
     }
 
     private async Task TryLoadWidgets()
     {
-        var path = FoxyFileManager.BuildFilePath(WidgetsFileName, FoxyFileManager.FolderType.Widgets, _instanceData.Name);
+        var path = FoxyFileManager.BuildFilePath(WidgetsFileName, FoxyFileManager.FolderType.Widgets, _mainWindow.Instance.Name);
         if (await FoxyFileManager.ReadFromFileAsync<List<WidgetData>>(path) is { code: not FoxyFileManager.ReturnCode.NotFound, content: not null } result)
         {
             _savedWidgets = result.content;
@@ -310,7 +291,7 @@ public sealed partial class HomePage : UserControl
 
     private async Task TryLoadSettings()
     {
-        var path = FoxyFileManager.BuildFilePath(SettingsFileName, FoxyFileManager.FolderType.Data, _instanceData.Name);
+        var path = FoxyFileManager.BuildFilePath(SettingsFileName, FoxyFileManager.FolderType.Data, _mainWindow.Instance.Name);
         if (File.Exists(path))
         {
             try
@@ -336,14 +317,14 @@ public sealed partial class HomePage : UserControl
 
     private async Task SaveWidgetsToJson()
     {
-        var path = FoxyFileManager.BuildFilePath(WidgetsFileName, FoxyFileManager.FolderType.Widgets, _instanceData.Name);
+        var path = FoxyFileManager.BuildFilePath(WidgetsFileName, FoxyFileManager.FolderType.Widgets, _mainWindow.Instance.Name);
         await FoxyFileManager.SaveToFileAsync(path, _savedWidgets);
     }
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     private async Task SaveSettingsToJson()
     {
-        var path = FoxyFileManager.BuildFilePath(SettingsFileName, FoxyFileManager.FolderType.Data, _instanceData.Name);
+        var path = FoxyFileManager.BuildFilePath(SettingsFileName, FoxyFileManager.FolderType.Data, _mainWindow.Instance.Name);
         await FoxyFileManager.SaveToFileAsync(path, _settings);
     }
 
@@ -1077,7 +1058,7 @@ public sealed partial class HomePage : UserControl
             (MaterialIconKind.ContentSaveMove, OptionType.SaveExit, "Save and Exit"),
             (MaterialIconKind.Logout, OptionType.Exit, "Exit Without Saving"), 
             (MaterialIconKind.Image, OptionType.ChangeImage, "Change Background Image"),
-            (MaterialIconKind.FolderImage, OptionType.ChangeSlideshow, "Change Slideshow Background"),
+            //(MaterialIconKind.FolderImage, OptionType.ChangeSlideshow, "Change Slideshow Settings"), TODO
         ];
     }
 
@@ -1099,21 +1080,35 @@ public sealed partial class HomePage : UserControl
                 EditModeEnd();
                 break;
             case OptionType.ChangeImage:
-                throw new NotImplementedException(); // can be a url, so show a popup with a file picker setting
-                /*var dialog = new OpenFileDialog
+                var picker = new FileOpenPicker();
+                picker.FileTypeFilter.Add(".jpg");
+                picker.FileTypeFilter.Add(".jpeg");
+                picker.FileTypeFilter.Add(".png");
+                picker.FileTypeFilter.Add(".bmp");
+                picker.FileTypeFilter.Add(".gif");
+			
+                InitializeWithWindow.Initialize(picker, _mainWindow.GetWindowHandle());
+			
+                var file = await picker.PickSingleFileAsync();
+                if (file != null)
                 {
-                    Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;|All Files (*.*)|*.*",
-                    Title = "Pick a background image",
-                    Multiselect = false
-                };
-
-                var result = dialog.ShowDialog();
-
-                if (result == true)
-                {
-                    _settings.BackgroundPath = dialog.FileName;
+                    _settings.BackgroundPath = file.Path;
                     ApplySettings();
-                }*/
+                }                
+                /*var dialog = new OpenFileDialog
+                    {
+                        Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;|All Files (*.*)|*.*",
+                        Title = "Pick a background image",
+                        Multiselect = false
+                    };
+
+                    var result = dialog.ShowDialog();
+
+                    if (result == true)
+                    {
+                        _settings.BackgroundPath = dialog.FileName;
+                        ApplySettings();
+                    }*/
                 break;
             case OptionType.ChangeSlideshow:
                 throw new NotImplementedException();

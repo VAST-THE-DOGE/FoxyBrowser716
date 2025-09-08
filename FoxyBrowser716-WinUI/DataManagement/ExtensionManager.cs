@@ -70,18 +70,15 @@ public class ContentScript
     [JsonPropertyName("match_about_blank")]
     public bool? MatchAboutBlank { get; set; }
 
-    // sometimes extensions specify a "world" (e.g., "MAIN")
     [JsonPropertyName("world")]
     public string? World { get; set; }
 }
 
 public class WebAccessibleResource
 {
-    // "resources" is the modern v3 object form
     [JsonPropertyName("resources")]
     public List<string>? Resources { get; set; }
 
-    // fallback: some manifests (v2) use an array of strings; converter handles that
     [JsonPropertyName("matches")]
     public List<string>? Matches { get; set; }
 
@@ -104,10 +101,9 @@ public class CommandDefinition
     public string? Description { get; set; }
 
     [JsonPropertyName("suggested_key")]
-    public JsonElement? SuggestedKey { get; set; } // can be object or string
+    public JsonElement? SuggestedKey { get; set; }
 }
 
-// ---------- Manifest V3 ----------
 public class ExtensionManifestV3 : ExtensionManifestBase
 {
     [JsonPropertyName("icons")]
@@ -128,7 +124,6 @@ public class ExtensionManifestV3 : ExtensionManifestBase
     [JsonPropertyName("content_scripts")]
     public List<ContentScript>? ContentScripts { get; set; }
 
-    // web_accessible_resources can be either array-of-strings (v2 style) or array-of-objects (v3 style)
     [JsonPropertyName("web_accessible_resources")]
     [JsonConverter(typeof(WebAccessibleResourcesConverter))]
     public List<WebAccessibleResource>? WebAccessibleResources { get; set; }
@@ -149,10 +144,9 @@ public class ExtensionManifestV3 : ExtensionManifestBase
     public string? Author { get; set; }
 
     [JsonPropertyName("storage")]
-    public JsonElement? Storage { get; set; } // often an object with managed_schema, keep as JsonElement
+    public JsonElement? Storage { get; set; }
 }
 
-// ---------- Manifest V2 ----------
 public class ExtensionManifestV2 : ExtensionManifestBase
 {
     [JsonPropertyName("icons")]
@@ -174,10 +168,9 @@ public class ExtensionManifestV2 : ExtensionManifestBase
     public OptionsUI? OptionsUI { get; set; }
 
     [JsonPropertyName("web_accessible_resources")]
-    public List<string>? WebAccessibleResources { get; set; } // v2 common shape
+    public List<string>? WebAccessibleResources { get; set; }
 }
 
-// ---------- Converter: web_accessible_resources (handles both strings and objects) ----------
 public class WebAccessibleResourcesConverter : JsonConverter<List<WebAccessibleResource>>
 {
     public override List<WebAccessibleResource> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -225,7 +218,6 @@ public class WebAccessibleResourcesConverter : JsonConverter<List<WebAccessibleR
 
                 outList.Add(war);
             }
-            // ignore other kinds
         }
 
         return outList;
@@ -262,7 +254,6 @@ public class LocalizedMessages
     }
 }
 
-// Add localization helper methods to ExtensionManifestBase
 public abstract class ExtensionManifestBase
 {
     [JsonPropertyName("manifest_version")]
@@ -298,7 +289,6 @@ public abstract class ExtensionManifestBase
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtraData { get; set; }
 
-    // Store the extension folder path for localization
     [JsonIgnore]
     public string? ExtensionFolderPath { get; set; }
 
@@ -351,25 +341,20 @@ public abstract class ExtensionManifestBase
                value.EndsWith("__");
     }
 
-    // Extract the actual localized string
     private string? ExtractLocalizedString(string localizedKey, string language = "en")
     {
         if (string.IsNullOrEmpty(ExtensionFolderPath) || !IsLocalizedString(localizedKey))
             return null;
 
-        // Extract the message key (remove __MSG_ and __)
         var messageKey = localizedKey.Substring(6, localizedKey.Length - 8);
         
-        // Try to get the localized message
         var localizedMessage = GetLocalizedMessage(messageKey, language);
         
-        // Fallback to default locale if specified and different from requested language
         if (localizedMessage == null && !string.IsNullOrEmpty(DefaultLocale) && DefaultLocale != language)
         {
             localizedMessage = GetLocalizedMessage(messageKey, DefaultLocale);
         }
         
-        // Final fallback to "en" if not already tried
         if (localizedMessage == null && language != "en" && DefaultLocale != "en")
         {
             localizedMessage = GetLocalizedMessage(messageKey, "en");
@@ -378,7 +363,6 @@ public abstract class ExtensionManifestBase
         return localizedMessage;
     }
 
-    // Get a specific message from the locales files
     private string? GetLocalizedMessage(string messageKey, string language)
     {
         if (string.IsNullOrEmpty(ExtensionFolderPath))
@@ -410,7 +394,6 @@ public abstract class ExtensionManifestBase
     };
 }
 
-// Update the parser to set the extension folder path
 public static class ExtensionManifestParser
 {
     private static JsonSerializerOptions Options
@@ -434,7 +417,7 @@ public static class ExtensionManifestParser
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        int manifestVersion = 2; // fallback
+        int manifestVersion = 2;
         if (root.TryGetProperty("manifest_version", out var mv))
         {
             if (mv.ValueKind == JsonValueKind.Number && mv.TryGetInt32(out var iv)) manifestVersion = iv;
@@ -453,15 +436,12 @@ public static class ExtensionManifestParser
             result = v2 ?? throw new InvalidOperationException("Failed to deserialize as V2.");
         }
 
-        // Set the extension folder path for localization
         result.ExtensionFolderPath = extensionFolderPath;
         return result;
     }
 
     public static async Task<ExtensionManifestBase> ParseFromFileAsync(string path)
     {
-        //TODO: move to using FoxyFileManager
-        
         var json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
         var extensionFolderPath = Path.GetDirectoryName(path);
         return Parse(json, extensionFolderPath);
