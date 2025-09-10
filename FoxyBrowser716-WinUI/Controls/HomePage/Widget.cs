@@ -156,6 +156,7 @@ public enum WidgetCategory
     TimeDate,
     WebsiteNavigation,
     FoxyBrowser716,
+    Tools,
     Misc,
 }
 
@@ -169,6 +170,7 @@ public static class WidgetCategoryExtensions
             WidgetCategory.TimeDate => MaterialIconKind.Clock,
             WidgetCategory.WebsiteNavigation => MaterialIconKind.Web,
             WidgetCategory.FoxyBrowser716 => MaterialIconKind.ApplicationCog,
+            WidgetCategory.Tools => MaterialIconKind.Toolbox,
             WidgetCategory.Misc => MaterialIconKind.Inbox,
             _ => throw new ArgumentOutOfRangeException(nameof(category), category, null)
         };
@@ -182,6 +184,7 @@ public static class WidgetCategoryExtensions
             WidgetCategory.TimeDate => "Time & Date",
             WidgetCategory.WebsiteNavigation => "Website Navigation",
             WidgetCategory.FoxyBrowser716 => "FoxyBrowser716",
+            WidgetCategory.Tools => "Tools",
             WidgetCategory.Misc => "Miscellaneous",
             _ => throw new ArgumentOutOfRangeException(nameof(category), category, null)
         };
