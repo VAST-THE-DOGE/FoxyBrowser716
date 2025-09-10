@@ -9,6 +9,7 @@ public partial class BrowserSettings : ObservableObject
     
     //TODO: look more into this
     //TODO: webview2 and everything needs an ApplySettings function that will call at creation and non change of settings.
+    //TODO maybe each category as a sub class?
     /* Necessary Settings:
      *
      * Simple:
@@ -17,16 +18,16 @@ public partial class BrowserSettings : ObservableObject
      * - other webview2 specific settings
      * - ai assistant settings
      * - tracking prevention
-     * default zoom
-     * color theme (dark/light mode)
-     * startup mode: none, restore, config
-     * restore browser on close?
-     * download location
-     * show download menu on download start
-     * sleeping tabs and performance settings
-     * reset to defaults
-     * default search engine, last used or specific one
-     * default browser
+     * - default zoom
+     * - color theme (dark/light mode)
+     * - startup mode: none, restore, config
+     * - restore browser on close?
+     * - download location
+     * - show download menu on download start
+     * - sleeping tabs and performance settings
+     * - reset to defaults
+     * - default search engine, last used or specific one
+     * - default browser
      * 
      * Complex:
      * Theme pick and editing
