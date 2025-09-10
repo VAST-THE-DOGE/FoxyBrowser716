@@ -1,4 +1,6 @@
 
+using FoxyBrowser716_WinUI.Controls.MainWindow;
+
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
 
 // formatting
@@ -33,18 +35,18 @@ public class ComboSetting(string name, string description, int defaultValue, Act
 {
     public (string name, int id)[] Options { get; } = options;
 }
-public class ColorSetting(string name, string description, Color defaultValue) : Setting<Color>(name, description, defaultValue);
+public class ColorSetting(string name, string description, Color defaultValue, Action<Color> onValueChanged) : Setting<Color>(name, description, defaultValue, onValueChanged);
 public class FilePickerSetting(string name, string description, string defaultValue, Action<string> onValueChanged, bool supportUrls = false, params string[] fileTypes) : Setting<string>(name, description, defaultValue, onValueChanged)
 {
     public bool SupportUrls { get; } = supportUrls;
     public string[] FileTypes { get; } = fileTypes;
 }
 public class FolderPickerSetting(string name, string description, string defaultValue, Action<string> onValueChanged) : Setting<string>(name, description, defaultValue, onValueChanged);
-public class CustomControlSetting(string name, string description, Func<ThemedUserControl> controlFactory) : ISetting 
+public class CustomControlSetting(string name, string description, Func<MainWindow, ThemedUserControl> controlFactory) : ISetting 
 { 
     public string Name => name; 
     public string Description => description; 
-    public Func<ThemedUserControl> ControlFactory => controlFactory; 
+    public Func<MainWindow, ThemedUserControl> ControlFactory => controlFactory; 
 }
 
 public class ButtonSetting(string name, string description, params (string label, Action action)[] buttons) : ISetting

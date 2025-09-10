@@ -10,12 +10,13 @@ using WinRT.Interop;
 using WinUIEx;
 using System.Collections.Generic;
 using System;
+using FoxyBrowser716_WinUI.Controls.MainWindow;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
 
 public static class SettingsHelper
 {
-	public static ThemedUserControl GetEditor(this ISetting setting, WindowEx window)
+	public static ThemedUserControl GetEditor(this ISetting setting, MainWindow window)
 	{
 		switch (setting)
 		{
@@ -49,7 +50,7 @@ public static class SettingsHelper
 			case SliderSetting sliderSetting:
 				return new SliderSettingControl(sliderSetting);
 			case CustomControlSetting customControlSetting:
-				return customControlSetting.ControlFactory();
+				return customControlSetting.ControlFactory(window);
 			default:
 				throw new ArgumentOutOfRangeException();
 		}
