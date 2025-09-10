@@ -3,15 +3,20 @@ using FoxyBrowser716_WinUI.DataManagement;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
 
+//TODO: separate out so that this file is only focused on values.
+// Keep enums in a file.
+// Keep Attribute in it's own file
+// Keep base class in a file (for get settings function).
+
 [AttributeUsage(AttributeTargets.Field)]
 public class SettingInfoAttribute(
     SettingsCategory category,
     string? name = null,
     string? description = null,
+    Func<MainWindow, ThemedUserControl>? controlFactory = null,
     string[]? options = null,
     FoxyFileManager.ItemType? itemType = null,
-    bool allowWebsiteUris = false,
-    Func<MainWindow, ThemedUserControl>? controlFactory = null)
+    bool allowWebsiteUris = false)
     : Attribute
 {
     public string? Name { get; } = name; // null = use field name
@@ -22,6 +27,7 @@ public class SettingInfoAttribute(
     public string[]? Options { get; } = options;
     public FoxyFileManager.ItemType? ItemType { get; } = itemType;
     public bool AllowWebsiteUris { get; } = allowWebsiteUris;
+    //TODO
     
     public Func<MainWindow, ThemedUserControl>? ControlFactory { get; } = controlFactory; // null = premade control
 }
@@ -86,10 +92,16 @@ public partial class BrowserSettings : ObservableObject
     [SettingInfo(SettingsCategory.General)]
     public string TestString = "default value here";
     
+    //TODO: enum support would be nice here:
+    // dictionary map of enum to human readable.
+    // detect enum, grab all values as options.
+    [SettingInfo(SettingsCategory.General, options: ["0", "1", "2", "3"])]
+    public string TestCombo = "1";
+    
     [SettingInfo(SettingsCategory.General)]
     public bool TestBool = true;
     
-    [SettingInfo(SettingsCategory.General)]
+    [SettingInfo(SettingsCategory.General, "Another Test Name")]
     public int TestInt = 42;
     #endregion
 
