@@ -12,7 +12,6 @@ public class DefaultThemes
 		["Foxy Theme"] = FoxyTheme,
 		["Vast Seas"] = VastSea,
 		["Vast Skies"] = VastSky,
-
 	};
 
 	public static Theme DarkMode = new()

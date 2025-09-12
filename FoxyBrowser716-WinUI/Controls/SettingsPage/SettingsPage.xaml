@@ -10,7 +10,7 @@
 
     <Grid Background="Gray">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -26,8 +26,13 @@
             </StackPanel>
         </Border>
         <Border Grid.Column="0" Grid.Row="2" x:Name="BorderCategories" Background="Blue">
-            <ScrollViewer/>
+            <ScrollViewer VerticalAlignment="Top">
+                <StackPanel x:Name="CategoryViewer" Background="Green" VerticalAlignment="Top"/>
+            </ScrollViewer>
         </Border>
+        <ScrollViewer Grid.Column="1" Grid.Row="2" Background="Cyan">
+            <StackPanel x:Name="SettingsViewer" Background="Black"/>
+        </ScrollViewer>
     </Grid>
 </UserControl>
 
