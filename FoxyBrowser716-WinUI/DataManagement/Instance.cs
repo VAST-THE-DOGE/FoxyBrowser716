@@ -1,4 +1,5 @@
-﻿using Windows.Foundation;
+﻿using System.ComponentModel;
+using Windows.Foundation;
 using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataObjects;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
@@ -12,7 +13,9 @@ namespace FoxyBrowser716_WinUI.DataManagement;
 public class Instance
 {
 	public string Name { get; private set; }
-
+	
+	//TODO:
+	public DefaultThemes DefaultThemeObject { get; } = new();
 	
 	public BrowserSettings Settings => _settings.Item;
 	public InstanceCache Cache => _cache.Item;
@@ -37,15 +40,28 @@ public class Instance
 		set
 		{
 			field = value;
-			ThemeUpdated?.Invoke(value);
+			foreach (var window in Windows)
+				window.CurrentTheme = value;
 		}
-	}
+	} = DefaultThemes.DarkMode;
 
 	public event Action<Instance>? Focused;
 	
 	private Instance()
 	{}
 
+	private void HandleSettingsChange(object? sender, PropertyChangedEventArgs propertyChangedEventArgs)
+	{
+		switch (propertyChangedEventArgs.PropertyName)
+		{
+			case nameof(BrowserSettings.ThemeName):
+				if (DefaultThemeObject.Themes.TryGetValue(Settings.ThemeName, out var theme)) CurrentTheme = theme;
+				break;
+			default:
+				break;
+		}
+	}
+	
 	public static async Task<Instance> Create(string name, InstanceRetoreData? retoreData = null)
 	{
 		var newInstance = new Instance();
@@ -61,6 +77,7 @@ public class Instance
 		
 		_cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data, Name);
 		_settings = new(() => new BrowserSettings(), "Settings.json", FoxyFileManager.FolderType.Data, Name, SavePriority.High);
+
 		
 		_pins = new("Pins.json", FoxyFileManager.FolderType.Data, Name);
 		_bookmarks = new("Bookmarks.json", FoxyFileManager.FolderType.Data, Name);
@@ -71,6 +88,9 @@ public class Instance
 			_pins,
 			_bookmarks
 		]);
+		
+		_settings.Item.PropertyChanged += HandleSettingsChange;
+		if (DefaultThemeObject.Themes.TryGetValue(Settings.ThemeName, out var theme)) CurrentTheme = theme;
 	}
 	
 	public async Task<MainWindow> CreateWindow(string[]? urls = null, Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
@@ -109,9 +129,12 @@ public class Instance
 			Cache.CurrentSearchEngine = se;
 		};
 
-		urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
+		newWindow.CurrentTheme = CurrentTheme;
 
+		urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
+		
 		newWindow.Activate();
+		
 		return newWindow;
 	}
 	

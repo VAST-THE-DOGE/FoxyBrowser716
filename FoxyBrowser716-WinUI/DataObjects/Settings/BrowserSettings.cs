@@ -19,12 +19,12 @@ public class SettingInfoAttribute : Attribute
     public required SettingsCategory Category { get; init; } // not null
     
     // extra for specific controls
-    public string[]? Options { get; init; }
+    public /*Func<MainWindow, string[]>?*/ string? Options { get; init; }
     public FoxyFileManager.ItemType? ItemType { get; init; }
     public bool AllowWebsiteUris { get; init; } = false;
     //TODO
     
-    public Func<MainWindow, ThemedUserControl>? ControlFactory { get; init; } // null = premade control
+    public /*Func<MainWindow, ThemedUserControl>?*/ string? ControlFactory { get; init; } // null = premade control
 }
 
 public enum SettingsCategory
@@ -52,20 +52,24 @@ public sealed class BrowserSettings : INotifyPropertyChanged
                 catControls = new List<ISetting>();
                 controls.Add(attribute.Category, catControls);
             }
-            
+
             if (attribute.ControlFactory is not null)
-                catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", attribute.ControlFactory));
+                throw new NotImplementedException();
+            // catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", attribute.ControlFactory));
             else
                 switch (field.GetValue(this))
                 {
                     case bool b:
-                        catControls.Add(new BoolSetting(attribute.Name ?? field.Name, attribute.Description ?? "", b, b1 => field.SetValue(this, b1)));
+                        catControls.Add(new BoolSetting(attribute.Name ?? field.Name, attribute.Description ?? "", b,
+                            b1 => field.SetValue(this, b1)));
                         break;
                     case int i:
-                        catControls.Add(new IntSetting(attribute.Name ?? field.Name, attribute.Description ?? "", i, i1 => field.SetValue(this, i1)));
+                        catControls.Add(new IntSetting(attribute.Name ?? field.Name, attribute.Description ?? "", i,
+                            i1 => field.SetValue(this, i1)));
                         break;
                     case decimal d:
-                        catControls.Add(new DecimalSetting(attribute.Name ?? field.Name, attribute.Description ?? "", d, d1 => field.SetValue(this, d1)));
+                        catControls.Add(new DecimalSetting(attribute.Name ?? field.Name, attribute.Description ?? "", d,
+                            d1 => field.SetValue(this, d1)));
                         break;
                     case double d:
                         throw new NotImplementedException();
@@ -74,18 +78,31 @@ public sealed class BrowserSettings : INotifyPropertyChanged
                         break;
                     case string s:
                         if (attribute.Options is { } comboOptions)
-                            throw new NotImplementedException(); //TODO combo
+                        {
+                            //TODO: clean up and test.
+                            var i = 0;
+                            var comboFunc = type.GetMethod(comboOptions, BindingFlags.NonPublic | BindingFlags.Static);
+                            var options = (comboFunc.Invoke(this, [mainWindow]) as string[]).Select(o => (o, i++))
+                                .ToArray();
+                            catControls.Add(new ComboSetting(attribute.Name ?? field.Name, attribute.Description ?? "",
+                                options.FirstOrDefault(o => o.o == s).Item2, s => field.SetValue(this, options[s].o), options));
+                        }
+                        //throw new NotImplementedException(); //TODO combo
                         else
-                            catControls.Add(new StringSetting(attribute.Name ?? field.Name, attribute.Description ?? "", s, s1 => field.SetValue(this, s1)));
+                            catControls.Add(new StringSetting(attribute.Name ?? field.Name, attribute.Description ?? "",
+                                s, s1 => field.SetValue(this, s1)));
+
                         break;
                     case Color c:
-                        catControls.Add(new ColorSetting(attribute.Name ?? field.Name, attribute.Description ?? "", c, c1 => field.SetValue(this, c1)));
+                        catControls.Add(new ColorSetting(attribute.Name ?? field.Name, attribute.Description ?? "", c,
+                            c1 => field.SetValue(this, c1)));
                         break;
                     case Uri u:
                         throw new NotImplementedException();
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException($"Type '{field.PropertyType.Name}' from field '{field.Name}' is not supported.'");
+                        throw new ArgumentOutOfRangeException(
+                            $"Type '{field.PropertyType.Name}' from field '{field.Name}' is not supported.'");
                 }
         }
         
@@ -108,6 +125,18 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     
     [SettingInfo(Category = SettingsCategory.General, Name = "Another Test Name")]
     public int TestInt { get; set => SetField(ref field, value); } = 42;
+    
+    
+    // ONLY REAL ONE HERE
+    [SettingInfo(Category = SettingsCategory.General, Description = "Another Test Description", Options = nameof(GetComboOptions))]
+    public string ThemeName { get; set => SetField(ref field, value); } = "Vast Seas";
+
+    private static string[] GetComboOptions(MainWindow mainWindow)
+    {
+        return mainWindow.Instance.DefaultThemeObject.Themes.Keys
+            .Select(k => k.ToString())
+            .ToArray();
+    }
     #endregion
     
     #region WebView2
