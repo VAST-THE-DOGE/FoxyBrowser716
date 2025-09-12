@@ -44,8 +44,21 @@ public class WebviewTab
 	{
 		await Core.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
 
-		var extensionSetupTask = TabManager.Instance.AddExtensions(Core);
+		// await TabManager.Instance.AddExtensions(Core);
+		//  TabManager.Instance.RegisterStoreButtonCallback(json => {
+		// 	// json contains: host, url, originalText, type
+		// 	// e.g. read the url:
+		// 	if (json.TryGetProperty("url", out var urlProp)) {
+		// 		var url = urlProp.GetString();
+		// 		// do something: log, open UI, start extension install, etc.
+		// 		System.Diagnostics.Debug.WriteLine("Clicked store button on: " + url);
+		// 	}
+		// });
+		
+		//await TabManager.Instance.InjectStoreButtonInterceptor(Core);
 
+		var extensionSetupTask = TabManager.Instance.AddExtensions(Core);
+		
 		Core.AllowDrop = true;
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		Core.CoreWebView2.DefaultDownloadDialogMargin = new Point(0, 0);

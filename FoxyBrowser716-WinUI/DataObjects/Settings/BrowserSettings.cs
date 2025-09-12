@@ -1,4 +1,4 @@
-﻿using FoxyBrowser716_WinUI.Controls.MainWindow;
+﻿/*using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataManagement;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
@@ -135,11 +135,11 @@ public partial class BrowserSettings : ObservableObject
      * startup config
      * cookies and permission management for websites
      *
-     */
+     #1#
     //TODO: need default static setting to use if none.
 }
 
 public partial class PerformanceSettings : ObservableObject
 {
     
-}
+}*/

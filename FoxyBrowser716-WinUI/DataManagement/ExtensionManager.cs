@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
+using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716_WinUI.DataManagement;
 
@@ -455,7 +456,7 @@ public static class ExtensionManifestParser
 
 
 
-public static class ExtensionManager
+public static partial class ExtensionManager
 {
 	readonly static string[] _whitelist = ["Microsoft Clipboard Extension", "Microsoft Edge PDF Viewer"];
 	
@@ -571,3 +572,234 @@ public static class ExtensionManager
 		return _extensions.TryGetValue(instance.Name, out var extensions) ? extensions : [];
 	}
 }
+
+//TODO: buggy
+/*
+public static partial class ExtensionManager
+{
+    // map CoreWebView2 -> instance name so the global WebMessageReceived handler knows which instance
+    static readonly ConcurrentDictionary<CoreWebView2, string> _webviewToInstance = new();
+    // per-instance callback when the injected button is clicked
+    static readonly ConcurrentDictionary<string, Action<JsonElement>> _storeButtonCallbacks = new();
+
+    /// <summary>
+    /// Register a callback to receive button clicks from the injected store button.
+    /// Callback receives the JSON payload sent from the page as a JsonElement.
+    /// </summary>
+    public static void RegisterStoreButtonCallback(this Instance instance, Action<JsonElement> callback)
+        => _storeButtonCallbacks[instance.Name] = callback;
+
+    /// <summary>
+    /// Unregister the callback for an instance.
+    /// </summary>
+    public static void UnregisterStoreButtonCallback(this Instance instance)
+        => _storeButtonCallbacks.TryRemove(instance.Name, out _);
+
+    /// <summary>
+    /// Injects script that patches webstore/install buttons on commonly used store pages,
+    /// sends click events back to host, and listens to host messages to update the button.
+    /// Call this once after the WebView2 CoreWebView2 is created (or await initialization inside).
+    /// </summary>
+    public static async Task InjectStoreButtonInterceptor(this Instance instance, WebView2 webview)
+    {
+        if (webview is null) throw new ArgumentNullException(nameof(webview));
+        if (instance is null) throw new ArgumentNullException(nameof(instance));
+
+        // ensure core is initialized
+        if (webview.CoreWebView2 == null)
+            await webview.EnsureCoreWebView2Async();
+
+        var core = webview.CoreWebView2;
+
+        // Keep mapping to instance name (for the message handler)
+        _webviewToInstance[core] = instance.Name;
+
+        // Attach a WebMessageReceived handler (if not already attached). Use a single global handler.
+        // (We attach it unconditionally — it's safe if you re-call; duplicates would cause double-calls,
+        // so remove any previous subscription first if you want stricter control.)
+        core.WebMessageReceived -= Core_WebMessageReceived;
+        core.WebMessageReceived += Core_WebMessageReceived;
+
+        // JS to inject (keeps a MutationObserver to work on SPA pages).
+        // - Patches candidate buttons (searched by a few selectors + fallback text regex)
+        // - Marks patched buttons with data-attribute so they can be updated later
+        // - Posts messages to host on click
+        // - Listens for host messages to update text/color/visibility
+        var script = """
+(function() {
+  try {
+    const STORE_HOSTS = [
+      'chrome.google.com',
+      'microsoftedge.microsoft.com',
+      'microsoft.com',
+      'addons.mozilla.org'
+    ];
+
+    function hostMatches() {
+      return STORE_HOSTS.some(h => location.hostname.includes(h));
+    }
+    if (!hostMatches()) return;
+
+    function isVisible(el) {
+      try {
+        const s = window.getComputedStyle(el);
+        return s && s.display !== 'none' && s.visibility !== 'hidden' && el.offsetParent !== null;
+      } catch (e) { return true; }
+    }
+
+    function findButtons() {
+      const selectors = [
+        'button[aria-label*="Add to Chrome"]',
+        'button[aria-label*="Get"]',
+        'button[aria-label*="Install"]',
+        'button[aria-label*="Add to Edge"]',
+        'button.btn-install',
+        'a[role="button"]',
+        'button'
+      ];
+      let list = [];
+      selectors.forEach(sel => {
+        try { list.push(...Array.from(document.querySelectorAll(sel))); } catch(e){}
+      });
+
+      // fallback: buttons or links whose text looks like an install/get button
+      const textRegex = /(add to chrome|add to edge|install|get|add extension|add to browser|install extension)/i;
+      list.push(...Array.from(document.querySelectorAll('button, a'))
+        .filter(el => (el.innerText || el.textContent || '').trim() && textRegex.test((el.innerText || el.textContent || ''))));
+
+      // dedupe
+      const uniq = Array.from(new Set(list));
+      return uniq.filter(isVisible);
+    }
+
+    function patchButtons() {
+      const buttons = findButtons();
+      for (const btn of buttons) {
+        if (btn.dataset.__patched_store_btn === '1') continue;
+        try {
+          btn.dataset.__patched_store_btn = '1';
+          btn.dataset.__orig_text = (btn.innerText || btn.textContent || '').trim();
+          btn.style.transition = 'background-color .15s ease, color .15s ease';
+          // default orange style
+          btn.style.backgroundColor = '#ff8c00';
+          btn.style.color = '#ffffff';
+          // default text override - you can change from host
+          try { btn.innerText = 'Install (custom)'; } catch(e){}
+          btn.addEventListener('click', function(ev) {
+            try {
+              const payload = {
+                type: 'storeButtonClick',
+                host: location.hostname,
+                url: location.href,
+                originalText: btn.dataset.__orig_text || null
+              };
+              if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
+                window.chrome.webview.postMessage(payload);
+              }
+            } catch (e){}
+          }, { once: false });
+        } catch (e) {}
+      }
+    }
+
+    // observe DOM changes (SPA friendly)
+    const mo = new MutationObserver((m) => {
+      try { patchButtons(); } catch(e){}
+    });
+    mo.observe(document, { childList: true, subtree: true });
+
+    // initial patch
+    patchButtons();
+
+    // listen for messages from host
+    if (window.chrome && window.chrome.webview && window.chrome.webview.addEventListener) {
+      window.chrome.webview.addEventListener('message', function(ev) {
+        try {
+          const msg = ev.data || {};
+          if (msg.type === 'updateStoreButton') {
+            const patched = document.querySelectorAll('[data-__patched_store_btn="1"]');
+            patched.forEach(b => {
+              try {
+                if (msg.text !== undefined && msg.text !== null) {
+                  b.innerText = msg.text;
+                }
+                if (msg.color) b.style.backgroundColor = msg.color;
+                if (msg.color && !msg.text) b.style.color = '#fff';
+                if (typeof msg.visible === 'boolean') b.style.display = msg.visible ? '' : 'none';
+              } catch(e){}
+            });
+          }
+        } catch(e){}
+      });
+    }
+  } catch(e){}
+})();
+""";
+
+        // ensure script runs on every navigation / new document
+        await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+
+        // also run immediately for the current document (if any content is already loaded)
+        // ExecuteScriptAsync runs in the context of the page and can be used to apply immediate patch
+        try { await core.ExecuteScriptAsync(script); } catch { /* ignore failures if execute not allowed #1# }
+    }
+
+    /// <summary>
+    /// Send an update message to the page to change patched button(s):
+    /// message: { type: 'updateStoreButton', text: '...', color: '#ff8c00', visible: true/false }
+    /// </summary>
+    public static void UpdateInjectedStoreButton(this Instance instance, WebView2 webview, string text = null, string color = null, bool? visible = null)
+    {
+        if (webview?.CoreWebView2 == null) return;
+        var msgObj = new
+        {
+            type = "updateStoreButton",
+            text,
+            color,
+            visible
+        };
+        var json = JsonSerializer.Serialize(msgObj, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+        try
+        {
+            webview.CoreWebView2.PostWebMessageAsJson(json);
+        } catch { /* swallow - host might not be ready #1# }
+    }
+
+    // Global WebMessageReceived handler used for all webviews we mapped earlier
+    static void Core_WebMessageReceived(CoreWebView2 core, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        try
+        {
+            if (!_webviewToInstance.TryGetValue(core, out var instanceName)) return;
+
+            // parse incoming JSON
+            var json = e.WebMessageAsJson;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // dispatch on type
+            if (root.TryGetProperty("type", out var tProp))
+            {
+                var type = tProp.GetString();
+                if (type == "storeButtonClick")
+                {
+                    if (_storeButtonCallbacks.TryGetValue(instanceName, out var cb))
+                    {
+                        // pass the raw JsonElement so user code can inspect url/host/originalText
+                        cb(root);
+                    }
+                    else
+                    {
+                        // default: just debug/log
+                        try { System.Diagnostics.Debug.WriteLine($"Store button click from {instanceName}: {json}"); } catch { }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // swallow any parse errors
+        }
+    }
+}
+*/
