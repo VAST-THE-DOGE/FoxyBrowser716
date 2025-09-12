@@ -75,7 +75,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Instance = instance;
         TabManager = await TabManager.Create(Instance);
         
-        await Task.WhenAll(LeftBar.Initialize(TabManager), HomePage.Initialize(this), ChatWindow.Initialize(this));
+        await Task.WhenAll(LeftBar.Initialize(TabManager), HomePage.Initialize(this), ChatWindow.Initialize(this), SettingsPage.Initialize(this));
         
         // link events from tab manager
         TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;

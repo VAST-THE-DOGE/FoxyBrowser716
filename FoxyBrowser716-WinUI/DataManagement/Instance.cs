@@ -3,6 +3,7 @@ using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataObjects;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
+using FoxyBrowser716_WinUI.DataObjects.Settings;
 using FoxyBrowser716_WinUI.StaticData;
 using WinUIEx;
 
@@ -13,9 +14,9 @@ public class Instance
 	public string Name { get; private set; }
 
 	
-	public InstanceSettings Settings => _settings.Item;
+	public BrowserSettings Settings => _settings.Item;
 	public InstanceCache Cache => _cache.Item;
-	private FoxyAutoSaverField<InstanceSettings> _settings;
+	private FoxyAutoSaverField<BrowserSettings> _settings;
 	private FoxyAutoSaverField<InstanceCache> _cache;
 	
 	public ObservableCollection<WebsiteInfo> Pins => _pins.Items;
@@ -59,7 +60,7 @@ public class Instance
 		Name = name;
 		
 		_cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data, Name);
-		_settings = new(() => new InstanceSettings(), "Settings.json", FoxyFileManager.FolderType.Data, Name);
+		_settings = new(() => new BrowserSettings(), "Settings.json", FoxyFileManager.FolderType.Data, Name, SavePriority.High);
 		
 		_pins = new("Pins.json", FoxyFileManager.FolderType.Data, Name);
 		_bookmarks = new("Bookmarks.json", FoxyFileManager.FolderType.Data, Name);

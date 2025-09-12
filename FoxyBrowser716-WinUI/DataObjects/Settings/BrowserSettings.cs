@@ -1,4 +1,7 @@
-﻿using FoxyBrowser716_WinUI.Controls.MainWindow;
+﻿using System.ComponentModel;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataManagement;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
@@ -8,60 +11,61 @@ namespace FoxyBrowser716_WinUI.DataObjects.Settings;
 // Keep Attribute in it's own file
 // Keep base class in a file (for get settings function).
 
-[AttributeUsage(AttributeTargets.Field)]
-public class SettingInfoAttribute(
-    SettingsCategory category,
-    string? name = null,
-    string? description = null,
-    Func<MainWindow, ThemedUserControl>? controlFactory = null,
-    string[]? options = null,
-    FoxyFileManager.ItemType? itemType = null,
-    bool allowWebsiteUris = false)
-    : Attribute
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public class SettingInfoAttribute : Attribute
 {
-    public string? Name { get; } = name; // null = use field name
-    public string? Description { get; } = description; // null = "" as description
-    public SettingsCategory Category { get; } = category; // not null
+    public string? Name { get; init; } // null = use field name
+    public string? Description { get; init; } // null = "" as description
+    public required SettingsCategory Category { get; init; } // not null
     
     // extra for specific controls
-    public string[]? Options { get; } = options;
-    public FoxyFileManager.ItemType? ItemType { get; } = itemType;
-    public bool AllowWebsiteUris { get; } = allowWebsiteUris;
+    public string[]? Options { get; init; }
+    public FoxyFileManager.ItemType? ItemType { get; init; }
+    public bool AllowWebsiteUris { get; init; } = false;
     //TODO
     
-    public Func<MainWindow, ThemedUserControl>? ControlFactory { get; } = controlFactory; // null = premade control
+    public Func<MainWindow, ThemedUserControl>? ControlFactory { get; init; } // null = premade control
 }
 
 public enum SettingsCategory
 {
     General,
+    WebView2,
+    Misc
 }
 
-public partial class BrowserSettings : ObservableObject
+public sealed class BrowserSettings : INotifyPropertyChanged
 {
-    public List<ISetting> GetSettingControls(MainWindow mainWindow)
+    public Dictionary<SettingsCategory, List<ISetting>> GetSettingControls(MainWindow mainWindow)
     {
-        var controls = new List<ISetting>(); //TODO: clump into one for now, but need a matrix here for categories.
-        var fields = this.GetType().GetFields();
+        var controls = new Dictionary<SettingsCategory, List<ISetting>>();
+        var type = typeof(BrowserSettings);
+        var fields = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var field in fields)
         {
             var attributes = (SettingInfoAttribute[])field.GetCustomAttributes(typeof(SettingInfoAttribute), false);
             
             if (attributes.FirstOrDefault() is not { } attribute) continue;
             
+            if (!controls.TryGetValue(attribute.Category, out var catControls))
+            {
+                catControls = new List<ISetting>();
+                controls.Add(attribute.Category, catControls);
+            }
+            
             if (attribute.ControlFactory is not null)
-                controls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", attribute.ControlFactory));
+                catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", attribute.ControlFactory));
             else
                 switch (field.GetValue(this))
                 {
                     case bool b:
-                        controls.Add(new BoolSetting(attribute.Name ?? field.Name, attribute.Description ?? "", b, b1 => field.SetValue(this, b1)));
+                        catControls.Add(new BoolSetting(attribute.Name ?? field.Name, attribute.Description ?? "", b, b1 => field.SetValue(this, b1)));
                         break;
                     case int i:
-                        controls.Add(new IntSetting(attribute.Name ?? field.Name, attribute.Description ?? "", i, i1 => field.SetValue(this, i1)));
+                        catControls.Add(new IntSetting(attribute.Name ?? field.Name, attribute.Description ?? "", i, i1 => field.SetValue(this, i1)));
                         break;
                     case decimal d:
-                        controls.Add(new DecimalSetting(attribute.Name ?? field.Name, attribute.Description ?? "", d, d1 => field.SetValue(this, d1)));
+                        catControls.Add(new DecimalSetting(attribute.Name ?? field.Name, attribute.Description ?? "", d, d1 => field.SetValue(this, d1)));
                         break;
                     case double d:
                         throw new NotImplementedException();
@@ -72,37 +76,52 @@ public partial class BrowserSettings : ObservableObject
                         if (attribute.Options is { } comboOptions)
                             throw new NotImplementedException(); //TODO combo
                         else
-                            controls.Add(new StringSetting(attribute.Name ?? field.Name, attribute.Description ?? "", s, s1 => field.SetValue(this, s1)));
+                            catControls.Add(new StringSetting(attribute.Name ?? field.Name, attribute.Description ?? "", s, s1 => field.SetValue(this, s1)));
                         break;
                     case Color c:
-                        controls.Add(new ColorSetting(attribute.Name ?? field.Name, attribute.Description ?? "", c, c1 => field.SetValue(this, c1)));
+                        catControls.Add(new ColorSetting(attribute.Name ?? field.Name, attribute.Description ?? "", c, c1 => field.SetValue(this, c1)));
                         break;
                     case Uri u:
                         throw new NotImplementedException();
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException($"Type '{field.FieldType.Name}' from field '{field.Name}' is not supported.'");
+                        throw new ArgumentOutOfRangeException($"Type '{field.PropertyType.Name}' from field '{field.Name}' is not supported.'");
                 }
         }
         
-        return [];
+        return controls;
     }
 
     #region General
-    [SettingInfo(SettingsCategory.General)]
-    public string TestString = "default value here";
-    
+
+    [SettingInfo(Category = SettingsCategory.General)]
+    public string TestString { get; set => SetField(ref field, value); } = "default value here";
+
     //TODO: enum support would be nice here:
     // dictionary map of enum to human readable.
     // detect enum, grab all values as options.
-    [SettingInfo(SettingsCategory.General, options: ["0", "1", "2", "3"])]
-    public string TestCombo = "1";
+    // [SettingInfo(Category = SettingsCategory.General, Options = ["0", "1", "2", "3"])]
+    // public string TestCombo = "1";
     
-    [SettingInfo(SettingsCategory.General)]
-    public bool TestBool = true;
+    [SettingInfo(Category = SettingsCategory.General)]
+    public bool TestBool { get; set => SetField(ref field, value); } = true;
     
-    [SettingInfo(SettingsCategory.General, "Another Test Name")]
-    public int TestInt = 42;
+    [SettingInfo(Category = SettingsCategory.General, Name = "Another Test Name")]
+    public int TestInt { get; set => SetField(ref field, value); } = 42;
+    #endregion
+    
+    #region WebView2
+    [SettingInfo(Category = SettingsCategory.WebView2)]
+    public string TestWebView2 { get; set => SetField(ref field, value); } = "default value here";
+    
+    [SettingInfo(Category = SettingsCategory.WebView2)]
+    public string TestWebView3 { get; set => SetField(ref field, value); } = "default value here";
+    #endregion
+    
+    #region Misc
+    [SettingInfo(Category = SettingsCategory.Misc)]
+    public string TestMisc { get; set => SetField(ref field, value); } = "default value here";
+    
     #endregion
 
     //TODO: look more into this
@@ -137,6 +156,20 @@ public partial class BrowserSettings : ObservableObject
      *
      */
     //TODO: need default static setting to use if none.
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
 }
 
 public partial class PerformanceSettings : ObservableObject
