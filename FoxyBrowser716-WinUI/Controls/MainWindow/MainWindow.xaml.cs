@@ -482,7 +482,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     {
         ContextMenuPopup.SetItems(
             Instance
-                .GetExtensions()
+                .GetSavedExtensions()
                 .Select(e =>
                     {
                         if (e.Manifest is ExtensionManifestV3 manifestV3)

@@ -57,7 +57,7 @@ public class WebviewTab
 		
 		//await TabManager.Instance.InjectStoreButtonInterceptor(Core);
 
-		var extensionSetupTask = TabManager.Instance.AddExtensions(Core);
+		var extensionSetupTask = TabManager.Instance.SetupExtensionSupport(Core);
 		
 		Core.AllowDrop = true;
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
