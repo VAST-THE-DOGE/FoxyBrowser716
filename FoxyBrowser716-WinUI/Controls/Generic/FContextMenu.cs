@@ -134,6 +134,7 @@ public sealed partial class FContextMenu : UserControl
 
     private void CreateMixedLayout(MenuItem[] items)
     {
+        var i = 0;
         foreach (var item in items)
         {
             var button = new FTextButton
@@ -142,11 +143,11 @@ public sealed partial class FContextMenu : UserControl
                 Padding = new Thickness(item.IconPadding),
                 ButtonText = item.Text ?? string.Empty,
                 //Width = _menuWidth - 4,
-                Margin = new Thickness(0),
+                Margin = new Thickness(0,i == 0 ? 0 : 2,0,i == items.Length - 1 ? 0 : 2),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 CurrentTheme = CurrentTheme,
                 ContentHorizontalAlignment = HorizontalAlignment.Left,
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(5),
             };
 
             button.OnClick += (_, _) =>
@@ -157,6 +158,8 @@ public sealed partial class FContextMenu : UserControl
             };
 
             _stackPanel.Children.Add(button);
+
+            i++;
         }
     }
     
