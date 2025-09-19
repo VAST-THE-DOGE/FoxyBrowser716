@@ -18,6 +18,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using WinUIEx;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -113,6 +114,39 @@ public sealed partial class TabCard : UserControl
         tab.Info.PropertyChanged += (_, _) => RefreshData(tab);
         Tag = tab;
         RefreshData(tab);
+
+        //TODO: temp code, redo
+        var cm = new MenuFlyout();
+
+        foreach (var item in new List<(string, Action)> {
+                     ("Duplicate", () => DuplicateRequested?.Invoke(Id)) ,
+                     ("Close", () => CloseRequested?.Invoke(Id))
+                 })
+        {
+            var i = new MenuFlyoutItem
+            {
+                Text = item.Item1,
+                Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor),
+                Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorVeryTransparent),
+                FocusVisualPrimaryBrush = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent),
+                FocusVisualSecondaryBrush = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent),
+                Padding = new Thickness(1),
+                Margin = new Thickness(1)
+            };
+            i.Click += (_, _) =>
+            {
+                item.Item2();
+            };
+            cm.Items.Add(i);
+        }
+
+        cm.LightDismissOverlayMode = LightDismissOverlayMode.On;
+        cm.SystemBackdrop = new TransparentTintBackdrop() { TintColor = CurrentTheme.PrimaryBackgroundColorSlightTransparent };
+
+        //cm.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        //cm.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        
+        ContextFlyout = cm;
     }
 
     public TabCard(int id, WebsiteInfo websiteInfo) : this()

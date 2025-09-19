@@ -143,11 +143,11 @@ public sealed partial class FContextMenu : UserControl
                 Padding = new Thickness(item.IconPadding),
                 ButtonText = item.Text ?? string.Empty,
                 //Width = _menuWidth - 4,
-                Margin = new Thickness(0,i == 0 ? 0 : 2,0,i == items.Length - 1 ? 0 : 2),
+                Margin = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 CurrentTheme = CurrentTheme,
                 ContentHorizontalAlignment = HorizontalAlignment.Left,
-                CornerRadius = new CornerRadius(5),
+                CornerRadius = new CornerRadius(0),
             };
 
             button.OnClick += (_, _) =>
