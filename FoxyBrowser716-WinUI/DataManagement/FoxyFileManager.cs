@@ -79,7 +79,7 @@ public static class FoxyFileManager
 	/// </summary>
 	public enum FolderType
 	{
-		BrowserData,
+		BrowserAppData,
 		Instance,
 		Extension,
 		WebView2,
@@ -114,7 +114,7 @@ public static class FoxyFileManager
 	{
 		return folderType switch
 		{
-			FolderType.BrowserData => BrowserAppDataPath,
+			FolderType.BrowserAppData => BrowserAppDataPath,
 			FolderType.Instance => instanceName is null ? InstanceFolderPath : Path.Combine(InstanceFolderPath, instanceName),
 			FolderType.Extension => instanceName is null ? throw new ArgumentNullException(nameof(instanceName)) : Path.Combine(InstanceFolderPath, instanceName, ExtensionFolderName),
 			FolderType.WebView2 => instanceName is null ? throw new ArgumentNullException(nameof(instanceName)) : Path.Combine(InstanceFolderPath, instanceName, WebView2FolderName),

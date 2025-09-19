@@ -8,6 +8,7 @@ using Windows.Graphics.Display;
 using Windows.UI.ViewManagement;
 using FoxyBrowser716_WinUI.Controls.MainWindow;
 using FoxyBrowser716_WinUI.DataManagement;
+using FoxyBrowser716_WinUI.ErrorHandeler;
 using Microsoft.Windows.AppLifecycle;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 
@@ -63,6 +64,9 @@ public partial class App : Application
             System.Environment.Exit(0);
             return;
         }
+        
+        // load errors:
+        ErrorInfo.LoadLog();
 
         // This is the main instance, set up activation handling
         currentInstance.Activated += OnActivated;
@@ -75,7 +79,10 @@ public partial class App : Application
     private void TaskSchedulerOnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
+        {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
+        }
         //TODO
         // throw new NotImplementedException();
     }
@@ -83,7 +90,10 @@ public partial class App : Application
     private void CurrentDomainOnUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
     {
         if (e.ExceptionObject is Exception ex)
+        {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
+        }
         //TODO
         // throw new NotImplementedException();
     }
@@ -91,7 +101,10 @@ public partial class App : Application
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
+        {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
+        }
         //TODO
         // throw new NotImplementedException();
         e.Handled = true;
