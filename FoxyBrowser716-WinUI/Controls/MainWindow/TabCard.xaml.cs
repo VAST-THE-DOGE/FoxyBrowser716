@@ -111,6 +111,7 @@ public sealed partial class TabCard : UserControl
     {
         Id = tab.Id;
         tab.Info.PropertyChanged += (_, _) => RefreshData(tab);
+        Tag = tab;
         RefreshData(tab);
     }
 
@@ -118,6 +119,7 @@ public sealed partial class TabCard : UserControl
     {
         Id = id;
         websiteInfo.PropertyChanged += (_, _) => RefreshData(websiteInfo);
+        Tag = websiteInfo;
         RefreshData(websiteInfo);
     }
     
