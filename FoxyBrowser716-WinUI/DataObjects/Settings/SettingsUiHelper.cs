@@ -363,7 +363,7 @@ public class DecimalSettingControl : BaseSettingControl
 
 public class StringSettingControl : BaseSettingControl
 {
-	private TextBox textBox;
+	private FTextInput textBox;
 	private readonly StringSetting setting;
 
 	public StringSettingControl(StringSetting stringSetting) : base(stringSetting.Name, stringSetting.Description, DefaultThemes.DarkMode)
@@ -374,15 +374,16 @@ public class StringSettingControl : BaseSettingControl
 
 	private void InitializeStringControl()
 	{
-		textBox = new TextBox
+		textBox = new FTextInput
 		{
-			Text = setting.Value,
 			MinWidth = 200
 		};
+		
+		textBox.SetText(setting.Value);
 
-		textBox.TextChanged += (_, _) =>
+		textBox.OnTextChanged += (s) =>
 		{
-			setting.Value = textBox.Text;
+			setting.Value = s;
 		};
 
 		AddControlToRight(textBox);
@@ -391,7 +392,8 @@ public class StringSettingControl : BaseSettingControl
 	protected override void ApplyTheme()
 	{
 		base.ApplyTheme();
-		// TextBox theming would require custom styling
+		
+		textBox.CurrentTheme = CurrentTheme;
 	}
 }
 

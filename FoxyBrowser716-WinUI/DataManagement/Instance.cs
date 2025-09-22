@@ -5,6 +5,7 @@ using FoxyBrowser716_WinUI.DataObjects;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
 using FoxyBrowser716_WinUI.DataObjects.Complex;
 using FoxyBrowser716_WinUI.DataObjects.Settings;
+using FoxyBrowser716_WinUI.ErrorHandeler;
 using FoxyBrowser716_WinUI.StaticData;
 using WinUIEx;
 
@@ -95,47 +96,55 @@ public class Instance
 	
 	public async Task<MainWindow> CreateWindow(string[]? urls = null, Rect? startLocation = null, MainWindow.BrowserWindowState windowState = MainWindow.BrowserWindowState.Normal)
 	{
-		var newWindow = await MainWindow.Create(this);
-		
-		Focused?.Invoke(this);
-		
-		if (startLocation is { } sl)
+		try
 		{
-			newWindow.MoveAndResize(sl.X, sl.Y, sl.Width, sl.Height);;
-		}
-		newWindow.ApplyWindowState(windowState);
-		
-		Windows.AddFirst(newWindow);
-		newWindow.Activated += (s, e) =>
-		{
-			if (e.WindowActivationState != WindowActivationState.Deactivated && s is MainWindow win)
+			var newWindow = await MainWindow.Create(this);
+
+			Focused?.Invoke(this);
+
+			if (startLocation is { } sl)
 			{
-				Windows.Remove(win);
-				Windows.AddFirst(win);
-				Focused?.Invoke(this);
+				newWindow.MoveAndResize(sl.X, sl.Y, sl.Width, sl.Height);
+				;
 			}
-		};
-		newWindow.Closed += (w, _) => 
-		{ 
-			if (w is MainWindow baw)
-				Windows.Remove(baw);
-			else
-				throw new InvalidOperationException(
-					$"Cannot remove browser application window from instance '{Name}', sender type mismatch.");
-		};
 
-		newWindow.SearchEngineChangeRequested += (se) =>
+			newWindow.ApplyWindowState(windowState);
+
+			Windows.AddFirst(newWindow);
+			newWindow.Activated += (s, e) =>
+			{
+				if (e.WindowActivationState != WindowActivationState.Deactivated && s is MainWindow win)
+				{
+					Windows.Remove(win);
+					Windows.AddFirst(win);
+					Focused?.Invoke(this);
+				}
+			};
+			newWindow.Closed += (w, _) =>
+			{
+				if (w is MainWindow baw)
+					Windows.Remove(baw);
+				else
+					throw new InvalidOperationException(
+						$"Cannot remove browser application window from instance '{Name}', sender type mismatch.");
+			};
+
+			newWindow.SearchEngineChangeRequested += (se) => { Cache.CurrentSearchEngine = se; };
+
+			newWindow.CurrentTheme = CurrentTheme;
+
+			urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
+
+			newWindow.Activate();
+
+			return newWindow;
+		}
+		catch (Exception ex) //TODO: does nothing I think
 		{
-			Cache.CurrentSearchEngine = se;
-		};
-
-		newWindow.CurrentTheme = CurrentTheme;
-
-		urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
-		
-		newWindow.Activate();
-		
-		return newWindow;
+			ErrorInfo.AddError(ex); 
+			
+			return null;
+		}
 	}
 	
 }

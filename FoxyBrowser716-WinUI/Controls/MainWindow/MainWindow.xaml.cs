@@ -248,6 +248,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         ContextMenuPopup.CurrentTheme = CurrentTheme;
         HomePage.CurrentTheme = CurrentTheme;
         ChatWindow.CurrentTheme = CurrentTheme;
+        SettingsPage.CurrentTheme = CurrentTheme;
 
         
         PopupRoot.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
@@ -370,7 +371,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", InstancesClick),
             new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", BookmarkClick),
             //TODO: not implemented yet.
-            //new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
+            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
         ];
         
         ContextMenuPopup.Margin = new Thickness(32, 28, 0, 0);
@@ -378,8 +379,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         {
             case >= 0:
                 ContextMenuPopup.SetItems(items
-                    //TODO not implemented yet.
-                    //.Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
+                    .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", DownloadClick))
                     .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false)));
                 break;
@@ -475,7 +475,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         //
         // CenterPopupRootRoot.IsOpen = true;
 
-        // throw new NotImplementedException();
+        throw new NotImplementedException();
     }
 
     private void ExtensionsClick()

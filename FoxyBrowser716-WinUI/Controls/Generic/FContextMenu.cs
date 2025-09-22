@@ -134,6 +134,7 @@ public sealed partial class FContextMenu : UserControl
 
     private void CreateMixedLayout(MenuItem[] items)
     {
+        var i = 0;
         foreach (var item in items)
         {
             var button = new FTextButton
@@ -157,6 +158,8 @@ public sealed partial class FContextMenu : UserControl
             };
 
             _stackPanel.Children.Add(button);
+
+            i++;
         }
     }
     

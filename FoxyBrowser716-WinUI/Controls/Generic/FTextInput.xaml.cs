@@ -78,22 +78,24 @@ public sealed partial class FTextInput : UserControl
 
     private void ApplyTheme()
     {
-        BottomBar.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
-        Root.Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent);
+        SearchBox.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
+        SearchBox.Background = new SolidColorBrush(CurrentTheme.PrimaryAccentColorSlightTransparent);
         SearchBox.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
         SearchBox.PlaceholderForeground = new SolidColorBrush(CurrentTheme.SecondaryForegroundColor);
+        SearchBox.SelectionHighlightColor = new SolidColorBrush(CurrentTheme.SecondaryHighlightColor);
+        SearchBox.SelectionHighlightColorWhenNotFocused = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
     }
 
     private void SearchBox_OnGotFocus(object sender, RoutedEventArgs e)
     {
-        ChangeColorAnimation(BottomBar.BorderBrush, CurrentTheme.PrimaryHighlightColor);
-        ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryBackgroundColorSlightTransparent);
+        ChangeColorAnimation(SearchBox.BorderBrush, CurrentTheme.PrimaryHighlightColor);
+        ChangeColorAnimation(SearchBox.Background, CurrentTheme.PrimaryBackgroundColorSlightTransparent);
     }
 
     private void SearchBox_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        ChangeColorAnimation(BottomBar.BorderBrush, CurrentTheme.SecondaryAccentColorSlightTransparent);
-        ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
+        ChangeColorAnimation(SearchBox.BorderBrush, CurrentTheme.SecondaryAccentColorSlightTransparent);
+        ChangeColorAnimation(SearchBox.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
     }
 
     private void SearchBox_OnKeyUp(object sender, KeyRoutedEventArgs e)

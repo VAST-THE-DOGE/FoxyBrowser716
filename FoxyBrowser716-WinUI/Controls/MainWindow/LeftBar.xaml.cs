@@ -37,6 +37,9 @@ public sealed partial class LeftBar : UserControl
     private Dictionary<int, TabCard> PinCards = [];
     private static int _pinCounter;
 
+    //TODO: refactor this when doing grouping, very inefficient!
+    //TODO: drag = create tab card window and use an empty space to show where it would go.
+    // along with a highlight for when it will go onto a pre existing window.
     
     public LeftBar()
     {

@@ -57,22 +57,17 @@
         </Style>
     </UserControl.Resources>
     
-    <Grid x:Name="Root" CornerRadius="5">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TextBox x:Name="SearchBox" 
-                 Style="{StaticResource CustomTextBoxStyle2}"
-                 Margin="5,0,5,0" 
-                 Padding="0,0,0,0"
-                 IsSpellCheckEnabled="True" 
-                 FontSize="18" 
-                 GotFocus="SearchBox_OnGotFocus" 
-                 LostFocus="SearchBox_OnLostFocus" 
-                 KeyUp="SearchBox_OnKeyUp"
-                 BeforeTextChanging="SearchBox_TextChanging"
-                 PlaceholderText=""/>
-        <Border Grid.Row="1" x:Name="BottomBar" Height="2" CornerRadius="1"/>
-    </Grid>
+    <TextBox x:Name="SearchBox" 
+             Style="{StaticResource CustomTextBoxStyle2}"
+             Margin="5,0,5,0" 
+             Padding="10,2,10,2"
+             CornerRadius="5"
+             BorderThickness="2"
+             IsSpellCheckEnabled="True" 
+             FontSize="18" 
+             GotFocus="SearchBox_OnGotFocus" 
+             LostFocus="SearchBox_OnLostFocus" 
+             KeyUp="SearchBox_OnKeyUp"
+             BeforeTextChanging="SearchBox_TextChanging"
+             PlaceholderText=""/>
 </UserControl>

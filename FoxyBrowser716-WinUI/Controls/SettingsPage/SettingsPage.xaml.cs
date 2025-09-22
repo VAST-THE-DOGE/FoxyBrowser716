@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -27,19 +28,41 @@ public sealed partial class SettingsPage : UserControl
         InitializeComponent();
     }
     
-    internal Theme CurrentTheme
-    {
-        get;
-        set
-        {
-            field = value;
-            ApplyTheme();
-        }
-    } = DefaultThemes.VastSea;
+    internal Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
 
     private void ApplyTheme()
     {
+        _settingsControls.ForEach(c => c.CurrentTheme = CurrentTheme);
+        _categoryButtons.ForEach(c => c.CurrentTheme = CurrentTheme);
         
+        InputSearch.CurrentTheme = CurrentTheme;
+        ResultBlock.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
+
+        BorderSearch.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        BorderSearch.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        
+        BorderCategories.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        BorderCategories.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
+        
+        //TODO: temp
+        var newGradient = new RadialGradientBrush()
+        {
+            MappingMode = BrushMappingMode.RelativeToBoundingBox,
+            Center = new Point(0,1),
+            GradientOrigin = new Point(0,1),
+        };
+        
+        newGradient.GradientStops.Add(new GradientStop() { Color = CurrentTheme.PrimaryHighlightColor, Offset = 0 });
+        newGradient.GradientStops.Add(new GradientStop() { Color = CurrentTheme.PrimaryBackgroundColor, Offset = 0.75 });
+        RootGrid.Background = newGradient;
+        
+        //TODO: why is this not updating???
+        // BackgroundPrimary.Color = CurrentTheme.PrimaryBackgroundColor;
+        // BackgroundSecondary.Color = CurrentTheme.PrimaryHighlightColor;
+        // Debug.WriteLine(string.Join(" -> ", BackgroundGradient.GradientStops.Select(gs => gs.Color)));
+        // RootGrid.Background = new SolidColorBrush(Colors.Black);
+        
+        // BackgroundGradient.InterpolationSpace = CompositionColorSpace.Auto;
     }
     
     private MainWindow.MainWindow _mainWindow;
@@ -62,18 +85,37 @@ public sealed partial class SettingsPage : UserControl
             var categoryButton = new FTextButton
             {
                 ButtonText = pair.Key.ToString(),
+                CurrentTheme = CurrentTheme,
+                CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(2),
+                //TODO custom click thing here
+            };
+
+            categoryButton.OnClick += (_,_) =>
+            {
+                //TODO
             };
             
+            _categoryButtons.Add(categoryButton);
             CategoryViewer.Children.Add(categoryButton);
             
-            SettingsViewer.Children.Add(new HeaderSetting(pair.Key.ToString()).GetEditor(_mainWindow));
+            var headset = new HeaderSetting(pair.Key.ToString()).GetEditor(_mainWindow);
+            _settingsControls.Add(headset);
+            headset.CurrentTheme = CurrentTheme;
+            SettingsViewer.Children.Add(headset);
             
             foreach (var control in pair.Value)
             {
-                SettingsViewer.Children.Add(control.GetEditor(_mainWindow));
+                var editor = control.GetEditor(_mainWindow);
+                _settingsControls.Add(editor);
+                editor.CurrentTheme = CurrentTheme;
+                SettingsViewer.Children.Add(editor);
             }
-            
-            SettingsViewer.Children.Add(new DividerSetting().GetEditor(_mainWindow));
+
+            var divSet = new DividerSetting().GetEditor(_mainWindow);
+            _settingsControls.Add(divSet);
+            divSet.CurrentTheme = CurrentTheme;
+            SettingsViewer.Children.Add(divSet);
         }
     }
 }
