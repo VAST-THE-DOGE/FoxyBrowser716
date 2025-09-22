@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
@@ -21,8 +22,7 @@ namespace FoxyBrowser716_WinUI.DataManagement;
 // L get extension from url and unpack to a file.
 
 
-// ---------- Shared helper types ----------
-
+#region  ManifestStuff
 [JsonConverter(typeof(IconsConverter))]
 public class Icons : Dictionary<string, string> { }
 
@@ -151,6 +151,19 @@ public class ContentSecurityPolicy
     public override string? ToString() => Policy ?? ExtensionPages;
 }
 
+// Custom class for Author field which can be string or object
+[JsonConverter(typeof(AuthorConverter))]
+public class Author
+{
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    
+    public override string? ToString() => Name ?? Email;
+    
+    public static implicit operator string?(Author? author) => author?.ToString();
+    public static implicit operator Author?(string? str) => str == null ? null : new Author { Name = str };
+}
+
 public class ExtensionManifestV3 : ExtensionManifestBase
 {
     [JsonPropertyName("icons")]
@@ -194,7 +207,7 @@ public class ExtensionManifestV3 : ExtensionManifestBase
     public string? Incognito { get; set; }
 
     [JsonPropertyName("author")]
-    public string? Author { get; set; }
+    public Author? Author { get; set; }
 
     [JsonPropertyName("storage")]
     public JsonElement? Storage { get; set; }
@@ -337,6 +350,53 @@ public class ContentSecurityPolicyConverter : JsonConverter<ContentSecurityPolic
                 writer.WriteString("sandboxed_pages", value.SandboxedPages);
             if (!string.IsNullOrEmpty(value.IsolatedWorld))
                 writer.WriteString("isolated_world", value.IsolatedWorld);
+            writer.WriteEndObject();
+        }
+    }
+}
+
+// Converter for Author (handles string or object)
+public class AuthorConverter : JsonConverter<Author>
+{
+    public override Author Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var author = new Author();
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            author.Name = reader.GetString();
+        }
+        else if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            var element = JsonSerializer.Deserialize<JsonElement>(ref reader, options);
+            
+            if (element.TryGetProperty("name", out var name))
+                author.Name = name.GetString();
+                
+            if (element.TryGetProperty("email", out var email))
+                author.Email = email.GetString();
+        }
+        else if (reader.TokenType == JsonTokenType.Null)
+        {
+            return author;
+        }
+
+        return author;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Author value, JsonSerializerOptions options)
+    {
+        if (!string.IsNullOrEmpty(value.Name) && string.IsNullOrEmpty(value.Email))
+        {
+            writer.WriteStringValue(value.Name);
+        }
+        else
+        {
+            writer.WriteStartObject();
+            if (!string.IsNullOrEmpty(value.Name))
+                writer.WriteString("name", value.Name);
+            if (!string.IsNullOrEmpty(value.Email))
+                writer.WriteString("email", value.Email);
             writer.WriteEndObject();
         }
     }
@@ -620,6 +680,7 @@ public static class ExtensionManifestParser
             o.Converters.Add(new WebAccessibleResourcesConverter());
             o.Converters.Add(new IconsConverter());
             o.Converters.Add(new ContentSecurityPolicyConverter());
+            o.Converters.Add(new AuthorConverter());
             return o;
         }
     }
@@ -668,15 +729,9 @@ public static class ExtensionManifestParser
         return Parse(json, extensionFolderPath);
     }
 }
+#endregion
 
-
-
-
-
-
-
-
-public static partial class ExtensionManager
+public static class ExtensionManager
 {
 	readonly static string[] _whitelist = ["Microsoft Clipboard Extension", "Microsoft Edge PDF Viewer"];
 	
@@ -692,6 +747,33 @@ public static partial class ExtensionManager
 	/// <param name="instance"></param>
 	public static async Task SetupExtensionSupport(this Instance instance, WebView2 webview)
 	{
+        //setup JS for MS Store support:
+        webview.CoreWebView2.WebMessageReceived += async (_,e) =>
+        {
+            string raw = e.TryGetWebMessageAsString();
+            try {
+                var doc = System.Text.Json.JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+                if(root.TryGetProperty("type", out var t)){
+                    var type = t.GetString();
+                    if(type == "installButtonClicked"){
+                        var href = root.GetProperty("href").GetString();
+                        var buttonId = root.GetProperty("buttonId").GetString();
+                        Debug.WriteLine($"Install clicked: href={href} id={buttonId}");
+                        var id = ExtractExtensionIdFromUrl(href);
+                        if(id is null) return;
+                        await instance.AddExtension(webview, id, ExtensionSource.Microsoft);
+                    } else {
+                        Debug.WriteLine("Page message: " + raw);
+                    }
+                }
+            } catch(Exception ex){
+                Debug.WriteLine("Failed parse web message: " + ex.Message + " raw:" + raw);
+            }
+        };
+        
+        await webview.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MicrosoftStoreScript);
+
 		// add extensions:
 		if (_extensions.TryGetValue(instance.Name, out var extensions))
 			await Task.WhenAll(extensions.Select(async e =>
@@ -752,8 +834,6 @@ public static partial class ExtensionManager
 		webview.CoreWebView2.DownloadStarting +=
 			async (_, e) =>
 			{
-				// we only care about downloads from the chrome webstore for now,
-				// skip anything else (aka, let the normal download handler take over):
 				if (webview.CoreWebView2.Source.Contains("chromewebstore.google.com"))
 				{
 					e.Handled = true;
@@ -766,123 +846,91 @@ public static partial class ExtensionManager
 	private static async Task AddExtension(this Instance instance, WebView2 webview, CoreWebView2DownloadStartingEventArgs e)
 	{
 		if (ExtractExtensionIdFromUrl(e.DownloadOperation.Uri) is not { } id) return;
-		await instance.AddExtension(webview, id);
+		await instance.AddExtension(webview, id, ExtensionSource.Chrome);
 	}
 
-	public static async Task AddExtension(this Instance instance, WebView2 webview, string id)
-{
-    Debug.WriteLine($"Adding extension {id}");
-    
-    // Try multiple download methods in order of preference
-    var methods = new[]
+    private enum ExtensionSource
     {
-        DownloadFromChromeWebStore,
-        DownloadFromAlternativeEndpoint,
-        DownloadFromCacheEndpoint
-    };
+        Chrome,
+        Microsoft,
+    }
     
-    byte[] crxBytes = null;
-    Exception lastException = null;
-    
-    foreach (var method in methods)
+	private static async Task AddExtension(this Instance instance, WebView2 webview, string id, ExtensionSource source)
     {
-        try
+        Debug.WriteLine($"Adding extension {id}");
+        
+        byte[] crxBytes = null;
+        Exception lastException = null;
+
+        if (source == ExtensionSource.Chrome)
         {
-            crxBytes = await method(id);
-            if (crxBytes != null && crxBytes.Length > 250)
+            var url = $"https://clients2.google.com/service/update2/crx?response=redirect&prodversion=99&x=id%3D{id}%26uc";
+            try
             {
-                Debug.WriteLine($"Successfully downloaded extension {id} using method {method.Method.Name}");
-                break;
+                crxBytes = await DownloadFromUrl(url);
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
             }
         }
-        catch (Exception ex)
+        else if (source == ExtensionSource.Microsoft)
         {
-            Debug.WriteLine($"Method {method.Method.Name} failed for {id}: {ex.Message}");
-            lastException = ex;
+            var url = $"https://edge.microsoft.com/extensionwebstorebase/v1/crx?response=redirect&x=id%3D{id}%26installsource%3Dondemand%26uc;";
+            try
+            {
+                crxBytes = await DownloadFromUrl(url);
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+            }
         }
+        
+        if (crxBytes == null || crxBytes.Length <= 250)
+        {
+            throw new Exception($"Failed to download extension {id}. All methods failed. Last error: {lastException?.Message}");
+        }
+        
+        await ProcessCrxFile(instance, webview, id, crxBytes);
     }
-    
-    if (crxBytes == null || crxBytes.Length <= 250)
+
+    private static async Task<byte[]> DownloadFromUrl(string url, int i = 10)
     {
-        throw new Exception($"Failed to download extension {id}. All methods failed. Last error: {lastException?.Message}");
+        if (i <= 0) throw new Exception("Failed to download extension. Maximum number of redirects reached.");
+        
+        using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true });
+        
+        // Use a more recent Chrome user agent
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        
+        // Add additional headers that Chrome typically sends
+        http.DefaultRequestHeaders.Add("Accept", "*/*");
+        http.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+        http.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+        http.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+        http.DefaultRequestHeaders.Add("Pragma", "no-cache");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
+        http.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-site");
+        
+        var response = await http.GetAsync(url);
+    
+        if (response.StatusCode is HttpStatusCode.Found)
+        {
+            var location = response.Headers.Location?.ToString();
+            if (!string.IsNullOrEmpty(location))
+            {
+                return await DownloadFromUrl(location, --i);
+            }
+        }
+        
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
     }
-    
-    await ProcessCrxFile(instance, webview, id, crxBytes);
-}
 
-private static async Task<byte[]> DownloadFromChromeWebStore(string id)
-{
-    using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true });
-    
-    // Use a more recent Chrome user agent
-    http.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    
-    // Add additional headers that Chrome typically sends
-    http.DefaultRequestHeaders.Add("Accept", "*/*");
-    http.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
-    http.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
-    http.DefaultRequestHeaders.Add("Pragma", "no-cache");
-    http.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
-    http.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
-    http.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-site");
-    
-    // Add a small delay to avoid rate limiting
-    await Task.Delay(Random.Shared.Next(100, 500));
-    
-    var url = $"https://clients2.google.com/service/update2/crx?response=redirect&prodversion=120.0.0.0&acceptformat=crx2,crx3&x=id%3D{id}%26installsource%3Dondemand%26uc";
-    
-    using var resp = await http.GetAsync(url);
-    resp.EnsureSuccessStatusCode();
-    
-    return await resp.Content.ReadAsByteArrayAsync();
-}
-
-private static async Task<byte[]> DownloadFromAlternativeEndpoint(string id)
-{
-    using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true });
-    
-    http.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    
-    // Alternative endpoint that sometimes works better
-    var url = $"https://chrome.google.com/webstore/detail/{id}";
-    
-    // First, get the extension page to potentially extract download links
-    using var pageResp = await http.GetAsync(url);
-    if (!pageResp.IsSuccessStatusCode)
-    {
-        throw new HttpRequestException($"Extension page not found: {pageResp.StatusCode}");
-    }
-    
-    // Try the direct CRX download with different parameters
-    var crxUrl = $"https://clients2.google.com/service/update2/crx?response=redirect&os=win&arch=x64&os_arch=x86_64&nacl_arch=x86-64&prod=chromecrx&prodchannel=stable&prodversion=120.0.0.0&lang=en-US&acceptformat=crx3&x=id%3D{id}%26installsource%3Dondemand%26uc";
-    
-    using var crxResp = await http.GetAsync(crxUrl);
-    crxResp.EnsureSuccessStatusCode();
-    
-    return await crxResp.Content.ReadAsByteArrayAsync();
-}
-
-private static async Task<byte[]> DownloadFromCacheEndpoint(string id)
-{
-    using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true });
-    
-    http.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    
-    // Try with cache headers to potentially get cached version
-    http.DefaultRequestHeaders.Add("Cache-Control", "max-age=0");
-    
-    var url = $"https://update.googleapis.com/service/update2/crx?response=redirect&prodversion=120.0.0.0&x=id%3D{id}%26installsource%3Dondemand%26uc";
-    
-    using var resp = await http.GetAsync(url);
-    resp.EnsureSuccessStatusCode();
-    
-    return await resp.Content.ReadAsByteArrayAsync();
-}
-
-private static async Task ProcessCrxFile(Instance instance, WebView2 webview, string id, byte[] crxBytes)
+    private static async Task ProcessCrxFile(Instance instance, WebView2 webview, string id, byte[] crxBytes)
 {
     var crxStream = new MemoryStream(crxBytes);
     crxStream.Position = 0;
@@ -1090,235 +1138,305 @@ private static async Task ProcessCrxFile(Instance instance, WebView2 webview, st
 	{
 		return _extensions.TryGetValue(instance.Name, out var extensions) ? extensions : [];
 	}
-}
 
-//TODO: buggy
-/*
-public static partial class ExtensionManager
-{
-    // map CoreWebView2 -> instance name so the global WebMessageReceived handler knows which instance
-    static readonly ConcurrentDictionary<CoreWebView2, string> _webviewToInstance = new();
-    // per-instance callback when the injected button is clicked
-    static readonly ConcurrentDictionary<string, Action<JsonElement>> _storeButtonCallbacks = new();
-
-    /// <summary>
-    /// Register a callback to receive button clicks from the injected store button.
-    /// Callback receives the JSON payload sent from the page as a JsonElement.
-    /// </summary>
-    public static void RegisterStoreButtonCallback(this Instance instance, Action<JsonElement> callback)
-        => _storeButtonCallbacks[instance.Name] = callback;
-
-    /// <summary>
-    /// Unregister the callback for an instance.
-    /// </summary>
-    public static void UnregisterStoreButtonCallback(this Instance instance)
-        => _storeButtonCallbacks.TryRemove(instance.Name, out _);
-
-    /// <summary>
-    /// Injects script that patches webstore/install buttons on commonly used store pages,
-    /// sends click events back to host, and listens to host messages to update the button.
-    /// Call this once after the WebView2 CoreWebView2 is created (or await initialization inside).
-    /// </summary>
-    public static async Task InjectStoreButtonInterceptor(this Instance instance, WebView2 webview)
-    {
-        if (webview is null) throw new ArgumentNullException(nameof(webview));
-        if (instance is null) throw new ArgumentNullException(nameof(instance));
-
-        // ensure core is initialized
-        if (webview.CoreWebView2 == null)
-            await webview.EnsureCoreWebView2Async();
-
-        var core = webview.CoreWebView2;
-
-        // Keep mapping to instance name (for the message handler)
-        _webviewToInstance[core] = instance.Name;
-
-        // Attach a WebMessageReceived handler (if not already attached). Use a single global handler.
-        // (We attach it unconditionally — it's safe if you re-call; duplicates would cause double-calls,
-        // so remove any previous subscription first if you want stricter control.)
-        core.WebMessageReceived -= Core_WebMessageReceived;
-        core.WebMessageReceived += Core_WebMessageReceived;
-
-        // JS to inject (keeps a MutationObserver to work on SPA pages).
-        // - Patches candidate buttons (searched by a few selectors + fallback text regex)
-        // - Marks patched buttons with data-attribute so they can be updated later
-        // - Posts messages to host on click
-        // - Listens for host messages to update text/color/visibility
-        var script = """
-(function() {
-  try {
-    const STORE_HOSTS = [
-      'chrome.google.com',
-      'microsoftedge.microsoft.com',
-      'microsoft.com',
-      'addons.mozilla.org'
-    ];
-
-    function hostMatches() {
-      return STORE_HOSTS.some(h => location.hostname.includes(h));
-    }
-    if (!hostMatches()) return;
-
-    function isVisible(el) {
-      try {
-        const s = window.getComputedStyle(el);
-        return s && s.display !== 'none' && s.visibility !== 'hidden' && el.offsetParent !== null;
-      } catch (e) { return true; }
-    }
-
-    function findButtons() {
-      const selectors = [
-        'button[aria-label*="Add to Chrome"]',
-        'button[aria-label*="Get"]',
-        'button[aria-label*="Install"]',
-        'button[aria-label*="Add to Edge"]',
-        'button.btn-install',
-        'a[role="button"]',
-        'button'
-      ];
-      let list = [];
-      selectors.forEach(sel => {
-        try { list.push(...Array.from(document.querySelectorAll(sel))); } catch(e){}
-      });
-
-      // fallback: buttons or links whose text looks like an install/get button
-      const textRegex = /(add to chrome|add to edge|install|get|add extension|add to browser|install extension)/i;
-      list.push(...Array.from(document.querySelectorAll('button, a'))
-        .filter(el => (el.innerText || el.textContent || '').trim() && textRegex.test((el.innerText || el.textContent || ''))));
-
-      // dedupe
-      const uniq = Array.from(new Set(list));
-      return uniq.filter(isVisible);
-    }
-
-    function patchButtons() {
-      const buttons = findButtons();
-      for (const btn of buttons) {
-        if (btn.dataset.__patched_store_btn === '1') continue;
-        try {
-          btn.dataset.__patched_store_btn = '1';
-          btn.dataset.__orig_text = (btn.innerText || btn.textContent || '').trim();
-          btn.style.transition = 'background-color .15s ease, color .15s ease';
-          // default orange style
-          btn.style.backgroundColor = '#ff8c00';
-          btn.style.color = '#ffffff';
-          // default text override - you can change from host
-          try { btn.innerText = 'Install (custom)'; } catch(e){}
-          btn.addEventListener('click', function(ev) {
+    private const string MicrosoftStoreScript = //TODO a few lines under this in config of the JS:
+        """
+        // Inject this with AddScriptToExecuteOnDocumentCreatedAsync(...)
+        (function(){
+          if (window.__wv2_ext_helper_installed) return;
+          window.__wv2_ext_helper_installed = true;
+        
+          // ===== CONFIG =====
+          const DEFAULT_COLOR = 'rgb(0,116,204)'; // Microsoft blue
+          const ALLOWED_HOST_PATTERNS = [/(\.|^)microsoftedge\.microsoft\.com$/i, /(\.|^)microsoft\.com$/i];
+          // ====================
+        
+          let currentColor = DEFAULT_COLOR;
+        
+          function postButtonClick(msg){
             try {
-              const payload = {
-                type: 'storeButtonClick',
-                host: location.hostname,
-                url: location.href,
-                originalText: btn.dataset.__orig_text || null
-              };
-              if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
-                window.chrome.webview.postMessage(payload);
+              if (window.chrome?.webview?.postMessage) {
+                chrome.webview.postMessage(JSON.stringify(msg));
               }
-            } catch (e){}
-          }, { once: false });
-        } catch (e) {}
-      }
-    }
-
-    // observe DOM changes (SPA friendly)
-    const mo = new MutationObserver((m) => {
-      try { patchButtons(); } catch(e){}
-    });
-    mo.observe(document, { childList: true, subtree: true });
-
-    // initial patch
-    patchButtons();
-
-    // listen for messages from host
-    if (window.chrome && window.chrome.webview && window.chrome.webview.addEventListener) {
-      window.chrome.webview.addEventListener('message', function(ev) {
-        try {
-          const msg = ev.data || {};
-          if (msg.type === 'updateStoreButton') {
-            const patched = document.querySelectorAll('[data-__patched_store_btn="1"]');
-            patched.forEach(b => {
-              try {
-                if (msg.text !== undefined && msg.text !== null) {
-                  b.innerText = msg.text;
+            } catch(e){
+              console.warn('WebView2 postMessage failed:', e);
+            }
+          }
+        
+          function isAllowedHost(){
+            try {
+              const host = location.hostname || '';
+              return ALLOWED_HOST_PATTERNS.some(re => re.test(host));
+            } catch(e){ 
+              return false; 
+            }
+          }
+        
+          function styleButton(btn){
+            if (!btn) return;
+            try{
+              Object.assign(btn.style, {
+                backgroundImage: 'none',
+                backgroundColor: currentColor,
+                borderColor: currentColor,
+                color: '#ffffff',
+                opacity: '1',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                borderRadius: btn.style.borderRadius || '4px'
+              });
+            } catch(e){
+              console.warn('Button styling failed:', e);
+            }
+          }
+        
+          function removeIncompatibleNotices(){
+            let removed = 0;
+            try{
+              // Remove elements with incompatible class
+              document.querySelectorAll('.incompatible').forEach(el => {
+                try{ 
+                  el.remove(); 
+                  removed++; 
+                } catch(e){}
+              });
+        
+              // Remove aria-live incompatible messages
+              document.querySelectorAll('[aria-live]').forEach(el => {
+                try {
+                  if (el?.textContent?.includes('incompatible with your browser')){
+                    el.remove(); 
+                    removed++;
+                  }
+                } catch(e){}
+              });
+        
+              // Remove other incompatible text
+              const textElements = document.querySelectorAll('p, div, span');
+              textElements.forEach(el => {
+                try {
+                  if (el?.textContent?.toLowerCase().includes('incompatible with your browser')){
+                    el.remove(); 
+                    removed++;
+                  }
+                } catch(e){}
+              });
+            } catch(e){
+              console.warn('Remove incompatible notices failed:', e);
+            }
+            return removed;
+          }
+        
+          function findInstallButtons(){
+            const results = [];
+            try {
+              // Find buttons with install ID pattern
+              const installButtons = document.querySelectorAll('button[id*="install"], button[id*="Install"]');
+              installButtons.forEach(b => results.push(b));
+        
+              // Find "Get" buttons
+              const buttons = document.querySelectorAll('button');
+              buttons.forEach(b => {
+                try {
+                  const text = b?.textContent?.trim().toLowerCase();
+                  if ((text === 'get' || text === 'install') && !results.includes(b)) {
+                    results.push(b);
+                  }
+                } catch(e){}
+              });
+        
+              // Find add-to-browser buttons
+              const addButtons = document.querySelectorAll('button[aria-label*="Add"], button[title*="Add"]');
+              addButtons.forEach(b => {
+                if (!results.includes(b)) results.push(b);
+              });
+        
+            } catch(e){
+              console.warn('Find install buttons failed:', e);
+            }
+            return results;
+          }
+        
+          function enableButtons(){
+            const buttons = findInstallButtons();
+            let changed = 0;
+        
+            buttons.forEach((btn, idx) => {
+              if (!btn) return;
+              
+              try{
+                // Enable the button
+                btn.removeAttribute('disabled');
+                btn.disabled = false;
+                btn.removeAttribute('aria-disabled');
+                
+                // Remove disabled classes
+                const disabledClasses = ['disabled', 'is-disabled', 'btn--disabled', 'fui-Button--disabled'];
+                disabledClasses.forEach(cls => btn.classList.remove(cls));
+                
+                // Style the button
+                styleButton(btn);
+                
+                // Add click handler once
+                if (!btn.__wv2_click_hooked) {
+                  btn.__wv2_click_hooked = true;
+                  btn.addEventListener('click', function(ev){
+                    postButtonClick({ 
+                      type: 'installButtonClicked', 
+                      href: location.href, 
+                      buttonId: btn.id || `button-${idx}`,
+                      buttonText: btn.textContent?.trim() || 'Unknown'
+                    });
+                  }, { capture: true, passive: true });
                 }
-                if (msg.color) b.style.backgroundColor = msg.color;
-                if (msg.color && !msg.text) b.style.color = '#fff';
-                if (typeof msg.visible === 'boolean') b.style.display = msg.visible ? '' : 'none';
-              } catch(e){}
+                
+                changed++;
+              } catch(e){
+                console.warn('Button enable failed:', e);
+              }
+            });
+        
+            return { count: buttons.length, changed };
+          }
+        
+          function processPage(){
+            if (!isAllowedHost()) {
+              return { href: location.href, ignoredHost: true };
+            }
+        
+            try {
+              removeIncompatibleNotices();
+              const buttonResult = enableButtons();
+              
+              return { 
+                href: location.href, 
+                buttonsFound: buttonResult.count, 
+                buttonsChanged: buttonResult.changed
+              };
+            } catch(e) {
+              console.error('Process page failed:', e);
+              return { href: location.href, error: e.message };
+            }
+          }
+        
+          function startWatcher(){
+            if (!isAllowedHost()) return;
+            
+            let attempts = 0;
+            const maxAttempts = 30;
+            const observer = new MutationObserver(() => {
+              attempts++;
+              try {
+                const result = processPage();
+                if (result.buttonsFound > 0 || attempts >= maxAttempts) {
+                  observer.disconnect();
+                }
+              } catch(e) {
+                console.warn('Watcher iteration failed:', e);
+              }
+            });
+        
+            try {
+              const target = document.documentElement || document.body || document;
+              observer.observe(target, { 
+                childList: true, 
+                subtree: true, 
+                attributes: true 
+              });
+              
+              // Initial run
+              processPage();
+              
+              // Timeout fallback
+              setTimeout(() => {
+                try {
+                  observer.disconnect();
+                } catch(e){}
+              }, 10000);
+              
+            } catch(e) {
+              console.error('Watcher setup failed:', e);
+              processPage(); // Fallback to single run
+            }
+          }
+        
+          // Navigation handling for SPAs
+          function setupNavigationHandler() {
+            const originalPushState = history.pushState;
+            const originalReplaceState = history.replaceState;
+            
+            history.pushState = function() {
+              const result = originalPushState.apply(this, arguments);
+              setTimeout(() => startWatcher(), 100);
+              return result;
+            };
+            
+            history.replaceState = function() {
+              const result = originalReplaceState.apply(this, arguments);
+              setTimeout(() => startWatcher(), 100);
+              return result;
+            };
+            
+            window.addEventListener('popstate', () => {
+              setTimeout(() => startWatcher(), 100);
             });
           }
-        } catch(e){}
-      });
-    }
-  } catch(e){}
-})();
-""";
-
-        // ensure script runs on every navigation / new document
-        await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
-
-        // also run immediately for the current document (if any content is already loaded)
-        // ExecuteScriptAsync runs in the context of the page and can be used to apply immediate patch
-        try { await core.ExecuteScriptAsync(script); } catch { /* ignore failures if execute not allowed #1# }
-    }
-
-    /// <summary>
-    /// Send an update message to the page to change patched button(s):
-    /// message: { type: 'updateStoreButton', text: '...', color: '#ff8c00', visible: true/false }
-    /// </summary>
-    public static void UpdateInjectedStoreButton(this Instance instance, WebView2 webview, string text = null, string color = null, bool? visible = null)
-    {
-        if (webview?.CoreWebView2 == null) return;
-        var msgObj = new
-        {
-            type = "updateStoreButton",
-            text,
-            color,
-            visible
-        };
-        var json = JsonSerializer.Serialize(msgObj, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
-        try
-        {
-            webview.CoreWebView2.PostWebMessageAsJson(json);
-        } catch { /* swallow - host might not be ready #1# }
-    }
-
-    // Global WebMessageReceived handler used for all webviews we mapped earlier
-    static void Core_WebMessageReceived(CoreWebView2 core, CoreWebView2WebMessageReceivedEventArgs e)
-    {
-        try
-        {
-            if (!_webviewToInstance.TryGetValue(core, out var instanceName)) return;
-
-            // parse incoming JSON
-            var json = e.WebMessageAsJson;
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            // dispatch on type
-            if (root.TryGetProperty("type", out var tProp))
-            {
-                var type = tProp.GetString();
-                if (type == "storeButtonClick")
-                {
-                    if (_storeButtonCallbacks.TryGetValue(instanceName, out var cb))
-                    {
-                        // pass the raw JsonElement so user code can inspect url/host/originalText
-                        cb(root);
+        
+          // Message handler for host commands
+          function setupMessageHandler() {
+            try {
+              if (window.chrome?.webview?.addEventListener) {
+                chrome.webview.addEventListener('message', function(e){
+                  try {
+                    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                    if (!data) return;
+        
+                    switch(data.cmd) {
+                      case 'setColor':
+                        if (typeof data.color === 'string') {
+                          currentColor = data.color.startsWith('rgb') ? data.color : `rgb(${data.color})`;
+                          findInstallButtons().forEach(styleButton);
+                        }
+                        break;
+                        
+                      case 'runNow':
+                        processPage();
+                        break;
                     }
-                    else
-                    {
-                        // default: just debug/log
-                        try { System.Diagnostics.Debug.WriteLine($"Store button click from {instanceName}: {json}"); } catch { }
-                    }
-                }
+                  } catch(e) {
+                    console.warn('Message handler failed:', e);
+                  }
+                });
+              }
+            } catch(e) {
+              console.warn('Message handler setup failed:', e);
             }
-        }
-        catch
-        {
-            // swallow any parse errors
-        }
-    }
+          }
+        
+          // Initialize
+          function init() {
+            setupNavigationHandler();
+            setupMessageHandler();
+            
+            // Export helper functions
+            window.__wv2_ext_helper = { 
+              runNow: processPage, 
+              setColor: (color) => {
+                currentColor = color;
+                findInstallButtons().forEach(styleButton);
+              }
+            };
+        
+            // Start processing
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+              startWatcher();
+            } else {
+              window.addEventListener('DOMContentLoaded', startWatcher, { once: true });
+              window.addEventListener('load', startWatcher, { once: true });
+            }
+          }
+        
+          init();
+        })();
+        """;
 }
-*/

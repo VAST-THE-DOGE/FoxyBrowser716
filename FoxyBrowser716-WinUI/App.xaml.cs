@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Windows.ApplicationModel.Activation;
 using Windows.Graphics.Display;
@@ -49,7 +50,9 @@ public partial class App : Application
 // #if !DEBUG
         this.UnhandledException += OnUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+        //AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
         TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
+        
 // #endif
         
         // Check if this is the first instance
@@ -58,7 +61,7 @@ public partial class App : Application
         if (!mainInstance.IsCurrent)
         {
             var activationArgs = currentInstance.GetActivatedEventArgs();
-            mainInstance.RedirectActivationToAsync(activationArgs).AsTask().Wait();
+            _ = mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
                 
             System.Environment.Exit(0);
             return;
@@ -72,12 +75,19 @@ public partial class App : Application
         _ = HandleActivationArgs(e, true);
     }
 
+    private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
+    {
+        if (e.Exception is Exception ex)
+            Debug.WriteLine(ex);
+    }
+
     private void TaskSchedulerOnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
             Debug.WriteLine(ex);
         //TODO
         // throw new NotImplementedException();
+        e.SetObserved();
     }
 
     private void CurrentDomainOnUnhandledException(object sender, System.UnhandledExceptionEventArgs e)

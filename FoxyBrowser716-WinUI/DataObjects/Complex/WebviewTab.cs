@@ -66,7 +66,7 @@ public class WebviewTab
 		Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
 		
 		// Add after Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
-		Core.CoreWebView2.Settings.IsWebMessageEnabled = false;     
+		// Core.CoreWebView2.Settings.IsWebMessageEnabled = false;     
 		Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
 		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
 
