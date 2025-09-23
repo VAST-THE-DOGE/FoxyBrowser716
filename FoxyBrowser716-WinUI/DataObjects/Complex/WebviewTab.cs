@@ -70,7 +70,7 @@ public class WebviewTab
 		Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
 		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
 
-		Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Strict;
+		Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
 		Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
 
 		// handle events
@@ -78,6 +78,7 @@ public class WebviewTab
 		Core.CoreWebView2.FaviconChanged += OnFaviconChanged;
 		Core.CoreWebView2.SourceChanged += CoreWebView2OnSourceChanged;
 		Core.CoreWebView2.NewWindowRequested += CoreWebView2OnNewWindowRequested;
+		Core.CoreWebView2.NavigationStarting += CoreWebView2OnNavigationStarting;
 		Core.CoreWebView2.WindowCloseRequested += CoreWebView2OnWindowCloseRequested;
 		Core.CoreWebView2.ProcessFailed += CoreWebView2OnProcessFailed;
 
@@ -108,6 +109,15 @@ public class WebviewTab
 
 		
 		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl, true));
+	}
+
+	private void CoreWebView2OnNavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs args)
+	{
+		//TODO: temp fix
+		if (args.Uri.StartsWith("chrome-search://local-ntp/local-ntp.html"))
+		{
+			args.Cancel = true;
+		}
 	}
 
 	private void CoreWebView2OnPermissionRequested(CoreWebView2 sender, CoreWebView2PermissionRequestedEventArgs args)
@@ -144,10 +154,12 @@ public class WebviewTab
 		Info.Url = Core.CoreWebView2.Source;
 	}
 
-	public async Task NavigateOrSearch(string url) => await NavigateOrSearch(url, false);
+	public async Task NavigateOrSearch(string? url) => await NavigateOrSearch(url, false);
 	
-	private async Task NavigateOrSearch(string url, bool forceNav)
+	private async Task NavigateOrSearch(string? url, bool forceNav)
 	{
+		if (url is null) return;
+		
 		if (!InitializeTask.IsCompleted && !forceNav)
 		{
 			_startingUrl = url;

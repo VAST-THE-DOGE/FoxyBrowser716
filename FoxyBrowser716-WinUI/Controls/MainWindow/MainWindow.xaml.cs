@@ -95,6 +95,31 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         RefreshCurrentTabUi(tab, TabManager.ActiveTabId < 0 ? TabManager.ActiveTabId : null);
         
         await ExtensionPopupWebview.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
+        await Instance.SetupExtensionSupport(ExtensionPopupWebview); // loads up those extensions!
+        ExtensionPopupWebview.CoreWebView2.NewWindowRequested +=
+            (_, args2) =>
+            {
+                TabManager.SwapActiveTabTo(TabManager.AddTab(args2.Uri));
+                args2.Handled = true;
+            };
+        
+        ExtensionPopupWebview.NavigationCompleted += async (_, _) =>
+        {
+            //TODO: not working as expected (crazy high width + height)
+            /*var result = await ExtensionPopupWebview.ExecuteScriptAsync(
+                """
+                (function(){
+                    return {
+                        width: document.documentElement.scrollWidth,
+                        height: document.documentElement.scrollHeight
+                    };
+                })();
+                """
+                );*/
+            //var size = JsonSerializer.Deserialize<PopupSize>(result);
+            ExtensionPopupWebview.Width = 300;//size.width;
+            ExtensionPopupWebview.Height = 500; //size.height;
+        };
         
         // refresh all data
         HandleCacheChanged();
@@ -139,31 +164,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         if (tab is not null)
         {
             TopBar.UpdateSearchBar(true, tab.Core.CanGoBack, tab.Core.CanGoForward, tab.Info.Url);
-
-            
-            ExtensionPopupWebview.CoreWebView2.NewWindowRequested +=
-                (_, args) =>
-                {
-                    TabManager.SwapActiveTabTo(TabManager.AddTab(args.Uri));
-                    args.Handled = true;
-                };
-            ExtensionPopupWebview.NavigationCompleted += async (_, _) =>
-            {
-                //TODO: not working as expected (crazy high width + height)
-                /*var result = await ExtensionPopupWebview.ExecuteScriptAsync(
-                    """
-                    (function(){
-                        return {
-                            width: document.documentElement.scrollWidth,
-                            height: document.documentElement.scrollHeight
-                        };
-                    })();
-                    """
-                    );*/
-                //var size = JsonSerializer.Deserialize<PopupSize>(result);
-                ExtensionPopupWebview.Width = 300;//size.width;
-                ExtensionPopupWebview.Height = 500; //size.height;
-            };
         }
         else if (browserWindowId is not null)
         {
@@ -177,6 +177,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void TabManagerOnActiveTabChanged((int oldId, int newId) pair)
     {
+        ExtensionPopupRoot.IsOpen = false;
+        ExtensionPopupWebview.NavigateToString(""); // clear it
+        
         if (pair.newId < 0)
             RefreshCurrentTabUi(null, pair.newId);
         else if (TabManager.TryGetTab(pair.newId, out var tab))
@@ -213,19 +216,19 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         if (pair.newId == -1)
         {
             Canvas.SetZIndex(HomePage, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
             _ = fadeIn.StartAsync(HomePage);
         }
         else if (pair.newId == -2)
         {
             Canvas.SetZIndex(SettingsPage, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
             _ = fadeIn.StartAsync(SettingsPage);
         } 
         else if (TabManager.TryGetTab(pair.newId, out var newTab))
         {
             Canvas.SetZIndex(newTab!.Core, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(1), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
             _ = fadeIn.StartAsync(newTab!.Core);
         }
     }
@@ -372,6 +375,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", BookmarkClick),
             //TODO: not implemented yet.
             new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
+            new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false),
         ];
         
         ContextMenuPopup.Margin = new Thickness(32, 28, 0, 0);
@@ -379,9 +383,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         {
             case >= 0:
                 ContextMenuPopup.SetItems(items
-                    .Prepend(new(new MaterialIcon {Kind = MaterialIconKind.Cogs}, 1, "Settings", () => TabManager.SwapActiveTabTo(-2)))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Download}, 1, "Downloads", DownloadClick))
-                    .Append(new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false)));
+                    .Prepend(new(new MaterialIcon { Kind = MaterialIconKind.Cogs }, 1, "Settings",
+                        () => TabManager.SwapActiveTabTo(-2)))
+                    .Append(new(new MaterialIcon { Kind = MaterialIconKind.Download }, 1, "Downloads", DownloadClick)));
                 break;
             case -1:
                 ContextMenuPopup.SetItems(items
@@ -500,7 +504,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                 manifestV3.Action.DefaultTitle??manifestV3.ShortName??manifestV3.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }
@@ -519,7 +523,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                 manifestV2.BrowserAction.DefaultTitle??manifestV2.ShortName??manifestV2.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }

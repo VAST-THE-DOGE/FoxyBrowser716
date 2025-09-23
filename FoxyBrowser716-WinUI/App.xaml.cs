@@ -1,5 +1,4 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -29,7 +28,7 @@ public partial class App : Application
         InitializeComponent();
     }
 
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         //need this to be able to compete with unoptimized games to prevent small freezes in some sites like youtube music:
         Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
@@ -62,9 +61,20 @@ public partial class App : Application
         if (!mainInstance.IsCurrent)
         {
             var activationArgs = currentInstance.GetActivatedEventArgs();
-            _ = mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
-                
-            System.Environment.Exit(0);
+            try
+            {
+                // Await the redirect so it completes before we exit the process.
+                // If you cannot make OnLaunched async, block synchronously but intentionally:
+                await mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"RedirectActivationToAsync failed: {ex}"); 
+                ErrorInfo.AddError(ex);
+            }
+
+            // After the redirect completes, exit.
+            Environment.Exit(0);
             return;
         }
         
@@ -76,7 +86,7 @@ public partial class App : Application
             
         var e = currentInstance.GetActivatedEventArgs();
             
-        _ = HandleActivationArgs(e, true);
+        await HandleActivationArgs(e, true);
     }
 
     private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
@@ -120,9 +130,9 @@ public partial class App : Application
         e.Handled = true;
     }
 
-    private void OnActivated(object? sender, AppActivationArguments e)
+    private async void OnActivated(object? sender, AppActivationArguments e)
     {
-        _ = HandleActivationArgs(e, false);
+        await HandleActivationArgs(e, false);
     }
         
     private async Task HandleActivationArgs(AppActivationArguments args, bool isFirst)

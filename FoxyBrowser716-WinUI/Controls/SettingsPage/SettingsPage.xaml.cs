@@ -52,8 +52,10 @@ public sealed partial class SettingsPage : UserControl
             GradientOrigin = new Point(0,1),
         };
         
-        newGradient.GradientStops.Add(new GradientStop() { Color = CurrentTheme.PrimaryHighlightColor, Offset = 0 });
-        newGradient.GradientStops.Add(new GradientStop() { Color = CurrentTheme.PrimaryBackgroundColor, Offset = 0.75 });
+        newGradient.GradientStops.Add(new GradientStop { Color = CurrentTheme.PrimaryHighlightColor, Offset = 0 });
+        newGradient.GradientStops.Add(new GradientStop { Color = CurrentTheme.PrimaryBackgroundColor, Offset = 0.6 });
+
+
         RootGrid.Background = newGradient;
         
         //TODO: why is this not updating???
