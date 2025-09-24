@@ -234,7 +234,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             field = value;
             ApplyTheme();
         }
-    } = DefaultThemes.VastSea;
+    } = DefaultThemes.FoxyTheme;
 
     private void ApplyTheme()
     {

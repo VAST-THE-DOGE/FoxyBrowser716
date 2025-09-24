@@ -330,7 +330,7 @@ public sealed partial class HomePage : UserControl
         }
 
         HomeSettings GetDefaults() => new() {
-            BackgroundPath = "C:\\Users\\penfo\\Downloads\\alone-cyberpunk-morning-4k-xi.jpg"/*TODO move to background on website*/,
+            BackgroundPath = "C:\\Users\\Zach\\OneDrive\\Desktop\\Desktop Backrounds\\Fey.png"/*TODO move to background on website*/,
         };
     }
 
