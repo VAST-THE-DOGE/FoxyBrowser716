@@ -30,63 +30,71 @@ public partial class App : Application
 
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        //need this to be able to compete with unoptimized games to prevent small freezes in some sites like youtube music:
-        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+        try
+        {
+            //need this to be able to compete with unoptimized games to prevent small freezes in some sites like youtube music:
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
         
-        // other performance optimizations:
-        GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
-        ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
-        Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            // other performance optimizations:
+            GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
+            ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
         
-        Windows.ApplicationModel.Core.CoreApplication.EnablePrelaunch(true);
+            Windows.ApplicationModel.Core.CoreApplication.EnablePrelaunch(true);
         
-        // note that webview2 has its own similar optimizations in WebviewTab.cs.
+            // note that webview2 has its own similar optimizations in WebviewTab.cs.
 
-        // Get the current app instance
-        var currentInstance = AppInstance.GetCurrent();
+            // Get the current app instance
+            var currentInstance = AppInstance.GetCurrent();
 
 // #if !DEBUG
-        this.UnhandledException += OnUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
-        //AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
-        TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
+            this.UnhandledException += OnUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+            //AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
+            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
         
 // #endif
         
-        // Check if this is the first instance
-        var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);
+            // Check if this is the first instance
+            var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);
             
-        if (!mainInstance.IsCurrent)
-        {
-            var activationArgs = currentInstance.GetActivatedEventArgs();
-            try
+            if (!mainInstance.IsCurrent)
             {
-                // Await the redirect so it completes before we exit the process.
-                // If you cannot make OnLaunched async, block synchronously but intentionally:
-                await mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"RedirectActivationToAsync failed: {ex}"); 
-                ErrorInfo.AddError(ex);
-            }
+                var activationArgs = currentInstance.GetActivatedEventArgs();
+                try
+                {
+                    // Await the redirect so it completes before we exit the process.
+                    // If you cannot make OnLaunched async, block synchronously but intentionally:
+                    await mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"RedirectActivationToAsync failed: {ex}"); 
+                    ErrorInfo.AddError(ex);
+                }
 
-            // After the redirect completes, exit.
-            Environment.Exit(0);
-            return;
-        }
+                // After the redirect completes, exit.
+                Environment.Exit(0);
+                return;
+            }
         
-        // load errors:
-        ErrorInfo.LoadLog();
+            // load errors:
+            ErrorInfo.LoadLog();
 
-        // This is the main instance, set up activation handling
-        currentInstance.Activated += OnActivated;
+            // This is the main instance, set up activation handling
+            currentInstance.Activated += OnActivated;
             
-        var e = currentInstance.GetActivatedEventArgs();
+            var e = currentInstance.GetActivatedEventArgs();
             
-        await HandleActivationArgs(e, true);
+            await HandleActivationArgs(e, true);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine(e);
+            ErrorInfo.AddError(e);
+        }
     }
 
     private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
@@ -149,7 +157,12 @@ public partial class App : Application
                 if (args.Data is ILaunchActivatedEventArgs launchArgs)
                 {
                     var arguments = launchArgs.Arguments;
-                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
+                    await AppServer.HandleLaunchEvent(
+                        arguments?
+                            .Split(" ")
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .ToArray() ?? [], isFirst
+                        );
                 }
                 break;
             case ExtendedActivationKind.Protocol:
@@ -163,7 +176,13 @@ public partial class App : Application
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
                     var arguments = commandArgs.Operation.Arguments;
-                    await AppServer.HandleLaunchEvent(arguments?.Split(" ").Skip(1 /*command name, such as FoxyBrowser716.exe or FoxyBrowser716*/).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? [], isFirst);
+                    await AppServer.HandleLaunchEvent(
+                        arguments?
+                            .Split(" ")
+                            .Skip(1 /*command name, such as FoxyBrowser716.exe or FoxyBrowser716*/)
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .ToArray() ?? [], isFirst
+                        );
                 }
                 break;
         }
