@@ -42,14 +42,14 @@ public class DefaultThemes
 	};
 	public static Theme FoxyTheme = new()
 	{
-		PrimaryBackgroundColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryBackgroundColor = Color.FromArgb(255, 0, 0, 0),
+		PrimaryBackgroundColor = Color.FromArgb(255, 255, 181, 92),
+		SecondaryBackgroundColor = Color.FromArgb(255, 255, 170, 75),
 		PrimaryForegroundColor = Color.FromArgb(255, 255, 255, 255),
 		SecondaryForegroundColor = Color.FromArgb(255, 200, 200, 200),
-		PrimaryAccentColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryAccentColor = Color.FromArgb(255, 0, 0, 0),
-		PrimaryHighlightColor = Color.FromArgb(255, 0, 0, 0),
-		SecondaryHighlightColor = Color.FromArgb(255, 0, 0, 0),
+		PrimaryAccentColor = Color.FromArgb(255, 149, 69, 255),
+		SecondaryAccentColor = Color.FromArgb(255, 114, 43, 209),
+		PrimaryHighlightColor = Color.FromArgb(255, 149, 69, 255),
+		SecondaryHighlightColor = Color.FromArgb(255, 114, 43, 209),
 		YesColor = Color.FromArgb(255, 0, 225, 0),
 		NoColor = Color.FromArgb(255, 225, 0, 0),
 	};
