@@ -42,7 +42,7 @@ public class FilePickerSetting(string name, string description, string defaultVa
     public string[] FileTypes { get; } = fileTypes;
 }
 public class FolderPickerSetting(string name, string description, string defaultValue, Action<string> onValueChanged) : Setting<string>(name, description, defaultValue, onValueChanged);
-public class CustomControlSetting(string name, string description, Func<MainWindow, ThemedUserControl> controlFactory) : ISetting 
+public class CustomControlSetting(string name, string description, Func<MainWindow, ThemedUserControl?> controlFactory) : ISetting 
 { 
     public string Name => name; 
     public string Description => description; 

@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using FoxyBrowser716_WinUI.Controls.MainWindow;
+using FoxyBrowser716_WinUI.Controls.SettingsPage.SettingsCustomControls;
 using FoxyBrowser716_WinUI.DataManagement;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Settings;
@@ -23,8 +25,6 @@ public class SettingInfoAttribute : Attribute
     public FoxyFileManager.ItemType? ItemType { get; init; }
     public bool AllowWebsiteUris { get; init; } = false;
     //TODO
-    
-    public /*Func<MainWindow, ThemedUserControl>?*/ string? ControlFactory { get; init; } // null = premade control
 }
 
 public enum SettingsCategory
@@ -40,8 +40,9 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     {
         var controls = new Dictionary<SettingsCategory, List<ISetting>>();
         var type = typeof(BrowserSettings);
-        var fields = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        foreach (var field in fields)
+        //var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var field in properties)
         {
             var attributes = (SettingInfoAttribute[])field.GetCustomAttributes(typeof(SettingInfoAttribute), false);
             
@@ -49,14 +50,20 @@ public sealed class BrowserSettings : INotifyPropertyChanged
             
             if (!controls.TryGetValue(attribute.Category, out var catControls))
             {
-                catControls = new List<ISetting>();
+                catControls = [];
                 controls.Add(attribute.Category, catControls);
             }
 
-            if (attribute.ControlFactory is not null)
-                throw new NotImplementedException();
-            // catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", attribute.ControlFactory));
-            else
+            // if (field.PropertyType.IsSubclassOf(typeof(ThemedUserControl)))
+            // {
+            //     var constructor = field.PropertyType.GetConstructor([typeof(MainWindow)]);
+            //     if (constructor is null)
+            //         throw new Exception($"Failed to find constructor for settings control class '{field.Name}'");
+            //     
+            //     catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", 
+            //         window => constructor.Invoke([window]) as ThemedUserControl));
+            // }
+            // else
                 switch (field.GetValue(this))
                 {
                     case bool b:
@@ -101,9 +108,33 @@ public sealed class BrowserSettings : INotifyPropertyChanged
                         throw new NotImplementedException();
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException(
-                            $"Type '{field.PropertyType.Name}' from field '{field.Name}' is not supported.'");
+                        //throw new ArgumentOutOfRangeException($"Type '{field.PropertyType.Name}' from field '{field.Name}' is not supported.'");
+                        break;
                 }
+        }
+        
+        var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var field in fields)
+        {
+            var attributes = (SettingInfoAttribute[])field.GetCustomAttributes(typeof(SettingInfoAttribute), false);
+            
+            if (attributes.FirstOrDefault() is not { } attribute) continue;
+            
+            if (!controls.TryGetValue(attribute.Category, out var catControls))
+            {
+                catControls = [];
+                controls.Add(attribute.Category, catControls);
+            }
+            
+            if (field.FieldType.IsSubclassOf(typeof(ThemedUserControl)))
+            {
+                var constructor = field.FieldType.GetConstructor([typeof(MainWindow)]);
+                if (constructor is null)
+                    throw new Exception($"Failed to find constructor for settings control class '{field.Name}'");
+                
+                catControls.Add(new CustomControlSetting(attribute.Name ?? field.Name, attribute.Description ?? "", 
+                    window => constructor.Invoke([window]) as ThemedUserControl));
+            }
         }
         
         return controls;
@@ -127,10 +158,14 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     public int TestInt { get; set => SetField(ref field, value); } = 42;
     
     
-    // ONLY REAL ONE HERE
+    // ONLY REAL ONE HERE (NVM, one below too)
     [SettingInfo(Category = SettingsCategory.General, Description = "Another Test Description", Options = nameof(GetComboOptions))]
     public string ThemeName { get; set => SetField(ref field, value); } = "Vast Seas";
 
+    [JsonIgnore] // VERY IMPORTANT. Without this, the entire control will be serialized/saved as JSON. Will inflate the size of the file!!!
+    [SettingInfo(Category = SettingsCategory.General, Name = "Extensions", Description = "Managed installed extensions for the current instance only.")]
+    public ExtensionsController? Extensions; //TODO: change the class to a new class that inherits from ThemedUserControl.
+    
     private static string[] GetComboOptions(MainWindow mainWindow)
     {
         return mainWindow.Instance.DefaultThemeObject.Themes.Keys

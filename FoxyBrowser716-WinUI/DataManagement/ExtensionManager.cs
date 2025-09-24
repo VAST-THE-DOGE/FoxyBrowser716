@@ -733,6 +733,8 @@ public static class ExtensionManifestParser
 
 public static class ExtensionManager
 {
+    public static event Action<string>? ExtensionsModified;
+    
 	readonly static string[] _whitelist = ["Microsoft Clipboard Extension", "Microsoft Edge PDF Viewer"];
 	
 	/// <summary>
@@ -828,6 +830,7 @@ public static class ExtensionManager
 					}));
 			}
 			_extensions[instance.Name] = extensionsList;
+            ExtensionsModified?.Invoke(instance.Name);
 		}
 		
 		// setup capturing of extension downloads:
@@ -856,6 +859,7 @@ public static class ExtensionManager
             webviewEx.RemoveAsync();
             extensions.Remove(localEx);
             FoxyFileManager.DeleteFolder(localEx.FolderPath);
+            ExtensionsModified?.Invoke(instance.Name);
         }
     }
     
@@ -1081,6 +1085,8 @@ public static class ExtensionManager
     {
         throw new Exception($"Failed to add extension {id} to WebView: {ex.Message}", ex);
     }
+    
+    ExtensionsModified?.Invoke(instance.Name);
 }
 
 	private static string? ExtractExtensionIdFromUrl(string url)
