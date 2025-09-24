@@ -864,7 +864,28 @@ public static class ExtensionManager
 
         if (source == ExtensionSource.Chrome)
         {
-            var url = $"https://clients2.google.com/service/update2/crx?response=redirect&prodversion=99&x=id%3D{id}%26uc";
+            //var url = $"https://clients2.google.com/service/update2/crx?response=redirect&prodversion=99&x=id%3D{id}%26uc";
+            
+            // from:
+            // https://github.com/Rob--W/crxviewer/blob/master/src/cws_pattern.js
+            
+            const string product_channel = "unknown";
+            const string product_version = "9999.0.9999.0";
+            const string product_id = "chromiumcrx";
+            const string platform = "win";
+            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") ?? "x86-32";
+            
+            var url = "https://clients2.google.com/service/update2/crx?response=redirect";
+            url += $"&os={platform}";
+            url += $"&arch={arch}";
+            url += $"&os_arch={arch}";
+            url += $"&nacl_arch={arch}";
+            url += $"&prod={product_id}";
+            url += $"&prodchannel={product_channel}";
+            url += $"&prodversion={product_version}";
+            url += $"&acceptformat=crx2,crx3";
+            url += $"&x=id%3D{id}";
+            url += $"%26uc";
             try
             {
                 crxBytes = await DownloadFromUrl(url);

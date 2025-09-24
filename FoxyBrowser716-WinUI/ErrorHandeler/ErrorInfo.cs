@@ -59,8 +59,10 @@ public class ErrorInfo
     }
 
     private static readonly string _file = FoxyFileManager.BuildFilePath("ErrorLog.json", FoxyFileManager.FolderType.Data);
+    private static bool loaded = false;
     public static void LoadLog()
     {
+        loaded = true;
         try
         {
             var result = FoxyFileManager.ReadFromFile<List<ErrorInfo>>(_file);
@@ -76,6 +78,8 @@ public class ErrorInfo
 
     private static void SaveLog()
     {
+        if (!loaded) return; // early exceptions do not erase all error data
+        
         //TODO: rate limit this, can be saving 24/7 from a stream of errors.
         try
         {
