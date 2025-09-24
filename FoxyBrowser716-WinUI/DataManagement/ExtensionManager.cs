@@ -843,6 +843,22 @@ public static class ExtensionManager
 			};
 	}
 
+    public static async Task RemoveExtension(this Instance instance, WebView2 webview, string id)
+    {
+        if (_extensions.TryGetValue(instance.Name, out var extensions))
+        {
+            var webviewEx = (await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync())
+                .FirstOrDefault(e => e.Id == id);
+            var localEx = extensions.FirstOrDefault(e => e.Id == id);
+            
+            if (webviewEx is null || localEx is null) return;
+
+            webviewEx.RemoveAsync();
+            extensions.Remove(localEx);
+            FoxyFileManager.DeleteFolder(localEx.FolderPath);
+        }
+    }
+    
 	private static async Task AddExtension(this Instance instance, WebView2 webview, CoreWebView2DownloadStartingEventArgs e)
 	{
 		if (ExtractExtensionIdFromUrl(e.DownloadOperation.Uri) is not { } id) return;
