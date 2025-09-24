@@ -39,6 +39,7 @@ public sealed partial class ExtensionsController : ThemedUserControl
             var panel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 BorderThickness = new Thickness(2),
                 CornerRadius = new CornerRadius(5),
             };
@@ -48,12 +49,27 @@ public sealed partial class ExtensionsController : ThemedUserControl
                 Text = extension.WebviewName,
             };
 
+            var disable = new FTextButton
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                CornerRadius = new CornerRadius(5),
+                ButtonText = extension.IsEnabled ? "Disable" : "Enable",
+            }; //TODO: use webview extension popup for this and implement in extension manager
+
             var remove = new FTextButton
             {
-                CornerRadius = new CornerRadius(5)
+                HorizontalAlignment = HorizontalAlignment.Right,
+                CornerRadius = new CornerRadius(5),
+                ButtonText = "Remove",
+            };
+
+            remove.OnClick += async (_, _) =>
+            {
+                await _mainWindow.Instance.RemoveExtension(_mainWindow.ExtensionPopupWebview, extension.Id);
             };
             
             panel.Children.Add(text);
+            panel.Children.Add(disable);
             panel.Children.Add(remove);
             
             Root.Children.Add(panel);

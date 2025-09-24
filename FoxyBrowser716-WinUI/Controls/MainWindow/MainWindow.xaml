@@ -32,7 +32,7 @@
             </Grid>
             
             <Popup x:Name="ExtensionPopupRoot" Width="350" MaxHeight="600" Margin="34,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
-                <WebView2 x:Name="ExtensionPopupWebview" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <WebView2 x:Name="ExtensionPopupWebview" x:FieldModifier="public" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Popup>
             
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
