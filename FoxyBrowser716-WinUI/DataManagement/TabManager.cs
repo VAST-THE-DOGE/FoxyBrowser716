@@ -40,8 +40,8 @@ public class TabManager
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 			EnableTrackingPrevention = true,
 			//TODO: look into these flags and make sure each are secure
-			AdditionalBrowserArguments = 
-				"--enable-gpu " +
+			AdditionalBrowserArguments = "" //TODO: 100% something here causing the lag
+				/*"--enable-gpu " +
 				"--enable-gpu-rasterization " +
 				"--enable-hardware-overlays " +
 				"--enable-webgl2-compute-context " +
@@ -62,7 +62,7 @@ public class TabManager
 				// "--max-unused-resource-memory-usage-percentage=5 " +
 				"--disable-background-media-suspend " //+
 				// "--disable-low-res-tiling " +
-				// "--enable-lcd-text "
+				// "--enable-lcd-text "*/
 		};
 			
 		WebsiteEnvironment ??= await CoreWebView2Environment.CreateWithOptionsAsync(null, FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.WebView2, Instance.Name), options);
