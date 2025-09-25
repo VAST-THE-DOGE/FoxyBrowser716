@@ -501,10 +501,10 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                     VerticalAlignment = VerticalAlignment.Stretch,
                                     HorizontalAlignment = HorizontalAlignment.Stretch,
                                 }, 1, 
-                                manifestV3.Action.DefaultTitle??manifestV3.ShortName??manifestV3.Name,
+                                manifestV3.Action?.DefaultTitle??manifestV3.ShortName??manifestV3.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV3.Action?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }
@@ -520,10 +520,10 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                                     VerticalAlignment = VerticalAlignment.Stretch,
                                     HorizontalAlignment = HorizontalAlignment.Stretch,
                                 }, 1, 
-                                manifestV2.BrowserAction.DefaultTitle??manifestV2.ShortName??manifestV2.Name,
+                                manifestV2.BrowserAction?.DefaultTitle??manifestV2.ShortName??manifestV2.Name,
                                 () =>
                                 {
-                                    ExtensionPopupWebview.CoreWebView2.Navigate($"extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
+                                    ExtensionPopupWebview.CoreWebView2.Navigate($"chrome-extension://{e.Id}/{manifestV2.BrowserAction?.DefaultPopup ?? ""}");
                                     ExtensionPopupRoot.IsOpen = true;
                                 });
                         }

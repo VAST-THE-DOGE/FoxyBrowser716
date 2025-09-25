@@ -36,14 +36,13 @@ public partial class App : Application
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
         
             // other performance optimizations:
-            GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            // GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
+            // GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
             ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
         
             Windows.ApplicationModel.Core.CoreApplication.EnablePrelaunch(true);
-        
             // note that webview2 has its own similar optimizations in WebviewTab.cs.
 
             // Get the current app instance

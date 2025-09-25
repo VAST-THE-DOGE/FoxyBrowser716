@@ -4,6 +4,7 @@ using System.Threading;
 using Windows.Foundation;
 using FoxyBrowser716_WinUI.DataManagement;
 using FoxyBrowser716_WinUI.DataObjects.Basic;
+using FoxyBrowser716_WinUI.ErrorHandeler;
 using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716_WinUI.DataObjects.Complex;
@@ -131,7 +132,8 @@ public class WebviewTab
 
 	private void CoreWebView2OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs args)
 	{
-		//TODO: log this error
+		ErrorInfo.AddWarning($"{nameof(CoreWebView2OnProcessFailed)} - {args.Reason} ({args.ExitCode})", 
+			$"{nameof(args.FailureSourceModulePath)}: {args.FailureSourceModulePath}\n{nameof(args.ProcessFailedKind)}: {args.ProcessFailedKind}\n{nameof(args.ProcessDescription)}: {args.ProcessDescription}");
 		
 		//try a recovery
 		TabManager.RemoveTab(Id);
