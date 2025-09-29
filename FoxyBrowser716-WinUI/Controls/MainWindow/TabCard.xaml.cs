@@ -169,7 +169,11 @@ public sealed partial class TabCard : UserControl
     {
         Icon.Child = new Image
         {
-            Source = new BitmapImage(string.IsNullOrWhiteSpace(tab.Info.FavIconUrl) ? new Uri("https://TODO") : new Uri(tab.Info.FavIconUrl)), //TODO
+            Source = string.IsNullOrWhiteSpace(tab.Info.FavIconUrl) 
+                ? new BitmapImage(new Uri("https://TODO")) //TODO
+                : tab.Info.FavIconUrl.EndsWith(".svg") 
+                    ? new SvgImageSource(new Uri(tab.Info.FavIconUrl)) 
+                    : new BitmapImage(new Uri(tab.Info.FavIconUrl)),
             Width = 18, Height = 18,
             Stretch = Stretch.Uniform,
             VerticalAlignment = VerticalAlignment.Center,
@@ -182,7 +186,11 @@ public sealed partial class TabCard : UserControl
     {
         Icon.Child = new Image
         {
-            Source = new BitmapImage(string.IsNullOrWhiteSpace(websiteInfo.FavIconUrl) ? new Uri("https://TODO") : new Uri(websiteInfo.FavIconUrl)), //TODO
+            Source = string.IsNullOrWhiteSpace(websiteInfo.FavIconUrl) 
+                ? new BitmapImage(new Uri("https://TODO")) //TODO
+                : websiteInfo.FavIconUrl.EndsWith(".svg") 
+                    ? new SvgImageSource(new Uri(websiteInfo.FavIconUrl)) 
+                    : new BitmapImage(new Uri(websiteInfo.FavIconUrl)),
             Width = 18, Height = 18,
             Stretch = Stretch.Uniform,
             VerticalAlignment = VerticalAlignment.Center,

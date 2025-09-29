@@ -28,7 +28,7 @@ public sealed partial class ExtensionsController : ThemedUserControl
 
     protected override void ApplyTheme()
     {
-        
+        //TODO
     }
 
     private void Refresh()

@@ -2,8 +2,7 @@
 
 namespace FoxyBrowser716_WinUI.DataObjects.Basic;
 
-[ObservableObject]
-public partial class WebsiteInfo
+public partial class WebsiteInfo : ObservableObject
 {
 	[ObservableProperty] private string _url;
 	[ObservableProperty] private string _favIconUrl;

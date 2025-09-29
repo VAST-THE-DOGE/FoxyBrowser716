@@ -539,7 +539,13 @@ public sealed partial class LeftBar : UserControl
             if (TabManager.Instance.Bookmarks.FirstOrDefault(b => b.Url == tab.Info.Url) is { } bookmarkToRemove)
                 TabManager.Instance.Bookmarks.Remove(bookmarkToRemove);
             else
-                TabManager.Instance.Bookmarks.Add(tab.Info);
+                TabManager.Instance.Bookmarks.Add(new WebsiteInfo()
+                {
+                    Url = tab.Info.Url,
+                    FavIconUrl = tab.Info.FavIconUrl,
+                    Title = tab.Info.Title,
+                    DateAdded = DateTime.Now,
+                });
 
             if (BookmarkCard.Icon.Child is MaterialIcon mi)
                 mi.Kind = TabManager.Instance.Bookmarks.Any(b => b.Url == tab.Info.Url)
@@ -555,7 +561,13 @@ public sealed partial class LeftBar : UserControl
             if (TabManager.Instance.Pins.FirstOrDefault(b => b.Url == tab.Info.Url) is { } pinToRemove)
                 TabManager.Instance.Pins.Remove(pinToRemove);
             else
-                TabManager.Instance.Pins.Add(tab.Info);
+                TabManager.Instance.Pins.Add(new WebsiteInfo()
+                {
+                    Url = tab.Info.Url,
+                    FavIconUrl = tab.Info.FavIconUrl,
+                    Title = tab.Info.Title,
+                    DateAdded = DateTime.Now,
+                });
 
             if (PinCard.Icon.Child is MaterialIcon mi)
                 mi.Kind = TabManager.Instance.Pins.Any(p => p.Url == tab.Info.Url)

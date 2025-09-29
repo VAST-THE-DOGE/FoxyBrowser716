@@ -27,7 +27,7 @@ public class WebviewTab
 		var info = new WebsiteInfo()
 		{
 			Url = url ?? "",
-			Title = "New Tab",
+			Title = "Loading...",
 			FavIconUrl = "", //TODO: get an icon on the website setup to grab from
 		};
 		
@@ -200,7 +200,7 @@ public class WebviewTab
 		Info.Title = Core.CoreWebView2.DocumentTitle;
 	}
 
-	private void OnFaviconChanged(object sender, object e)
+	private async void OnFaviconChanged(object sender, object e)
 	{
 		Info.FavIconUrl = Core.CoreWebView2.FaviconUri ?? "";
 	}
