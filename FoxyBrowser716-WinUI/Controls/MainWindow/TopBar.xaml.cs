@@ -52,7 +52,11 @@ public sealed partial class TopBar : UserControl
         ButtonBorderlessToggle.CurrentTheme = CurrentTheme;
         ButtonMinimize.CurrentTheme = CurrentTheme;
         ButtonMaximize.CurrentTheme = CurrentTheme;
-        ButtonClose.CurrentTheme = CurrentTheme with { PrimaryAccentColor = CurrentTheme.NoColor };
+        ButtonClose.CurrentTheme = CurrentTheme with
+        {
+            SecondaryForegroundColor = CurrentTheme.NoColor,
+            PrimaryHighlightColor = CurrentTheme.NoColor
+        };
         ButtonBack.CurrentTheme = CurrentTheme;
         ButtonForward.CurrentTheme = CurrentTheme;
         ButtonRefresh.CurrentTheme = CurrentTheme;

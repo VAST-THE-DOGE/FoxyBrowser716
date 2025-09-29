@@ -23,7 +23,7 @@ public sealed partial class FIconButton : ContentControl
         var control = (FIconButton)d;
         control.Background = new SolidColorBrush(control.ForceHighlight 
             ? control.CurrentTheme.PrimaryHighlightColorSlightTransparent
-            : control.PointerOver ? control.CurrentTheme.PrimaryAccentColorSlightTransparent : Colors.Transparent);
+            : Colors.Transparent);
     }
     
     public static readonly DependencyProperty RoundedProperty = DependencyProperty.Register(
@@ -53,9 +53,9 @@ public sealed partial class FIconButton : ContentControl
         }
         else
         {
-            Background = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColorSlightTransparent : Colors.Transparent);;
+            Background = new SolidColorBrush(Colors.Transparent);;
         }
-        Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
+        Foreground = new SolidColorBrush(PointerOver ? CurrentTheme.PrimaryAccentColorSlightTransparent : CurrentTheme.PrimaryForegroundColor);
     }
     
     internal bool PointerOver { get; set; }
@@ -74,34 +74,26 @@ public sealed partial class FIconButton : ContentControl
         {
             PointerOver = true;
             
-            if (ForceHighlight) return;
-
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
+            ChangeColorAnimation(Foreground, CurrentTheme.SecondaryForegroundColor);
         };
 
         PointerExited += (_, _) =>
         {
             PointerOver = false;
             
-            if (ForceHighlight) return;
-            
-            ChangeColorAnimation(Background, Colors.Transparent);
+            ChangeColorAnimation(Foreground, CurrentTheme.PrimaryForegroundColor);
         };
         
         PointerPressed += (_, _) =>
         {
-            if (ForceHighlight) return;
-            
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryHighlightColorSlightTransparent, 0.05);
+            ChangeColorAnimation(Foreground, CurrentTheme.PrimaryHighlightColor, 0.05);
         };
 
         PointerReleased += (_, _) =>
         {
             OnClick?.Invoke(this, new RoutedEventArgs());
             
-            if (ForceHighlight) return;
-            
-            ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent, 0.3);
+            ChangeColorAnimation(Foreground, PointerOver ? CurrentTheme.SecondaryForegroundColor : CurrentTheme.PrimaryForegroundColor, 0.3);
         };
 
         ApplyTheme();

@@ -57,7 +57,11 @@ public sealed partial class BookmarkCard : UserControl
         }
         Label.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
 
-        ButtonClose.CurrentTheme = CurrentTheme with{ PrimaryAccentColor = CurrentTheme.NoColor};
+        ButtonClose.CurrentTheme = CurrentTheme with
+        {
+            SecondaryForegroundColor = CurrentTheme.NoColor,
+            PrimaryHighlightColor = CurrentTheme.NoColor
+        };
         NoteInput.CurrentTheme = CurrentTheme;
     }
 

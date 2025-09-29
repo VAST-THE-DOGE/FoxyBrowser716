@@ -69,7 +69,11 @@ public sealed partial class AiChatWindow : UserControl
         ButtonBraveMode.CurrentTheme = CurrentTheme;
         ButtonSend.CurrentTheme = CurrentTheme;
         ButtonHistory.CurrentTheme = CurrentTheme;
-        ButtonClose.CurrentTheme = CurrentTheme with { PrimaryAccentColor = CurrentTheme.NoColor};
+        ButtonClose.CurrentTheme = CurrentTheme with
+        {
+            SecondaryForegroundColor = CurrentTheme.NoColor,
+            PrimaryHighlightColor = CurrentTheme.NoColor
+        };
         ButtonNewChat.CurrentTheme = CurrentTheme;
     }
 

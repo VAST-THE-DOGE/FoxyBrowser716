@@ -220,8 +220,12 @@ public sealed partial class TabCard : UserControl
         }
         Label.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
 
-        ButtonClose.CurrentTheme = CurrentTheme with{ PrimaryAccentColor = CurrentTheme.NoColor};
-        ButtonDuplicate.CurrentTheme = CurrentTheme with{ PrimaryAccentColor = Colors.DodgerBlue};
+        ButtonClose.CurrentTheme = CurrentTheme with
+        {
+            SecondaryForegroundColor = CurrentTheme.NoColor,
+            PrimaryHighlightColor = CurrentTheme.NoColor
+        };
+        ButtonDuplicate.CurrentTheme = CurrentTheme;
     }
 
     
