@@ -51,7 +51,7 @@ public partial class App : Application
 // #if !DEBUG
             this.UnhandledException += OnUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
-            //AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
+            AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
         
 // #endif
@@ -99,7 +99,10 @@ public partial class App : Application
     private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
+        {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
+        }
     }
 
     private void TaskSchedulerOnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
@@ -107,7 +110,6 @@ public partial class App : Application
         if (e.Exception is Exception ex)
         {
             Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
         }
         //TODO
         // throw new NotImplementedException();
@@ -119,7 +121,6 @@ public partial class App : Application
         if (e.ExceptionObject is Exception ex)
         {
             Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
         }
         //TODO
         // throw new NotImplementedException();
@@ -130,7 +131,6 @@ public partial class App : Application
         if (e.Exception is Exception ex)
         {
             Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
         }
         //TODO
         // throw new NotImplementedException();

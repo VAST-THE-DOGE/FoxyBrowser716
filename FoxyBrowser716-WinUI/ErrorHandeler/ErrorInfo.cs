@@ -24,7 +24,8 @@ public sealed class ErrorInfo
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        MaxDepth = 64,
     };
 
     // In‑memory circular buffer (most recent first)
@@ -54,7 +55,7 @@ public sealed class ErrorInfo
     [JsonPropertyName("IE")]
     public ErrorInfo? InnerError { get; init; }
 
-    private ErrorInfo() {}
+    public ErrorInfo() {}
 
     public static ReadOnlyCollection<ErrorInfo> Errors
     {
@@ -175,7 +176,9 @@ public sealed class ErrorInfo
 
             try
             {
-                foreach (var line in File.ReadLines(_errorFile))
+                var errors = 0;
+                var lines = File.ReadLines(_errorFile);
+                foreach (var line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
                     try
@@ -190,7 +193,9 @@ public sealed class ErrorInfo
                     }
                     catch
                     {
-                        // Corrupted line ignored
+                        if (++errors > 100) break; // TODO: stack overflow ono line error
+                        
+                        continue;
                     }
                 }
                 // Reorder to most recent first

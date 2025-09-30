@@ -5,7 +5,6 @@ global using Microsoft.UI.Xaml.Media;
 global using Color = Windows.UI.Color;
 global using Colors = Microsoft.UI.Colors;
 global using System.Numerics;
-global using Microsoft.UI.Composition;
 global using Microsoft.UI.Xaml.Hosting;
 global using System;
 global using System.Collections.Generic;

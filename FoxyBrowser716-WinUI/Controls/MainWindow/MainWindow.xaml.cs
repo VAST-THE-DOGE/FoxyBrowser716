@@ -15,6 +15,7 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
 using CommunityToolkit.WinUI.Animations;
+using FoxyBrowser716_WinUI.Controls.Helpers;
 using FoxyBrowser716_WinUI.DataObjects.Settings;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Web.WebView2.Core;
@@ -31,6 +32,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     public Instance Instance { get; private set; }
 
     public Action<InfoGetter.SearchEngine> SearchEngineChangeRequested;
+    
+    private VisualCaptureHelper? _captureHelper;
     
     private MainWindow()
     {
@@ -121,6 +124,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             ExtensionPopupWebview.Height = 500; //size.height;
         };
         
+        _captureHelper = new VisualCaptureHelper(TabHolder, BlurredBackgroundGrid);
+
         // refresh all data
         HandleCacheChanged();
     }
@@ -374,7 +379,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             new(new MaterialIcon {Kind = MaterialIconKind.CardMultiple}, 1, "Instances", InstancesClick),
             new(new MaterialIcon {Kind = MaterialIconKind.BookmarkMultiple}, 1, "Bookmarks", BookmarkClick),
             //TODO: not implemented yet.
-            new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
+            //new(new MaterialIcon {Kind = MaterialIconKind.History}, 1, "History", HistoryClick),
             new(new MaterialIcon {Kind = MaterialIconKind.Puzzle}, 1, "Extensions", ExtensionsClick, false),
         ];
         
@@ -605,7 +610,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
-        //TODO
+        _captureHelper?.Dispose();
     }
 
     private void MainWindow_OnWindowStateChanged(object? sender, WindowState e)
@@ -621,11 +626,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private void TopBar_OnToggleSidebarLock(bool isLocked)
     {
         Instance.Cache.LeftBarLocked = isLocked;
-    }
-
-    private void BorderGrid_OnPointerReleased(object sender, PointerRoutedEventArgs e)
-    {
-        Debug.WriteLine(sender);
     }
 
     private void CenterPopupCloseButton_OnOnClick(object sender, RoutedEventArgs e)
