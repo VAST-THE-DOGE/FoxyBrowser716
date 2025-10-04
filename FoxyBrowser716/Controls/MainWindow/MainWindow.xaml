@@ -1,0 +1,66 @@
+<winUiEx:WindowEx
+    x:Class="FoxyBrowser716.Controls.MainWindow.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:generic="using:FoxyBrowser716.Controls.Generic"
+    xmlns:mainWindow="using:FoxyBrowser716.Controls.MainWindow"
+    xmlns:homePage="using:FoxyBrowser716.Controls.HomePage"
+    xmlns:settingsPage="using:FoxyBrowser716.Controls.SettingsPage"
+    xmlns:material="using:Material.Icons.WinUI3"
+    xmlns:winUiEx="using:WinUIEx" mc:Ignorable="d" 
+    MinWidth="253" MinHeight="43"
+    Title="FoxyBrowser716" 
+    WindowStateChanged="MainWindow_OnWindowStateChanged"
+    Activated="MainWindow_OnActivated"
+    Closed="OnWindowClosed">
+    <!--<Window.SystemBackdrop>
+        <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
+    </Window.SystemBackdrop>-->
+    <Grid x:Name="Root" Background="Black">
+        <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8">
+            <Grid x:Name="BlurredBackgroundGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <mainWindow:TopBar x:Name="TopBar" 
+                               MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
+                               BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked" MenuClicked="TopBar_OnMenuClicked"
+                               BackClicked="TopBar_OnBackClicked" EngineClicked="TopBar_OnEngineClicked" ForwardClicked="TopBar_OnForwardClicked"
+                               RefreshClicked="TopBar_OnRefreshClicked" ToggleSidebarLock="TopBar_OnToggleSidebarLock" />
+            <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,26,0,0">
+                <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
+                <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
+            </Grid>
+            
+            <Popup x:Name="ExtensionPopupRoot" Width="350" MaxHeight="600" Margin="34,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
+                <WebView2 x:Name="ExtensionPopupWebview" x:FieldModifier="public" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </Popup>
+            
+            <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
+            
+            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
+
+            <mainWindow:AiChatWindow x:Name="ChatWindow" Margin="0,26,0,0" Visibility="Collapsed"/>
+            
+            <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
+                <ScrollViewer x:Name="PopupRoot"
+                              CornerRadius="5" BorderThickness="2"
+                              VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
+                              HorizontalAlignment="Stretch"
+                              ZoomMode="Disabled">
+                    <StackPanel x:Name="PopupContainer" HorizontalAlignment="Stretch"/>
+                </ScrollViewer>
+            </Popup>
+            
+            <Popup x:Name="CenterPopupRootRoot" Margin="50,50" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True" Closed="CenterPopupRootRoot_OnClosed">
+                <StackPanel x:Name="CenterPopupRoot" CornerRadius="5" BorderThickness="2">
+                    <generic:FTextButton x:Name="CenterPopupCloseButton" OnClick="CenterPopupCloseButton_OnOnClick" HorizontalAlignment="Right" Icon="{material:MaterialIconExt Kind=Close}" ButtonText="Close" CornerRadius="5"/>
+                    <ScrollViewer 
+                        VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" 
+                        ZoomMode="Disabled">
+                        <StackPanel x:Name="CenterPopupContainer" HorizontalAlignment="Stretch"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Popup>
+        </Grid>
+    </Grid>
+</winUiEx:WindowEx>

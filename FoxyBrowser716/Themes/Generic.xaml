@@ -1,0 +1,117 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FoxyBrowser716.Controls.Generic"
+    xmlns:helpers="using:FoxyBrowser716.Controls.Helpers"
+    xmlns:winUi3="using:Material.Icons.WinUI3">
+
+    <helpers:HalfValueConverter x:Key="HalfValueConverter"/>
+    <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    <helpers:HeightToIconSizeConverter x:Key="HeightToIconSizeConverter"/>
+
+    <Style TargetType="winUi3:MaterialIcon">
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="winUi3:MaterialIcon">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Viewbox FlowDirection="{TemplateBinding FlowDirection}">
+                            <Canvas Width="24"
+                                    Height="24">
+                                <Path Data="{Binding Data, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Fill="{TemplateBinding Foreground}" />
+                            </Canvas>
+                        </Viewbox>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="winUi3:MaterialIconText">
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+        <Setter Property="Spacing" Value="5" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="winUi3:MaterialIconText">
+                    <StackPanel Orientation="{TemplateBinding Orientation}"
+                                Spacing="{TemplateBinding Spacing}">
+                        <winUi3:MaterialIcon Width="{TemplateBinding IconSize}"
+                                            Height="{TemplateBinding IconSize}"
+                                            Animation="{TemplateBinding Animation}"
+                                            Kind="{TemplateBinding Kind}" />
+                        <TextBlock Text="{TemplateBinding Text}" />
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    
+    <Style TargetType="local:FIconButton">
+        <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundAccentBrush}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:FIconButton">
+                    <ContentPresenter
+                        x:Name="presenter"
+                        Background="{TemplateBinding Background}"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Padding="{TemplateBinding Padding}"
+                        CornerRadius="{TemplateBinding CornerRadius}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Style TargetType="local:FTextButton">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:FTextButton">
+                    <Border x:Name="RootBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="0"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="0">
+                        <StackPanel Orientation="Horizontal" 
+                                    HorizontalAlignment="{TemplateBinding ContentHorizontalAlignment}" 
+                                    VerticalAlignment="Center">
+                            <Viewbox x:Name="IconViewbox"
+                                     Height="{Binding ActualHeight, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HeightToIconSizeConverter}}"
+                                     Width="{Binding Height, RelativeSource={RelativeSource Self}}"
+                                     Margin="3,0"
+                                     VerticalAlignment="Center"
+                                     Visibility="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NullToVisibilityConverter}}">
+                                <ContentPresenter Content="{TemplateBinding Icon}"
+                                                  Foreground="{TemplateBinding Foreground}"/>
+                            </Viewbox>
+                            <TextBlock Text="{TemplateBinding ButtonText}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Left"
+                                       TextWrapping="NoWrap"
+                                       Padding="0"
+                                       Margin="3,0"/>
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="ContentHorizontalAlignment" Value="Center"/>
+    </Style>
+    
+
+</ResourceDictionary>

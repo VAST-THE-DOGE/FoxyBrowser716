@@ -3,7 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36109.1 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoxyBrowser716-WinUI", "FoxyBrowser716-WinUI\FoxyBrowser716-WinUI.csproj", "{D665459E-5BDE-48E1-A68C-594AF310FC2C}"EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoxyBrowser716", "FoxyBrowser716\FoxyBrowser716.csproj", "{D665459E-5BDE-48E1-A68C-594AF310FC2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
