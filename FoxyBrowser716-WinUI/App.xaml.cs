@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.Core;
 using Windows.Graphics.Display;
 using Windows.UI.ViewManagement;
 using FoxyBrowser716_WinUI.Controls.MainWindow;
@@ -32,29 +33,8 @@ public partial class App : Application
     {
         try
         {
-            //need this to be able to compete with unoptimized games to prevent small freezes in some sites like youtube music:
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-        
-            // other performance optimizations:
-            // GCSettings.LatencyMode = GCLatencyMode.Batch; // Lag spikes? // commented out causes a lot of memory overhead, maybe???
-            // GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
-            ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
-            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-        
-            Windows.ApplicationModel.Core.CoreApplication.EnablePrelaunch(true);
-            // note that webview2 has its own similar optimizations in WebviewTab.cs.
-
             // Get the current app instance
             var currentInstance = AppInstance.GetCurrent();
-
-// #if !DEBUG
-            this.UnhandledException += OnUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
-            AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
-            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
-        
-// #endif
         
             // Check if this is the first instance
             var mainInstance = AppInstance.FindOrRegisterForKey(AppKey);
@@ -81,6 +61,29 @@ public partial class App : Application
         
             // load errors:
             ErrorInfo.LoadLog();
+            
+// #if !DEBUG
+            this.UnhandledException += OnUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+            AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
+            TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
+// #endif
+            
+            // performance optimizations:
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            CoreApplication.EnablePrelaunch(true);
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+                    ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
+                    ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
+                }
+                catch { /* ignore if fails */ }
+            });
+            
+            // note that webview2 has its own similar optimizations in WebviewTab.cs.
 
             // This is the main instance, set up activation handling
             currentInstance.Activated += OnActivated;

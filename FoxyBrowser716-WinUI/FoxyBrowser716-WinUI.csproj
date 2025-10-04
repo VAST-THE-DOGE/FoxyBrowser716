@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.18362.0</TargetPlatformMinVersion>
-    <RootNamespace>FoxyBrowser716_WinUI</RootNamespace>
+    <RootNamespace>FoxyBrowser716</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
@@ -17,10 +17,11 @@
     <IsPackable>false</IsPackable>
     <Version />
     <LangVersion>preview</LangVersion>
-    <ApplicationIcon>Foxybrowser716.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Foxybrowser716.ico</ApplicationIcon>
     <Company>FoxyBrowser716</Company>
     <Product>FoxyBrowser716</Product>
     <AssemblyVersion>0.6.0.0</AssemblyVersion>
+    <AssemblyName>FoxyBrowser716</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,29 +46,11 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-
-
-
     <PackageReference Include="ColorCode.WinUI" Version="2.0.15" />
-
-
-
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-
-
-
     <PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
-
-
-
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
-
-
-
     <PackageReference Include="Material.Icons.WinUI3" Version="2.4.1" />
-
-
-
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3530-prerelease" />
     <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
@@ -93,18 +76,49 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-    <PublishReadyToRun >true</PublishReadyToRun>
-    <Optimize >true</Optimize>
-    <TieredPGO >true</TieredPGO>
-<!--    <PublishAot>true</PublishAot>-->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <Optimize >true</Optimize>
+        <TieredPGO >true</TieredPGO>
+<!--        <PublishAot>true</PublishAot>-->
 
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+<!--    <PublishTrimmed>true</PublishTrimmed>-->
+<!--    <TrimMode>partial</TrimMode>-->
     <!-- Preserve XAML-related assemblies -->
 <!--    <TrimmerRootAssembly Include="Microsoft.UI.Xaml" />-->
 <!--    <TrimmerRootAssembly Include="WinRT.Runtime" />-->
-  </PropertyGroup>
+      <InvariantGlobalization>false</InvariantGlobalization>
+      <EventSourceSupport>false</EventSourceSupport>
+      <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    </PropertyGroup>
+    
+    <Target Name="EnsurePublishR2RRestore" BeforeTargets="BeforeBuild"
+            Condition=" '$(AutoRestorePublishReadyToRun)' == 'true'
+                    and '$(Configuration)' == 'Release'
+                    and '$(PublishReadyToRun)' == 'true'
+                    and '$(IsRestore)' != 'true' ">
+        <Message Importance="high" Text="Running dotnet restore for R2R (RID=$(RuntimeIdentifier))..." />
+        <Exec Command='dotnet restore "$(MSBuildProjectFullPath)" -r $(RuntimeIdentifier) -p:PublishReadyToRun=true' />
+    </Target>
+    
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|ARM64' ">
+        <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+        <DebugType>none</DebugType>
+        <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
+        <PublishReadyToRun >true</PublishReadyToRun>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+        <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+        <DebugType>none</DebugType>
+        <DebugSymbols>false</DebugSymbols>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <PublishReadyToRun >true</PublishReadyToRun>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+        <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+        <DebugType>none</DebugType>
+        <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+        <PublishReadyToRun >true</PublishReadyToRun>
+    </PropertyGroup>
 
   <!-- Publish Properties -->
   <PropertyGroup>

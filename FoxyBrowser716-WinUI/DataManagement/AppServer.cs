@@ -26,21 +26,20 @@ public static class AppServer
 	
 	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded, bool fromStartup = false)
 	{
-		var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
-		
-		switch (startupTask.State)
-		{
-			case StartupTaskState.Disabled:
-				var newState = await startupTask.RequestEnableAsync();
-				break;
-			case StartupTaskState.DisabledByUser:
-				//TODO: popup to re-enable
-				break;
-		}
-
-		
 		if (setupNeeded)
 		{
+			var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
+		
+			switch (startupTask.State)
+			{
+				case StartupTaskState.Disabled:
+					var newState = await startupTask.RequestEnableAsync();
+					break;
+				case StartupTaskState.DisabledByUser:
+					//TODO: popup to re-enable
+					break;
+			}
+			
 			await FoxyAutoSaver.Create([_versionInfo]).ContinueWith(task => AutoSaver = task.Result);
 			
 			List<Task> tasks = [];
@@ -52,10 +51,13 @@ public static class AppServer
 			//TODO check for existing files and do any first time setup
 			
 			var instanceFolderPath = FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Instance);
-			var result = FoxyFileManager.GetChildrenOfFolder(instanceFolderPath, FoxyFileManager.ItemType.Folder);
+			var result = await FoxyFileManager.GetChildrenOfFolderAsync(instanceFolderPath, FoxyFileManager.ItemType.Folder);
 			if (result.code == FoxyFileManager.ReturnCode.Success && result.items is not null)
 			{
-				tasks.AddRange(result.items.Select(async item => Instances.Add(await Instance.Create(item.path.Split(@"\")[^1]))));
+				var instances = await Task.WhenAll(
+					result.items.Select(item => Instance.Create(item.path.Split(@"\")[^1]))
+				);
+				Instances.AddRange(instances);
 				
 				//TODO: need a proper way to identify the primary instance
 			}

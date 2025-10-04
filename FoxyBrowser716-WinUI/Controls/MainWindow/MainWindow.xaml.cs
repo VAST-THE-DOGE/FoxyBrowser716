@@ -40,9 +40,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private MainWindow()
     {
         InitializeComponent();
-
-        ErrorInfo.AddInfo("test");
-
+        
         AppWindow.SetIcon(Path.Combine(Windows.ApplicationModel.Package.Current.InstalledPath, "Assets", "Foxybrowser716.ico"));
         
         // initial is needed to allow clicks for other buttons

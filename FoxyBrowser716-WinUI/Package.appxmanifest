@@ -18,7 +18,7 @@
   <mp:PhoneIdentity PhoneProductId="b823390d-1193-4b3e-9ba9-be9328c2fdf4" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>FoxyBrowser716-WinUI</DisplayName>
+    <DisplayName>FoxyBrowser716</DisplayName>
     <PublisherDisplayName>William Herbert</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -37,8 +37,8 @@
                  Executable="$targetnametoken$.exe"
                  EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-              DisplayName="FoxyBrowser716-WinUI"
-              Description="FoxyBrowser716-WinUI"
+              DisplayName="FoxyBrowser716"
+              Description="No Description Yet... Need to do this eventually, but it's a web browser."
               BackgroundColor="transparent"
               Square150x150Logo="Assets\Square150x150Logo.png"
               Square44x44Logo="Assets\Square44x44Logo.png">
