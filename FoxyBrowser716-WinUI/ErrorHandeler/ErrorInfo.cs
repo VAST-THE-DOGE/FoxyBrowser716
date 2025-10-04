@@ -93,7 +93,7 @@ public sealed class ErrorInfo
         }
     }
     
-    public static void AddInfo(string message, string? details = null)
+    public static void AddInfo(string message, string details)
     {
         EnsureLoaded();
         var info = new ErrorInfo
@@ -134,34 +134,17 @@ public sealed class ErrorInfo
 
     private static Assembly _currentAssembly = Assembly.GetExecutingAssembly();
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void AddInfo(string message)
-    {
-        var callingMethod = new StackTrace()
-            .GetFrames()
-            .FirstOrDefault(f => f.GetMethod() is { DeclaringType: { } declaringType } method
-                                 && !method.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
-                                 && !declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
-                                 && declaringType.Assembly == _currentAssembly
-                                 && method.Name != nameof(AddInfo))?
-            .GetMethod();
-        
-        AddInfo(message, FormatMethod(callingMethod));
-    }
+    public static void AddInfo(string message, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string? filePath = null)
+        => AddInfo(message, $"CallerInfo:" +
+                            $"\n    Line: {lineNumber}" +
+                            $"\n    File: {filePath}");
+    
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void AddWarning(string message)
-    {
-        var callingMethod = new StackTrace()
-            .GetFrames()
-            .FirstOrDefault(f => f.GetMethod() is { DeclaringType: { } declaringType } method
-                                 && !method.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
-                                 && !declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
-                                 && declaringType.Assembly == _currentAssembly
-                                 && method.Name != nameof(AddWarning))?
-            .GetMethod();
-        
-        AddWarning(message, FormatMethod(callingMethod));
-    }
+    public static void AddWarning(string message, [CallerLineNumber] int lineNumber = 0, [CallerFilePath] string? filePath = null) 
+        => AddWarning(message, $"CallerInfo:" +
+                               $"\n    Line {lineNumber}" +
+                               $"\n    File: {filePath}");
 
     public static void LoadLog()
     {

@@ -17,6 +17,8 @@ using Windows.Win32.Graphics.Dwm;
 using CommunityToolkit.WinUI.Animations;
 using FoxyBrowser716_WinUI.Controls.Helpers;
 using FoxyBrowser716_WinUI.DataObjects.Settings;
+using FoxyBrowser716_WinUI.ErrorHandeler;
+using Microsoft.UI;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Web.WebView2.Core;
 
@@ -38,6 +40,10 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private MainWindow()
     {
         InitializeComponent();
+
+        ErrorInfo.AddInfo("test");
+
+        AppWindow.SetIcon(Path.Combine(Windows.ApplicationModel.Package.Current.InstalledPath, "Assets", "Foxybrowser716.ico"));
         
         // initial is needed to allow clicks for other buttons
         SetTitleBar(TopBar.DragZone); 

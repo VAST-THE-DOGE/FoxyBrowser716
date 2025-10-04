@@ -13,7 +13,7 @@
   <Identity
           Name="b823390d-1193-4b3e-9ba9-be9328c2fdf4"
           Publisher="CN=William Herbert"
-          Version="0.6.0" />
+          Version="0.6.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="b823390d-1193-4b3e-9ba9-be9328c2fdf4" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
