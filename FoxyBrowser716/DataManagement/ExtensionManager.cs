@@ -10,6 +10,7 @@ using System.Web;
 using FoxyBrowser716.DataObjects.Basic;
 using FoxyBrowser716.DataObjects.Complex;
 using Microsoft.Web.WebView2.Core;
+using WinUIEx;
 
 namespace FoxyBrowser716.DataManagement;
 
@@ -972,122 +973,130 @@ public static class ExtensionManager
     }
 
     private static async Task ProcessCrxFile(Instance instance, WebView2 webview, string id, byte[] crxBytes)
-{
-    var crxStream = new MemoryStream(crxBytes);
-    crxStream.Position = 0;
-    
-    using var br = new BinaryReader(crxStream, Encoding.UTF8, leaveOpen: true);
-    
-    var signature = new string(br.ReadChars(4));
-    if (signature != "Cr24")
     {
-        throw new InvalidDataException("Invalid CRX header signature. Expected 'Cr24'.");
-    }
-    
-    var version = br.ReadUInt32();
-    
-    switch (version)
-    {
-        case 2:
+        var crxStream = new MemoryStream(crxBytes);
+        crxStream.Position = 0;
+        
+        using var br = new BinaryReader(crxStream, Encoding.UTF8, leaveOpen: true);
+        
+        var signature = new string(br.ReadChars(4));
+        if (signature != "Cr24")
         {
-            // CRX2 format:
-            var publicKeySize = br.ReadUInt32();
-            var signatureSize = br.ReadUInt32();
+            throw new InvalidDataException("Invalid CRX header signature. Expected 'Cr24'.");
+        }
+        
+        var version = br.ReadUInt32();
+        
+        switch (version)
+        {
+            case 2:
+            {
+                // CRX2 format:
+                var publicKeySize = br.ReadUInt32();
+                var signatureSize = br.ReadUInt32();
+                
+                br.ReadBytes((int)publicKeySize);  // Skip public key
+                br.ReadBytes((int)signatureSize);  // Skip signature
+                break;
+            }
+            case 3:
+            {
+                // CRX3 format:
+                var headerSize = br.ReadUInt32();
+                br.ReadBytes((int)headerSize);  // Skip entire header
+                break;
+            }
+            default:
+                throw new InvalidDataException($"Unsupported CRX version: {version}");
+        }
+        
+        var zipDataSize = crxStream.Length - crxStream.Position;
+        var zipData = new byte[zipDataSize];
+        await crxStream.ReadExactlyAsync(zipData, 0, (int)zipDataSize);
+        
+        using var zipStream = new MemoryStream(zipData);
+        using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
+        
+        var outFolder = Path.Combine(FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Extension, instance.Name), id);
+        
+        if (!Directory.Exists(outFolder))
+        {
+            Directory.CreateDirectory(outFolder);
+        }
+        
+        // Extract with error handling
+        try
+        {
+            archive.ExtractToDirectory(outFolder, overwriteFiles: true);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to extract extension {id}: {ex.Message}", ex);
+        }
+        
+        var manifestPath = Path.Combine(outFolder, "manifest.json");
+        if (!File.Exists(manifestPath))
+        {
+            throw new Exception($"No manifest.json found in extracted extension {id}! It will not be loaded.");
+        }
+        
+        if (!_extensions.TryGetValue(instance.Name, out var extensions))
+        {
+            throw new Exception($"Extensions for instance name '{instance.Name}' not found");
+        }
+        
+        var extension1 = await GetFolderExtension(outFolder);
+        if (extension1 is null)
+        {
+            throw new Exception($"Failed to load extension from {outFolder}");
+        }
+        
+        var currentExtensions = await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+        currentExtensions = currentExtensions.Where(e => !_whitelist.Contains(e.Name)).ToList();
+        
+        // Remove the old one if it exists
+        var webviewEx = currentExtensions.FirstOrDefault(e => IsNamesEqual(e.Name, extension1.Manifest));
+        if (webviewEx != null)
+        {
+            await webviewEx.RemoveAsync();
+        }
+        
+        var oldExtension = extensions.FirstOrDefault(e => e.Id == webviewEx?.Id);
+        if (oldExtension is not null)
+        {
+            extensions.Remove(oldExtension);
+        }
+        
+        // Add the new extension
+        try
+        {
+            var browserExtension = await webview.CoreWebView2.Profile.AddBrowserExtensionAsync(outFolder);
             
-            br.ReadBytes((int)publicKeySize);  // Skip public key
-            br.ReadBytes((int)signatureSize);  // Skip signature
-            break;
+            extensions.Add(new Extension
+            {
+                FolderPath = extension1.FolderPath,
+                Manifest = extension1.Manifest,
+                WebviewName = browserExtension.Name,
+                Id = browserExtension.Id
+            });
+            
+            Debug.WriteLine($"Successfully added extension {id} with WebView ID {browserExtension.Id}");
         }
-        case 3:
+        catch (Exception ex)
         {
-            // CRX3 format:
-            var headerSize = br.ReadUInt32();
-            br.ReadBytes((int)headerSize);  // Skip entire header
-            break;
+            throw new Exception($"Failed to add extension {id} to WebView: {ex.Message}", ex);
         }
-        default:
-            throw new InvalidDataException($"Unsupported CRX version: {version}");
-    }
-    
-    var zipDataSize = crxStream.Length - crxStream.Position;
-    var zipData = new byte[zipDataSize];
-    await crxStream.ReadExactlyAsync(zipData, 0, (int)zipDataSize);
-    
-    using var zipStream = new MemoryStream(zipData);
-    using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
-    
-    var outFolder = Path.Combine(FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Extension, instance.Name), id);
-    
-    if (!Directory.Exists(outFolder))
-    {
-        Directory.CreateDirectory(outFolder);
-    }
-    
-    // Extract with error handling
-    try
-    {
-        archive.ExtractToDirectory(outFolder, overwriteFiles: true);
-    }
-    catch (Exception ex)
-    {
-        throw new Exception($"Failed to extract extension {id}: {ex.Message}", ex);
-    }
-    
-    var manifestPath = Path.Combine(outFolder, "manifest.json");
-    if (!File.Exists(manifestPath))
-    {
-        throw new Exception($"No manifest.json found in extracted extension {id}! It will not be loaded.");
-    }
-    
-    if (!_extensions.TryGetValue(instance.Name, out var extensions))
-    {
-        throw new Exception($"Extensions for instance name '{instance.Name}' not found");
-    }
-    
-    var extension1 = await GetFolderExtension(outFolder);
-    if (extension1 is null)
-    {
-        throw new Exception($"Failed to load extension from {outFolder}");
-    }
-    
-    var currentExtensions = await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-    currentExtensions = currentExtensions.Where(e => !_whitelist.Contains(e.Name)).ToList();
-    
-    // Remove the old one if it exists
-    var webviewEx = currentExtensions.FirstOrDefault(e => IsNamesEqual(e.Name, extension1.Manifest));
-    if (webviewEx != null)
-    {
-        await webviewEx.RemoveAsync();
-    }
-    
-    var oldExtension = extensions.FirstOrDefault(e => e.Id == webviewEx?.Id);
-    if (oldExtension is not null)
-    {
-        extensions.Remove(oldExtension);
-    }
-    
-    // Add the new extension
-    try
-    {
-        var browserExtension = await webview.CoreWebView2.Profile.AddBrowserExtensionAsync(outFolder);
         
-        extensions.Add(new Extension
+        ExtensionsModified?.Invoke(instance.Name);
+
+        var messageBox = new ContentDialog()
         {
-            FolderPath = extension1.FolderPath,
-            Manifest = extension1.Manifest,
-            WebviewName = browserExtension.Name,
-            Id = browserExtension.Id
-        });
-        
-        Debug.WriteLine($"Successfully added extension {id} with WebView ID {browserExtension.Id}");
+            Title = "Extension installed",
+            PrimaryButtonText = "OK",
+            XamlRoot = webview.XamlRoot,
+        };
+        await messageBox.ShowAsync();
     }
-    catch (Exception ex)
-    {
-        throw new Exception($"Failed to add extension {id} to WebView: {ex.Message}", ex);
-    }
-    
-    ExtensionsModified?.Invoke(instance.Name);
-}
 
 	private static string? ExtractExtensionIdFromUrl(string url)
 	{
