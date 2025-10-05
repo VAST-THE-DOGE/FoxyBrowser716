@@ -11,7 +11,7 @@ public static class InfoGetter
     #region Versioning
     public static readonly Version? Version = Assembly.GetExecutingAssembly().GetName().Version;
     public static readonly string VersionString = Version is not null 
-        ? $"v{Version.Major}.{Version.Minor}.{Version.Build}" 
+        ? $"v{Version.Major}.{Version.Minor}.{Version.Build}.{Version.Revision}" 
         : "Unknown";
 
     public static readonly string LeadDev = "Vast The Doge (William Herbert)";

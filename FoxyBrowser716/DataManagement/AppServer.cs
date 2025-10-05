@@ -91,8 +91,11 @@ public static class AppServer
 			else if (_versionInfo.Item.Version != InfoGetter.VersionString)
 			{
 				//TODO: new update, go to changelog
-
 				_versionInfo.Item.Version = InfoGetter.VersionString;
+				uris = uris
+					.ToList()
+					.Append($"{InfoGetter.WebsiteUrl}/changelog/{_versionInfo.Item.Version}")
+					.ToArray();
 			}
 
 			if (uris.Length > 0)
