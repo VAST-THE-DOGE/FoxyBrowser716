@@ -23,6 +23,8 @@ public class AiHandler
 	}
 	private async Task Init(MainWindow mainWindow)
 	{
+		return;
+		
 		//TODO: load and save chat history
 		
 		var token = Environment.GetEnvironmentVariable("mistral_token");
