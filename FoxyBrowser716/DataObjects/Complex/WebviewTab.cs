@@ -44,7 +44,7 @@ public class WebviewTab
 	private async Task CoreWebView2Initialization()
 	{
 		await Core.EnsureCoreWebView2Async(TabManager.WebsiteEnvironment);
-
+		
 		// await TabManager.Instance.AddExtensions(Core);
 		//  TabManager.Instance.RegisterStoreButtonCallback(json => {
 		// 	// json contains: host, url, originalText, type
@@ -60,19 +60,21 @@ public class WebviewTab
 
 		var extensionSetupTask = TabManager.Instance.SetupExtensionSupport(Core);
 		
+		// Core.AllowExternalDrop = true;
 		Core.AllowDrop = true;
+		Core.CompositeMode = ElementCompositeMode.MinBlend;
+		
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		Core.CoreWebView2.DefaultDownloadDialogMargin = new Point(0, 0);
 		Core.CoreWebView2.Profile.PreferredColorScheme = CoreWebView2PreferredColorScheme.Auto;
-		Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
+		// Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
 		
-		// Add after Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
 		// Core.CoreWebView2.Settings.IsWebMessageEnabled = false;     
-		Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
-		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
+		// Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
+		// Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
 
-		Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
-		Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
+		// Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
+		// Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;
 
 		// handle events
 		Core.CoreWebView2.DocumentTitleChanged += OnDocumentTitleChanged;
@@ -82,8 +84,8 @@ public class WebviewTab
 		Core.CoreWebView2.NavigationStarting += CoreWebView2OnNavigationStarting;
 		Core.CoreWebView2.WindowCloseRequested += CoreWebView2OnWindowCloseRequested;
 		Core.CoreWebView2.ProcessFailed += CoreWebView2OnProcessFailed;
-
 		Core.CoreWebView2.PermissionRequested += CoreWebView2OnPermissionRequested;
+		
 		//performance stuff
 		var processId = Core.CoreWebView2.BrowserProcessId;
 		var process = Process.GetProcessById((int)processId);

@@ -777,62 +777,55 @@ public static class ExtensionManager
         
         await webview.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(MicrosoftStoreScript);
 
-		// add extensions:
-		if (_extensions.TryGetValue(instance.Name, out var extensions))
-			await Task.WhenAll(extensions.Select(async e =>
-				await webview.CoreWebView2.Profile.AddBrowserExtensionAsync(e.FolderPath)));
-		else
-		{
-			var currentExtensions = await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-			currentExtensions = currentExtensions.Where(e => !_whitelist.Contains(e.Name)).ToList();
-			
-			var extensionFolder = FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Extension, instance.Name);
-			
-			List<Extension> extensionsList = [];
-			if (currentExtensions.Any())
-			{
-				await foreach (var ex in GetFolderExtensions(extensionFolder))
-				{
-					var webviewEx = currentExtensions.FirstOrDefault(e => IsNamesEqual(e.Name, ex.Manifest));
-					
-					if (webviewEx is null) continue;
-					
-					//TODO: THIS IS TEMP, make sure it is enabled for now and just keep a reference to this from the extension.
-					await webviewEx.EnableAsync(true);
-					
-					extensionsList.Add(new Extension
-					{
-						FolderPath = ex.FolderPath,
-						Manifest = ex.Manifest,
-						WebviewName = webviewEx.Name,
-						Id = webviewEx.Id
-					});
-				}
-			}
-			else
-			{
-				List<(Task<CoreWebView2BrowserExtension>, Extension)> tasks = [];
-				await foreach (var ex in GetFolderExtensions(extensionFolder))
-				{
-					tasks.Add((
-						webview.CoreWebView2.Profile
-							.AddBrowserExtensionAsync(ex.FolderPath)
-							.AsTask(),
-						ex));
-				}
-				await Task.WhenAll(tasks.Select(p => p.Item1));
-				tasks.ForEach(p => 
-					extensionsList.Add(new Extension
-					{
-						FolderPath = p.Item2.FolderPath,
-						Manifest = p.Item2.Manifest,
-						WebviewName = p.Item1.Result.Name,
-						Id = p.Item1.Result.Id
-					}));
-			}
-			_extensions[instance.Name] = extensionsList;
-            ExtensionsModified?.Invoke(instance.Name);
-		}
+        var currentExtensions = await webview.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+        currentExtensions = currentExtensions.Where(e => !_whitelist.Contains(e.Name)).ToList();
+
+        var extensionFolder = FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Extension, instance.Name);
+
+        List<Extension> extensionsList = [];
+        if (currentExtensions.Any())
+        {
+            await foreach (var ex in GetFolderExtensions(extensionFolder))
+            {
+                var webviewEx = currentExtensions.FirstOrDefault(e => IsNamesEqual(e.Name, ex.Manifest));
+
+                if (webviewEx is null) continue;
+
+                // Ensure it's enabled
+                await webviewEx.EnableAsync(true);
+
+                extensionsList.Add(new Extension
+                {
+                    FolderPath = ex.FolderPath,
+                    Manifest = ex.Manifest,
+                    WebviewName = webviewEx.Name,
+                    Id = webviewEx.Id
+                });
+            }
+        }
+        else
+        {
+            List<(Task<CoreWebView2BrowserExtension>, Extension)> tasks = [];
+            await foreach (var ex in GetFolderExtensions(extensionFolder))
+            {
+                tasks.Add((
+                    webview.CoreWebView2.Profile
+                        .AddBrowserExtensionAsync(ex.FolderPath)
+                        .AsTask(),
+                    ex));
+            }
+            await Task.WhenAll(tasks.Select(p => p.Item1));
+            tasks.ForEach(p =>
+                extensionsList.Add(new Extension
+                {
+                    FolderPath = p.Item2.FolderPath,
+                    Manifest = p.Item2.Manifest,
+                    WebviewName = p.Item1.Result.Name,
+                    Id = p.Item1.Result.Id
+                }));
+        }
+        _extensions[instance.Name] = extensionsList;
+        ExtensionsModified?.Invoke(instance.Name);
 		
 		// setup capturing of extension downloads:
 		webview.CoreWebView2.DownloadStarting +=

@@ -40,7 +40,7 @@ public class TabManager
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 			EnableTrackingPrevention = true,
 			//TODO: look into these flags and make sure each are secure
-			AdditionalBrowserArguments = "" //TODO: 100% something here causing the lag
+			AdditionalBrowserArguments = $"--disable-features=AudioServiceOutOfProcess" //TODO: 100% something here causing the lag
 				/*"--enable-gpu " +
 				"--enable-gpu-rasterization " +
 				"--enable-hardware-overlays " +
