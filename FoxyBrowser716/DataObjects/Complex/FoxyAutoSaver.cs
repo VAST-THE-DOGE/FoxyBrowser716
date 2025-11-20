@@ -135,11 +135,11 @@ public class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyP
 		if (result.code != FoxyFileManager.ReturnCode.Success || result.content is null)
 			throw new Exception($"Failed to load {FilePath}: {result}");
 
+		Items.CollectionChanged += HandleCollectionChanged;
 		foreach (var item in result.content)
 		{
 			Items.Add(item);
 		}
-		Items.CollectionChanged += HandleCollectionChanged;
 		IsLoaded = true;
 	}
 
