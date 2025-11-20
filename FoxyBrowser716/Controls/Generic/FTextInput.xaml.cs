@@ -18,6 +18,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace FoxyBrowser716.Controls.Generic;
 
+[ObservableObject]
 public sealed partial class FTextInput : UserControl
 {
     public static readonly DependencyProperty PlaceHolderTextProperty = DependencyProperty.Register(
@@ -42,6 +43,28 @@ public sealed partial class FTextInput : UserControl
         set => SetValue(InputMiddlewareProperty, value);
     }
 
+    public static readonly DependencyProperty AcceptsReturnProperty = DependencyProperty.Register(
+        nameof(AcceptsReturn), typeof(bool), typeof(FTextInput),
+        new PropertyMetadata(true, OnAcceptsReturnChanged));
+
+    public bool AcceptsReturn
+    {
+        get => (bool)GetValue(AcceptsReturnProperty);
+        set
+        {
+            SetValue(AcceptsReturnProperty, value);
+            TextWrap = value ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            SearchBox.AcceptsReturn = value;
+        }
+    }
+
+    private static void OnAcceptsReturnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (FTextInput)d;
+        control.SearchBox.AcceptsReturn = (bool)e.NewValue;
+    }
+
+    [ObservableProperty] private partial TextWrapping TextWrap { get; set; } = TextWrapping.NoWrap;
 
     private static void PlaceHolderTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs? e)
     {

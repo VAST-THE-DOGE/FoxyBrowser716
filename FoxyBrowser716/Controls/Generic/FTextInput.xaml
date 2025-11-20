@@ -48,6 +48,7 @@
                                            Text="{TemplateBinding PlaceholderText}"
                                            Foreground="{ThemeResource TextControlPlaceholderForeground}"
                                            Margin="{TemplateBinding Padding}"
+                                           FontSize="{TemplateBinding FontSize}"
                                            IsHitTestVisible="False"/>
                             </Grid>
                         </Grid>
@@ -64,7 +65,8 @@
              CornerRadius="5"
              BorderThickness="2"
              IsSpellCheckEnabled="True" 
-             FontSize="18" 
+             FontSize="{x:Bind FontSize, Mode=TwoWay}" 
+             AcceptsReturn="{x:Bind AcceptsReturn, Mode=TwoWay}"
              GotFocus="SearchBox_OnGotFocus" 
              LostFocus="SearchBox_OnLostFocus" 
              KeyUp="SearchBox_OnKeyUp"
