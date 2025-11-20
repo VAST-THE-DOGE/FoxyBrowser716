@@ -4,9 +4,9 @@ namespace FoxyBrowser716.DataObjects.Basic;
 
 public partial class WebsiteInfo : ObservableObject
 {
-	[ObservableProperty] private string _url;
-	[ObservableProperty] private string _favIconUrl;
-	[ObservableProperty] private string _title;
-	[ObservableProperty] private string _note;
-	[ObservableProperty] private DateTime? _dateAdded;
+	[ObservableProperty] public partial string Url { get; set; } = string.Empty;
+	[ObservableProperty] public partial string FavIconUrl { get; set; } = string.Empty;
+	[ObservableProperty] public partial string Title { get; set; } = string.Empty;
+	[ObservableProperty] public partial string Note { get; set; } = string.Empty;
+	[ObservableProperty] public partial DateTime? DateAdded { get; set; }
 }
