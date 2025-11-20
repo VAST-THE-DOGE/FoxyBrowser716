@@ -1,8 +1,10 @@
-﻿using System.Timers;
+﻿using System.Diagnostics;
+using System.Timers;
 using Windows.ApplicationModel;
 using FoxyBrowser716.Controls.MainWindow;
 using FoxyBrowser716.DataObjects.Basic;
 using FoxyBrowser716.DataObjects.Complex;
+using FoxyBrowser716.ErrorHandeler;
 using Microsoft.UI.Dispatching;
 
 namespace FoxyBrowser716.DataManagement;
@@ -26,7 +28,9 @@ public static class AppServer
 	
 	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded, bool fromStartup = false)
 	{
-		if (setupNeeded)
+		try
+		{
+			if (setupNeeded)
 		{
 			var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
 		
@@ -116,6 +120,12 @@ public static class AppServer
 				else
 					await CurrentInstance.CreateWindow();
 			});
+		}
+		}
+		catch (Exception e)
+		{
+			Debug.WriteLine(e);
+			ErrorInfo.AddError(e);
 		}
 	}
 }
