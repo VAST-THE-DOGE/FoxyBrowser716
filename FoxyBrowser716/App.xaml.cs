@@ -174,6 +174,13 @@ public partial class App : Application
                     await AppServer.HandleLaunchEvent([uri.ToString()], isFirst);
                 }
                 break;
+            case ExtendedActivationKind.File:
+                if (args.Data is IFileActivatedEventArgs fileArgs)
+                {
+                    var uris = fileArgs.Files.Select(f => f.Path).ToArray();
+                    await AppServer.HandleLaunchEvent(uris, isFirst);
+                }
+                break;
             case ExtendedActivationKind.CommandLineLaunch:
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
