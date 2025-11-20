@@ -1,13 +1,7 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using FoxyBrowser716.DataObjects.Complex;
-
 namespace FoxyBrowser716.DataObjects.Basic;
 
-
-[ObservableObject]
-
-public partial class VersionInfo
+public partial class VersionInfo : ObservableObject
 {
-	[ObservableProperty] 
-	private string? _version;
+	[ObservableProperty] public partial string? Version { get; set; }
+	[ObservableProperty] public partial string? Timestamp { get; set; }
 }

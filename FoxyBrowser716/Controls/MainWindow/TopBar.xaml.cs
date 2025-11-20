@@ -2,6 +2,8 @@
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
+using System.Net.Http;
+using System.Threading;
 using Material.Icons;
 using Material.Icons.WinUI3;
 using WinUIEx;
@@ -10,6 +12,7 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
+using FoxyBrowser716.DataManagement;
 
 
 namespace FoxyBrowser716.Controls.MainWindow;
@@ -32,7 +35,9 @@ public sealed partial class TopBar : UserControl
     public event Action? EngineClicked;
     
     public event Action<bool>? RequestSnapLayout;
-
+    
+    private Timer refreshTimer;
+    
     internal Theme CurrentTheme
     {
         get;
@@ -48,6 +53,7 @@ public sealed partial class TopBar : UserControl
         Root.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
         
+        UpdateButton.CurrentTheme = CurrentTheme with { PrimaryAccentColor = CurrentTheme.PrimaryHighlightColor, SecondaryAccentColor = CurrentTheme.SecondaryHighlightColor};
         ButtonMenu.CurrentTheme = CurrentTheme;
         ButtonBorderlessToggle.CurrentTheme = CurrentTheme;
         ButtonMinimize.CurrentTheme = CurrentTheme;
@@ -75,6 +81,8 @@ public sealed partial class TopBar : UserControl
         InitializeComponent();
         
         ApplyTheme();
+        
+        refreshTimer = new Timer(RefreshTimer_Tick, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
     }
 
     private void BorderlessToggle_OnClick(object sender, RoutedEventArgs e)
@@ -220,5 +228,69 @@ public sealed partial class TopBar : UserControl
     {
         SidebarLocked = sl;
         ButtonToggleSidebarExpand.ForceHighlight = !SidebarLocked;
+    }
+    
+    private JsonSerializerOptions serializerOptions = new() { PropertyNameCaseInsensitive = true };
+    private HttpClient client = new();
+    
+    private void RefreshTimer_Tick(object? state)
+    {
+        AppServer.UiDispatcherQueue.TryEnqueue(async () =>
+        {
+            try
+            {
+                using var response = await client.GetAsync("https://foxybrowser716.com/api/latest-version");
+                response.EnsureSuccessStatusCode();
+            
+                var json = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<VersionInfo>(json, serializerOptions);
+                
+                if (result is { Version: not null } && result.Version.Replace("v", string.Empty) != AppServer.VersionInfo.Version.Replace("v", string.Empty))
+                {
+                    var normalizedCurrentVersion = AppServer.VersionInfo.Version.StartsWith('v')
+                        ? AppServer.VersionInfo.Version
+                        : $"v{AppServer.VersionInfo.Version}";
+                    
+                    var normalizedNewVersion = result.Version.StartsWith('v') 
+                        ? result.Version 
+                        : $"v{result.Version}";
+                    
+                    var newVerNum = result.Version
+                        .Replace("v", string.Empty)
+                        .Split('.')
+                        .Select(int.Parse)
+                        .ToArray();
+                    
+                    var curVerNum = AppServer.VersionInfo.Version
+                        .Replace("v", string.Empty)
+                        .Split('.')
+                        .Select(int.Parse)
+                        .ToArray();
+
+                    for (var i = 0; i < newVerNum.Length && i < curVerNum.Length; i++)
+                    {
+                        // on old version
+                        if (newVerNum[i] > curVerNum[i])
+                        {
+                            UpdateButton.ButtonText = $"Update Available: {normalizedCurrentVersion} → {normalizedNewVersion}";
+                            UpdateButton.Visibility = Visibility.Visible;
+                            return;
+                        }
+                    }
+                    
+                    // on new version
+                    UpdateButton.ButtonText = $"Dev Version: {normalizedCurrentVersion} ← {normalizedNewVersion}";
+                    UpdateButton.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    // do not worry about swaping back, the app needs a restart to update.
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorHandeler.ErrorInfo.AddError(ex);
+            }
+        });
     }
 }
