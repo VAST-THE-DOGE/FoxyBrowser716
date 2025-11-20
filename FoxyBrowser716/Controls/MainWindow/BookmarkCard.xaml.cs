@@ -33,7 +33,7 @@ public sealed partial class BookmarkCard : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
         };
         Label.Text = websiteInfo.Title;
-        NoteInput.SetText(websiteInfo.Note);
+        NoteInput.Text = websiteInfo.Note;
     }
 
     internal Theme CurrentTheme

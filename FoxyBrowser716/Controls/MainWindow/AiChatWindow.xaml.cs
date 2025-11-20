@@ -243,9 +243,9 @@ public sealed partial class AiChatWindow : UserControl
         // Don't allow input if there's an error
         if (_hasError) return;
         
-        var input = Input.GetText();
+        var input = Input.Text;
         if (string.IsNullOrWhiteSpace(input)) return;
-        Input.SetText(string.Empty);
+        Input.Text = "";
         
         var userBubble = GetMessageBubble(new ChatMessage(ChatMessage.RoleEnum.User, input));
         MessageList.Children.Add(userBubble.Item1);

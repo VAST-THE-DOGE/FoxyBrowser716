@@ -33,6 +33,24 @@ public sealed partial class FTextInput : UserControl
         }
     }
     
+    public static readonly DependencyProperty TextProperty = DependencyProperty.Register(
+        nameof(Text), typeof(string), typeof(FTextInput),
+        new PropertyMetadata(string.Empty, OnTextPropertyChanged));
+
+    public string Text
+    {
+        get => (string)GetValue(TextProperty);
+        set => SetValue(TextProperty, value);
+    }
+
+    private static void OnTextPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (FTextInput)d;
+        var newText = e.NewValue as string ?? string.Empty;
+        if (control.SearchBox.Text != newText)
+            control.SearchBox.Text = newText;
+    }
+    
     public static readonly DependencyProperty InputMiddlewareProperty = DependencyProperty.Register(
         nameof(InputMiddleware), typeof(Func<string, string, string>), typeof(FTextInput),
         new PropertyMetadata(null));
@@ -72,14 +90,14 @@ public sealed partial class FTextInput : UserControl
         control.SearchBox.PlaceholderText = control.PlaceHolderText;
     }
 
-    public void SetText(string text)
-    {
-        SearchBox.Text = text;
-    }
-    public string GetText()
-    {
-        return SearchBox.Text;
-    }
+    // public void SetText(string text)
+    // {
+    //     SearchBox.Text = text;
+    // }
+    // public string GetText()
+    // {
+    //     return SearchBox.Text;
+    // }
     
     public event Action<string>? OnTextChanged;
     public event Action? EnterPressed;
@@ -139,6 +157,7 @@ public sealed partial class FTextInput : UserControl
         if (newText == e.NewText) return; // let the text change like normal. it is valid.
         
         e.Cancel = true;
-        SearchBox.Text = newText;
+        SetValue(TextProperty, SearchBox.Text);
+        OnTextChanged?.Invoke(SearchBox.Text);    
     }
 }

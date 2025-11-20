@@ -287,7 +287,7 @@ public class IntSettingControl : BaseSettingControl
 			Width = 200,
 		};
 		
-		numberBox.SetText(setting.Value.ToString());
+		numberBox.Text = setting.Value.ToString();
 
 		numberBox.InputMiddleware = (before, after) =>
 		{
@@ -333,7 +333,7 @@ public class DecimalSettingControl : BaseSettingControl
 			Width = 200,
 		};
 		
-		numberBox.SetText(setting.Value.ToString());
+		numberBox.Text = setting.Value.ToString();
 
 		numberBox.InputMiddleware = (before, after) =>
 		{
@@ -379,7 +379,7 @@ public class StringSettingControl : BaseSettingControl
 			MinWidth = 200
 		};
 		
-		textBox.SetText(setting.Value);
+		textBox.Text = setting.Value;
 
 		textBox.OnTextChanged += (s) =>
 		{
@@ -531,7 +531,7 @@ public class FilePickerSettingControl : BaseSettingControl
 			MinWidth = 172,
 			Margin = new Thickness(2, 2, 0, 2)
 		};
-		pathTextBox.SetText(setting.Value);
+		pathTextBox.Text = setting.Value;
 
 		browseButton = new FIconButton
 		{
@@ -556,7 +556,7 @@ public class FilePickerSettingControl : BaseSettingControl
 			var file = await picker.PickSingleFileAsync();
 			if (file != null)
 			{
-				pathTextBox.SetText(file.Path);
+				pathTextBox.Text = file.Path;
 				setting.Value = file.Path;
 			}
 		};
@@ -697,7 +697,7 @@ public class FolderPickerSettingControl : BaseSettingControl
 			MinWidth = 172,
 			Margin = new Thickness(2, 2, 0, 2)
 		};
-		pathTextBox.SetText(setting.Value);
+		pathTextBox.Text = setting.Value;
 
 		browseButton = new FIconButton
 		{
@@ -721,7 +721,7 @@ public class FolderPickerSettingControl : BaseSettingControl
 			var folder = await picker.PickSingleFolderAsync();
 			if (folder != null)
 			{
-				pathTextBox.SetText(folder.Path);
+				pathTextBox.Text = folder.Path;
 				setting.Value = folder.Path;
 			}
 		};
