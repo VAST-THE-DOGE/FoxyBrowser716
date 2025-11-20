@@ -66,6 +66,11 @@
       <HintPath>..\..\..\.nuget\packages\material.icons.winui3\2.4.1\lib\net8.0-windows10.0.18362\Material.Icons.WinUI3.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <Resource Remove="ControlTemplates(CopyPaste)\BlankPage.xaml" />
+    <Resource Remove="ControlTemplates(CopyPaste)\BlankUserControl.xaml" />
+    <Resource Remove="ControlTemplates(CopyPaste)\BlankWindow.xaml" />
+  </ItemGroup>
   
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
