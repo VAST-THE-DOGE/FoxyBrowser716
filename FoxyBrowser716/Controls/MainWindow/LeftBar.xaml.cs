@@ -382,7 +382,7 @@ public sealed partial class LeftBar : UserControl
             // .EasingType(EasingType.Cubic);
 
        _ = AnimationBuilder.Create()
-           .Size(Axis.X, 260, null, null, TimeSpan.FromSeconds(0.3), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml)
+           .Size(Axis.X, 260, null, null, TimeSpan.FromSeconds(0.2), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml)
            .StartAsync(Root);
             
         // await myControl.StartAsync(animation);
@@ -404,7 +404,7 @@ public sealed partial class LeftBar : UserControl
         SideOpen = false;
         
         _ = AnimationBuilder.Create()
-            .Size(Axis.X, 30, null, null, TimeSpan.FromSeconds(0.3), null, EasingType.Quintic, EasingMode.EaseIn, FrameworkLayer.Xaml)
+            .Size(Axis.X, 30, null, null, TimeSpan.FromSeconds(0.2), null, EasingType.Quintic, EasingMode.EaseIn, FrameworkLayer.Xaml)
             .StartAsync(Root);
     }
 
@@ -424,7 +424,7 @@ public sealed partial class LeftBar : UserControl
         }
         PointerPressed += LeftDown;
 		
-        Task.Delay(200).ContinueWith(_ =>
+        Task.Delay(175).ContinueWith(_ =>
         {
             AppServer.UiDispatcherQueue.TryEnqueue(() => PointerPressed -= LeftDown);
             if (MouseOver && !SideOpen && !click)
@@ -438,7 +438,7 @@ public sealed partial class LeftBar : UserControl
         
         if (LockSideBar) return;
         
-        Task.Delay(300).ContinueWith(_ =>
+        Task.Delay(175).ContinueWith(_ =>
         {
             if (!MouseOver && SideOpen)
                 AppServer.UiDispatcherQueue.TryEnqueue(CloseSideBar);
