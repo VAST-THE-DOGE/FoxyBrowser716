@@ -35,7 +35,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     public Action<InfoGetter.SearchEngine> SearchEngineChangeRequested;
     
-    private VisualCaptureHelper? _captureHelper;
+    // private VisualCaptureHelper? _captureHelper;
     
     private MainWindow()
     {
@@ -128,7 +128,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             ExtensionPopupWebview.Height = 500; //size.height;
         };
         
-        _captureHelper = new VisualCaptureHelper(TabHolder, BlurredBackgroundGrid);
+        // _captureHelper = new VisualCaptureHelper(TabHolder, BlurredBackgroundGrid);
 
         // refresh all data
         HandleCacheChanged();
@@ -200,7 +200,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         
         // apply fading:
         // var fadeOut = AnimationBuilder.Create();
-        var fadeIn = AnimationBuilder.Create();
+        // var fadeIn = AnimationBuilder.Create();
         
         // already collapsed?
         // if (pair.oldId == -1)
@@ -222,24 +222,24 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         //     _ = fadeOut.StartAsync(oldTab!.Core);
         // }
         
-        if (pair.newId == -1)
-        {
-            Canvas.SetZIndex(HomePage, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
-            _ = fadeIn.StartAsync(HomePage);
-        }
-        else if (pair.newId == -2)
-        {
-            Canvas.SetZIndex(SettingsPage, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
-            _ = fadeIn.StartAsync(SettingsPage);
-        } 
-        else if (TabManager.TryGetTab(pair.newId, out var newTab))
-        {
-            Canvas.SetZIndex(newTab!.Core, 1);
-            fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
-            _ = fadeIn.StartAsync(newTab!.Core);
-        }
+        // if (pair.newId == -1)
+        // {
+        //     Canvas.SetZIndex(HomePage, 1);
+        //     fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeIn.StartAsync(HomePage);
+        // }
+        // else if (pair.newId == -2)
+        // {
+        //     Canvas.SetZIndex(SettingsPage, 1);
+        //     fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeIn.StartAsync(SettingsPage);
+        // } 
+        // else if (TabManager.TryGetTab(pair.newId, out var newTab))
+        // {
+        //     Canvas.SetZIndex(newTab!.Core, 1);
+        //     fadeIn.Opacity(1, 0, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml);
+        //     _ = fadeIn.StartAsync(newTab!.Core);
+        // }
     }
 
     internal Theme CurrentTheme
@@ -273,6 +273,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         TabHolder.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
+        
+        BlurredBackgroundGrid.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColor);
     }
 
     #region Window Events
@@ -614,7 +616,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
-        _captureHelper?.Dispose();
+        // _captureHelper?.Dispose();
     }
 
     private void MainWindow_OnWindowStateChanged(object? sender, WindowState e)
