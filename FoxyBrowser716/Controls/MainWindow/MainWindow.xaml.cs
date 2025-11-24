@@ -156,6 +156,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 RefreshCurrentTabUi(tab);
             }
         };
+        
         await tab.InitializeTask;
         tab.Core.CoreWebView2.HistoryChanged += (_, _) =>
         {
@@ -423,10 +424,17 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
                 {
                     var ic = new InstanceCard(i, i.Name == Instance.Name);
                     ic.OpenRequested += async () => await i.CreateWindow();
-                    ic.TransferRequested += async () => await i.CreateWindow(
-                        TabManager.GetAllTabs().Select(t => t.Value.Info.Url).ToArray(),
-                        new Rect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height),
-                        StateFromWindow());
+                    ic.TransferRequested += async () =>
+                    {
+                        var currentPos = new Rect(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+                        var tabUrls = TabManager
+                            .GetAllTabs()
+                            .Select(t => t.Value.Info.Url)
+                            .ToArray();
+                        
+                        await i.CreateWindow(tabUrls, currentPos, StateFromWindow());
+                        this.Close();
+                    };
                     ic.CurrentTheme = CurrentTheme;
                     return ic;
                 })

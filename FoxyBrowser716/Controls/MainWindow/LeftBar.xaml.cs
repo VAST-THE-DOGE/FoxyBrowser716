@@ -206,10 +206,10 @@ public sealed partial class LeftBar : UserControl
         return _ => TabManager!.SwapActiveTabTo(TabManager.AddTab(websiteInfo.Url));
     }
 
-    private void TabManagerOnActiveTabChanged((int oldId, int newId) pair)
+    public void RefreshBookmarkAndPinCards()
     {
-        PinCard.Visibility = pair.newId < 0 ? Visibility.Collapsed : Visibility.Visible;
-        BookmarkCard.Visibility = pair.newId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        PinCard.Visibility = TabManager.ActiveTabId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        BookmarkCard.Visibility = TabManager.ActiveTabId < 0 ? Visibility.Collapsed : Visibility.Visible;
         
         if (TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
         {
@@ -222,7 +222,12 @@ public sealed partial class LeftBar : UserControl
                 mi2.Kind = TabManager.Instance.Pins.Any(p => p.Url == tab.Info.Url)
                     ? MaterialIconKind.Pin
                     : MaterialIconKind.PinOutline;
-        }    
+        }     
+    }
+
+    private void TabManagerOnActiveTabChanged((int oldId, int newId) pair)
+    {
+        RefreshBookmarkAndPinCards();
         
         switch (pair.oldId)
         {
@@ -265,6 +270,14 @@ public sealed partial class LeftBar : UserControl
 
     private void TabManagerOnTabAdded(WebviewTab tab)
     {
+        tab.Info.PropertyChanged += (_, _) =>
+        {
+            if (TabManager.ActiveTabId == tab.Id)
+            {
+                RefreshBookmarkAndPinCards();
+            }
+        };
+        
         var card = new TabCard(tab);
         card.CurrentTheme = CurrentTheme;
         card.CloseRequested += TabManager!.RemoveTab;
