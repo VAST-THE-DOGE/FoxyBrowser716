@@ -250,7 +250,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             field = value;
             ApplyTheme();
         }
-    } = DefaultThemes.FoxyTheme;
+    } = DefaultThemes.DaybreakFoxy;
 
     private void ApplyTheme()
     {
