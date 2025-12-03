@@ -102,10 +102,17 @@ public partial class TabManager : ObservableObject
 		
 		if (_tabs.TryRemove(tabId, out var tab))
 		{
-			Tabs.Remove(tab);
-			if (tab.Core.Parent is Grid g)
+			var removeFrom = Groups
+				.FirstOrDefault(g => g.Tabs.Contains(tab));
+		
+			if (removeFrom is { } group)
+				group.Tabs.Remove(tab);
+			else 
+				Tabs.Remove(tab);
+			
+			if (tab.Core.Parent is Grid grid)
 			{
-				g.Children.Remove(tab.Core);
+				grid.Children.Remove(tab.Core);
 				if (!keepCore)
 				{
 					tab.Core.Close();
@@ -198,5 +205,44 @@ public partial class TabManager : ObservableObject
 			_nextToSwap = null;
 			SwapActiveTabTo(next);
 		}
+	}
+
+	/// <summary>
+	/// -1 group id for no group
+	/// </summary>
+	/// <param name="tabId"></param>
+	/// <param name="groupId"></param>
+	public void MoveTabToGroup(int tabId, int groupId)
+	{
+		var tab = _tabs[tabId];
+		
+		var removeFrom = Groups
+			.FirstOrDefault(g => g.Tabs.Contains(tab));
+		
+		if (removeFrom is { } group)
+			group.Tabs.Remove(tab);
+		else 
+			Tabs.Remove(tab);
+
+        if (groupId >= 0)
+			Groups[groupId].Tabs.Add(tab);
+		else
+			Tabs.Add(tab);
+	}
+
+	public int CreateGroup()
+	{
+		var group = new TabGroup(this);
+		group.Name = $"Group {group.Id}";
+		
+		return group.Id;
+	}
+
+	public void RemoveGroup(int groupId)
+	{
+		var group = Groups[groupId];
+		foreach (var tab in group.Tabs)
+			RemoveTab(tab.Id);
+		Groups.Remove(group);
 	}
 }

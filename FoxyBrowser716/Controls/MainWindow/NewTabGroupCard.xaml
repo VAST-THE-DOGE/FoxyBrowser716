@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FoxyBrowser716.Controls.MainWindow.NewTabGroupCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:generic="using:FoxyBrowser716.Controls.Generic"
+    xmlns:material="using:Material.Icons.WinUI3"
+    xmlns:mainWindow="using:FoxyBrowser716.Controls.MainWindow"
+    xmlns:complex="using:FoxyBrowser716.DataObjects.Complex"
+    xmlns:helpers="using:FoxyBrowser716.Controls.Helpers"
+    mc:Ignorable="d" MinWidth="0" HorizontalAlignment="Stretch" SizeChanged="TabCard_OnSizeChanged">
+    
+    <UserControl.Resources>
+        <helpers:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+        <helpers:UrlToImageControlConverter x:Key="UrlToImageControlConverter"/>
+    </UserControl.Resources>
+    
+    <Grid Name="Root" CornerRadius="5" BorderThickness="0" MinWidth="0" HorizontalAlignment="Stretch"
+          Background="{x:Bind TabGroup.GroupColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Name="TopBar" CornerRadius="5" BorderThickness="2" Height="26" MinWidth="0" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" MinWidth="0"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- <Viewbox Grid.Column="0" Margin="2,1,1,1" Width="17" Height="17" x:Name="Icon" x:FieldModifier="public" /> -->
+            <generic:FTextInput Grid.Column="1" Height="22" Margin="2,0" x:Name="Label" x:FieldModifier="public" Text="{x:Bind TabGroup.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+            <generic:FIconButton Grid.Column="2" Width="21" Height="21" Margin="0,0,1,0" x:Name="ButtonCollapse" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=ExpandLess}" OnClick="ButtonCollapse_OnOnClick" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+        </Grid>
+        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,2">
+            <ItemsRepeater ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="complex:WebviewTab">
+                        <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
+                                               Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
+                                               CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}" 
+                                               Tag="{x:Bind}"   
+                                               OnClick="TabCard_OnClick" 
+                                               CloseRequested="TabCard_OnCloseRequested"
+                                               DuplicateRequested="TabCard_OnDuplicateRequested"
+                                               MenuOptions="{x:Bind GetMenuItems(), Mode=OneWay}"
+                                               
+                                               OnDragStarted="NewTabCard_OnOnDragStarted"
+                                               OnDragMoved="NewTabCard_OnOnDragMoved"
+                                               OnDragCompleted="NewTabCard_OnOnDragCompleted"
+                        />
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+        </StackPanel>
+    </Grid>
+</UserControl>

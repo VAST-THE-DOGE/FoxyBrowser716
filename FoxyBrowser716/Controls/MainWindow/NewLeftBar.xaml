@@ -33,8 +33,8 @@
         </Grid.RowDefinitions>
         
         <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="HomeCard_OnOnClick"/>
-        <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Hidden" 
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Hidden"
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
                       ZoomMode="Disabled">
@@ -44,17 +44,27 @@
                         <DataTemplate x:DataType="complex:WebviewTab">
                             <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
                                                    Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
-                                                   CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}" 
-                                                   Tag="{x:Bind}"   
-                                                   OnClick="TabCard_OnClick" 
+                                                   CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
+                                                   Tag="{x:Bind}"
+                                                   OnClick="TabCard_OnClick"
                                                    CloseRequested="TabCard_OnCloseRequested"
                                                    DuplicateRequested="TabCard_OnDuplicateRequested"
-                                                   MenuOptions="{x:Bind TabToOptions, Mode=OneWay}"
-
+                                                   MenuOptions="{x:Bind GetMenuItems(), Mode=OneWay}"
+        
                                                    OnDragStarted="NewTabCard_OnOnDragStarted"
                                                    OnDragMoved="NewTabCard_OnOnDragMoved"
                                                    OnDragCompleted="NewTabCard_OnOnDragCompleted"
                             />
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+        
+                <ItemsRepeater ItemsSource="{x:Bind TabManager.Groups, Mode=OneWay}">
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="basic:TabGroup">
+                            <mainWindow:NewTabGroupCard CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
+                                                    Tag="{x:Bind}" TabGroup="{x:Bind}"
+                                                    />
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>

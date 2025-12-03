@@ -18,7 +18,6 @@ public partial class WebviewTab : ObservableObject
 	public TabManager TabManager;
 	private string? _startingUrl;
 	public int Id { get; private set; }
-	public int GroupId { get; private set; }
 	[JsonIgnore] [ObservableProperty] public partial bool MovingTab { get; set; }
 	
 	[ObservableProperty] public partial WebView2 Core { get; private set; }
@@ -217,10 +216,28 @@ public partial class WebviewTab : ObservableObject
 	{
 		Info.FavIconUrl = Core.CoreWebView2.FaviconUri ?? "";
 	}
-
-	public ObservableCollection<FMenuItem> TabToOptions =>
+	
+	private ObservableCollection<FMenuItem> BaseItems =>
 	[
-		new() { Text="Close", Action = () => TabManager.RemoveTab(Id) },
-		new() { Text="Duplicate", Action = () => TabManager.SwapActiveTabTo(TabManager.AddTab(Info.Url)) },
+		new() { Text = "Close", Action = () => TabManager.RemoveTab(Id) },
+		new() { Text = "Duplicate", Action = () => TabManager.SwapActiveTabTo(TabManager.AddTab(Info.Url)) },
+		new() { Text = "Move to new group", Action = () => TabManager.MoveTabToGroup(Id, TabManager.CreateGroup()) },
 	];
+
+	public ObservableCollection<FMenuItem> GetMenuItems()
+	{
+		var items = new ObservableCollection<FMenuItem>(BaseItems);
+		
+		if (TabManager.Tabs.Contains(this))
+		{
+			items.Add(new() { Text="", Action = () => TabManager.MoveTabToGroup(Id, -1)});
+		}
+		
+		foreach (var group in TabManager.Groups.Where(g => !g.Tabs.Contains(this)))
+		{
+			items.Add(new() { Text = $"Move to {group.Name}", Action = () => TabManager.MoveTabToGroup(Id, group.Id) });
+		}
+		
+		return items;
+	}
 }
