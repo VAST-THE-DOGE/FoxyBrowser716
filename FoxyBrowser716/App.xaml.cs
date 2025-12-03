@@ -33,6 +33,8 @@ public partial class App : Application
     {
         try
         {
+            // performance optimizations:
+            // compiles JIT code for the startup profile which is reused after the first launch
             var profileRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
             ProfileOptimization.SetProfileRoot(profileRoot);
             ProfileOptimization.StartProfile("Startup.profile");
@@ -48,8 +50,6 @@ public partial class App : Application
                 var activationArgs = currentInstance.GetActivatedEventArgs();
                 try
                 {
-                    // Await the redirect so it completes before we exit the process.
-                    // If you cannot make OnLaunched async, block synchronously but intentionally:
                     await mainInstance.RedirectActivationToAsync(activationArgs).AsTask();
                 }
                 catch (Exception ex)
@@ -58,20 +58,16 @@ public partial class App : Application
                     ErrorInfo.AddError(ex);
                 }
 
-                // After the redirect completes, exit.
                 Environment.Exit(0);
                 return;
             }
         
-            // load errors:
             ErrorInfo.LoadLog();
             
-// #if !DEBUG
             this.UnhandledException += OnUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
             AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
             TaskScheduler.UnobservedTaskException += TaskSchedulerOnUnobservedTaskException;
-// #endif
             
             // performance optimizations:
             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
