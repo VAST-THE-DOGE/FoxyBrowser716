@@ -33,6 +33,10 @@ public partial class App : Application
     {
         try
         {
+            var profileRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+            ProfileOptimization.SetProfileRoot(profileRoot);
+            ProfileOptimization.StartProfile("Startup.profile");
+            
             // Get the current app instance
             var currentInstance = AppInstance.GetCurrent();
         
@@ -76,9 +80,9 @@ public partial class App : Application
             {
                 try
                 {
-                    Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-                    ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
-                    ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
+                    Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
+                    //ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
+                    //ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
                 }
                 catch { /* ignore if fails */ }
             });

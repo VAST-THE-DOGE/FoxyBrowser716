@@ -36,7 +36,7 @@ public class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : class, INotify
 	private SavePriority Priority { get; }
 	private string FilePath { get; init; }
 	public bool IsLoaded { get; private set; } = false;
-	public T? Item { get; private set; }
+	public T Item { get; private set; } = null!; // set via ItemFactory if null
 	private Func<T> ItemFactory { get; init; }
 	
 	/// <summary>
@@ -57,7 +57,7 @@ public class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : class, INotify
 	internal override async Task Save()
 	{
 		if (!IsLoaded) return;
-		if (Item is null) return;
+		if (Item is null) return; // null before load
 		
 		var result = await FoxyFileManager.SaveToFileAsync(FilePath, Item);
 		

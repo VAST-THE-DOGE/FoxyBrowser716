@@ -25,6 +25,9 @@ public partial class WebviewTab : ObservableObject
 	
 	public Task InitializeTask { get; private set; }
 	
+	private static readonly HashSet<int> _boostedProcessIds = [];
+	private static readonly object _boostLock = new();
+	
 	public WebviewTab(TabManager tabManager, string? url)
 	{
 		var core = new WebView2();
@@ -66,7 +69,7 @@ public partial class WebviewTab : ObservableObject
 		
 		// Core.AllowExternalDrop = true;
 		Core.AllowDrop = true;
-		Core.CompositeMode = ElementCompositeMode.MinBlend;
+		// Core.CompositeMode = ElementCompositeMode.MinBlend;
 		
 		Core.CoreWebView2.DefaultDownloadDialogCornerAlignment = CoreWebView2DefaultDownloadDialogCornerAlignment.TopLeft;
 		Core.CoreWebView2.DefaultDownloadDialogMargin = new Point(0, 0);
@@ -92,30 +95,34 @@ public partial class WebviewTab : ObservableObject
 		
 		//performance stuff
 		var processId = Core.CoreWebView2.BrowserProcessId;
-		var process = Process.GetProcessById((int)processId);
-        
-		process.PriorityClass = ProcessPriorityClass.High;
 		
-		// process.ProcessorAffinity = 0x0F; // Use first 4 cores
-		
-		try
+		_ = Task.Run(() =>
 		{
-			var gpuProcesses = Process.GetProcessesByName("msedgewebview2")
-				.Where(p => p.Id != process.Id);
-    
-			foreach (var gpuProcess in gpuProcesses)
+			try
 			{
-				try
-				{
-					gpuProcess.PriorityClass = ProcessPriorityClass.High;
-				}
-				catch { /* Ignore */ }
+				BoostProcessPriority((int)processId);
 			}
-		}
-		catch { /* Ignore */ }
+			catch { /* Ignore */ }
+		});
 
-		
 		await Task.WhenAll(extensionSetupTask, NavigateOrSearch(_startingUrl, true));
+	}
+	
+	private static void BoostProcessPriority(int processId)
+	{
+		lock (_boostLock)
+		{
+			if (_boostedProcessIds.Contains(processId))
+				return;
+
+			try
+			{
+				var process = Process.GetProcessById(processId);
+				process.PriorityClass = ProcessPriorityClass.AboveNormal;
+				_boostedProcessIds.Add(processId);
+			}
+			catch { /* Process may have exited */ }
+		}
 	}
 
 	private void CoreWebView2OnNavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs args)
