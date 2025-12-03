@@ -41,10 +41,10 @@ public sealed partial class NewTabCard : UserControl
 	[ObservableProperty] 
 	public partial ObservableCollection<FMenuItem> MenuOptions { get; set; } = 
 		[ 
-			new() { Text = "test1", Command = () => Debug.WriteLine("hey1"), }, 
-			new() { Text = "test2", Command = () => Debug.WriteLine("hey2") }, 
-			new() { Text = "test3", Command = () => Debug.WriteLine("hey3") }, 
-			new() { Text = "test4", Command = () => Debug.WriteLine("hey4") },
+			new() { Text = "test1", Action = () => Debug.WriteLine("hey1"), }, 
+			new() { Text = "test2", Action = () => Debug.WriteLine("hey2") }, 
+			new() { Text = "test3", Action = () => Debug.WriteLine("hey3") }, 
+			new() { Text = "test4", Action = () => Debug.WriteLine("hey4") },
 		];
 	
 	public event Action<NewTabCard>? DuplicateRequested;

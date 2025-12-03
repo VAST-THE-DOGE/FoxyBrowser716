@@ -1,26 +1,39 @@
+using FoxyBrowser716.ErrorHandeler;
+using Material.Icons.WinUI3;
+
 namespace FoxyBrowser716.Controls.Helpers;
 
 public class UrlToImageControlConverter : IValueConverter
 {
 	public object Convert(object value, Type targetType, object parameter, string language)
 	{
-		if (value is string url)
+		if (value is string { Length: > 0 } url)
 		{
-			return new Image
+			try
 			{
-				Source = string.IsNullOrWhiteSpace(url) 
-					? new BitmapImage(new Uri("https://TODO")) //TODO
-					: url.EndsWith(".svg") 
+				return new Image
+				{
+					Source = url.EndsWith(".svg") 
 						? new SvgImageSource(new Uri(url)) 
 						: new BitmapImage(new Uri(url)),
-				Width = 18, Height = 18,
-				Stretch = Stretch.Uniform,
-				VerticalAlignment = VerticalAlignment.Center,
-				HorizontalAlignment = HorizontalAlignment.Center,
-			};
+					Width = 18, Height = 18,
+					Stretch = Stretch.Uniform,
+					VerticalAlignment = VerticalAlignment.Center,
+					HorizontalAlignment = HorizontalAlignment.Center,
+				};
+			}
+			catch (Exception e)
+			{
+				ErrorInfo.AddError(e);
+				
+			}
 		}
 
-		return null;
+		return new MaterialIcon
+		{
+			Kind = MaterialIconKind.Web, 
+			Foreground = new SolidColorBrush(Colors.Gray)
+		};
 	}
 
 	public object ConvertBack(object value, Type targetType, object parameter, string language)

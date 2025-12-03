@@ -50,7 +50,7 @@
                                 <generic:FTextButton ButtonText="{x:Bind Text}" 
                                                      OnClick="{x:Bind ClickedEvent}"
                                                      CurrentTheme="{Binding ElementName=MenuItemsHolder, Path=Tag}"
-                                                     Margin="2" CornerRadius="5"/>
+                                                     Margin="1" CornerRadius="5"/>
                             </DataTemplate>
                         </ItemsRepeater.ItemTemplate>
                     </ItemsRepeater>

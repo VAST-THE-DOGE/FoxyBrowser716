@@ -217,4 +217,10 @@ public partial class WebviewTab : ObservableObject
 	{
 		Info.FavIconUrl = Core.CoreWebView2.FaviconUri ?? "";
 	}
+
+	public ObservableCollection<FMenuItem> TabToOptions =>
+	[
+		new() { Text="Close", Action = () => TabManager.RemoveTab(Id) },
+		new() { Text="Duplicate", Action = () => TabManager.SwapActiveTabTo(TabManager.AddTab(Info.Url)) },
+	];
 }

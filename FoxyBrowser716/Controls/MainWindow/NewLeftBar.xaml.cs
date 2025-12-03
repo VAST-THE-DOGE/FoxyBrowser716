@@ -153,7 +153,8 @@ public sealed partial class NewLeftBar : UserControl
         LockSideBar = locked;
     }
     #endregion
-
+    
+    
     private void PinCard_OnClick(NewTabCard newTabCard)
     {
         if (newTabCard.Tag is WebsiteInfo wi)
@@ -209,5 +210,10 @@ public sealed partial class NewLeftBar : UserControl
         {
             TabManager?.SwapActiveTabTo(TabManager.AddTab(wt.Info.Url));
         }
+    }
+
+    private void HomeCard_OnOnClick(int id)
+    {
+        TabManager?.SwapActiveTabTo(id);
     }
 }

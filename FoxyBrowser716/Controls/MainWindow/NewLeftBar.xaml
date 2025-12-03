@@ -32,23 +32,25 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
-        <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+        <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="HomeCard_OnOnClick"/>
         <ScrollViewer Grid.Row="1" 
                       VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
                       ZoomMode="Disabled">
-            <StackPanel x:Name="Tabs" HorizontalAlignment="Stretch" Tag="{x:Bind CurrentTheme, Mode=OneWay}">
+            <StackPanel x:Name="Tabs" HorizontalAlignment="Stretch">
                 <ItemsRepeater ItemsSource="{x:Bind TabManager.Tabs, Mode=OneWay}">
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="complex:WebviewTab">
                             <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
                                                    Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
-                                                   CurrentTheme="{Binding ElementName=Pins, Path=Tag}" Tag="{x:Bind}"   
+                                                   CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}" 
+                                                   Tag="{x:Bind}"   
                                                    OnClick="TabCard_OnClick" 
                                                    CloseRequested="TabCard_OnCloseRequested"
                                                    DuplicateRequested="TabCard_OnDuplicateRequested"
-                                                   
+                                                   MenuOptions="{x:Bind TabToOptions, Mode=OneWay}"
+
                                                    OnDragStarted="NewTabCard_OnOnDragStarted"
                                                    OnDragMoved="NewTabCard_OnOnDragMoved"
                                                    OnDragCompleted="NewTabCard_OnOnDragCompleted"
@@ -80,7 +82,7 @@
                         <DataTemplate x:DataType="basic:WebsiteInfo">
                             <mainWindow:NewTabCard Title="{x:Bind Title}"
                                                    Icon="{x:Bind FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
-                                                   CurrentTheme="{Binding ElementName=Pins, Path=Tag}" Tag="{x:Bind}"   
+                                                   CurrentTheme="{Binding ElementName=Pins, Path=Tag, Mode=OneWay}" Tag="{x:Bind}"   
                                                    DuplicateVisible="Collapsed" OnClick="PinCard_OnClick" CloseRequested="PinCard_OnCloseRequested" 
                                                    OnDragStarted="NewTabCard_OnOnDragStarted"
                                                    OnDragMoved="NewTabCard_OnOnDragMoved"
