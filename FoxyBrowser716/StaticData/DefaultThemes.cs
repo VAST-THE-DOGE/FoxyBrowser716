@@ -9,7 +9,8 @@ public class DefaultThemes
 	{
 		["Dark Mode"] = DarkMode,
 		["Light Mode"] = LightMode,
-		["Foxy Theme"] = FoxyTheme,
+		["Daybreak Foxy"] = DaybreakFoxy,
+		["Nightfall Foxy"] = NightfallFoxy,
 		["Vast Seas"] = VastSea,
 		["Vast Skies"] = VastSky,
 	};
@@ -40,7 +41,7 @@ public class DefaultThemes
 		YesColor = Color.FromArgb(255, 0, 225, 0),
 		NoColor = Color.FromArgb(255, 225, 0, 0),
 	};
-	public static Theme FoxyTheme = new()
+	public static Theme DaybreakFoxy = new()
 	{
 		PrimaryBackgroundColor = Color.FromArgb(255, 255, 181, 92),
 		SecondaryBackgroundColor = Color.FromArgb(255, 255, 170, 75),
@@ -50,6 +51,19 @@ public class DefaultThemes
 		SecondaryAccentColor = Color.FromArgb(255, 114, 43, 209),
 		PrimaryHighlightColor = Color.FromArgb(255, 149, 69, 255),
 		SecondaryHighlightColor = Color.FromArgb(255, 114, 43, 209),
+		YesColor = Color.FromArgb(255, 0, 225, 0),
+		NoColor = Color.FromArgb(255, 225, 0, 0),
+	};
+	public static Theme NightfallFoxy = new()
+	{
+		PrimaryBackgroundColor = Color.FromArgb(255, 30, 0, 73),
+		SecondaryBackgroundColor = Color.FromArgb(255, 0, 6, 38),
+		PrimaryForegroundColor = Color.FromArgb(255, 255, 255, 255),
+		SecondaryForegroundColor = Color.FromArgb(255, 200, 200, 200),
+		PrimaryAccentColor = Color.FromArgb(255, 149, 69, 255),
+		SecondaryAccentColor = Color.FromArgb(255, 114, 43, 209),
+		PrimaryHighlightColor = Color.FromArgb(255, 94, 35, 173),
+		SecondaryHighlightColor = Color.FromArgb(255, 76, 22, 148),
 		YesColor = Color.FromArgb(255, 0, 225, 0),
 		NoColor = Color.FromArgb(255, 225, 0, 0),
 	};
