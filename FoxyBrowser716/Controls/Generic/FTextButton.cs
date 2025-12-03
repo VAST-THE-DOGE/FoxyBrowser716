@@ -1,6 +1,7 @@
 
 using Windows.UI.Text;
 using FoxyBrowser716.DataObjects.Basic;
+using Microsoft.UI.Input;
 using Microsoft.UI.Text;
 
 namespace FoxyBrowser716.Controls.Generic;
@@ -117,15 +118,19 @@ public sealed partial class FTextButton : ContentControl
             ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorVeryTransparent);
         };
         
-        PointerPressed += (_, _) =>
+        PointerPressed += (_, e) =>
         {
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
             if (ForceHighlight) return;
             
             ChangeColorAnimation(Background, CurrentTheme.PrimaryHighlightColor, 0.05);
         };
 
-        PointerReleased += (_, _) =>
+        PointerReleased += (_, e) =>
         {
+            if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonReleased) return;
+
             ChangeColorAnimation(Background, CurrentTheme.PrimaryAccentColorSlightTransparent, 0.3);
             
             OnClick?.Invoke(this, new RoutedEventArgs());

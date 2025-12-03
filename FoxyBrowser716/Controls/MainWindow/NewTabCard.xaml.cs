@@ -11,6 +11,7 @@ using FoxyBrowser716.DataObjects.Basic;
 using FoxyBrowser716.DataObjects.Complex;
 using Material.Icons;
 using Material.Icons.WinUI3;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -120,6 +121,7 @@ public sealed partial class NewTabCard : UserControl
 	
 	private void Root_OnPointerReleased(object sender, PointerRoutedEventArgs e)
 	{
+		if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonReleased) return;
 		if (ButtonDuplicate.PointerOver || ButtonClose.PointerOver) return;
         
 		ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryBackgroundColorVeryTransparent, 0.3);
@@ -128,6 +130,7 @@ public sealed partial class NewTabCard : UserControl
 	
 	private void Root_OnPointerPressed(object sender, PointerRoutedEventArgs e)
 	{
+		if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 		if (ButtonDuplicate.PointerOver || ButtonClose.PointerOver) return;
 
 		ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryHighlightColorSlightTransparent, 0.05);

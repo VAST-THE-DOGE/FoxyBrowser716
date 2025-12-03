@@ -200,8 +200,10 @@ public sealed partial class AiChatWindow : UserControl
                 Grid.SetColumn(date, 0);
                 Grid.SetRow(date, 1);
 
-                chatCard.PointerPressed += async (_, _) =>
+                chatCard.PointerPressed += async (_, e) =>
                 {
+                    if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+                    
                     if (buttonRemove.PointerOver) return;
                     await _aiHandler.SwapChat(chat.Id);
                     await LoadChatMessages(chat);

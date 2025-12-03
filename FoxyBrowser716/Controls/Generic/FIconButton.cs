@@ -1,4 +1,5 @@
 using FoxyBrowser716.DataObjects.Basic;
+using Microsoft.UI.Input;
 
 namespace FoxyBrowser716.Controls.Generic;
 
@@ -84,13 +85,17 @@ public sealed partial class FIconButton : ContentControl
             ChangeColorAnimation(Foreground, CurrentTheme.PrimaryForegroundColor);
         };
         
-        PointerPressed += (_, _) =>
+        PointerPressed += (_, e) =>
         {
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+            
             ChangeColorAnimation(Foreground, CurrentTheme.PrimaryHighlightColor, 0.05);
         };
 
-        PointerReleased += (_, _) =>
+        PointerReleased += (_, e) =>
         {
+            if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonReleased) return;
+
             OnClick?.Invoke(this, new RoutedEventArgs());
             
             ChangeColorAnimation(Foreground, PointerOver ? CurrentTheme.SecondaryForegroundColor : CurrentTheme.PrimaryForegroundColor, 0.3);
