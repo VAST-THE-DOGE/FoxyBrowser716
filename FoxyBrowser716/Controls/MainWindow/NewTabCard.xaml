@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FoxyBrowser716.Controls.MainWindow.NewTabCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:generic="using:FoxyBrowser716.Controls.Generic"
+    xmlns:material="using:Material.Icons.WinUI3"
+    xmlns:helpers="using:FoxyBrowser716.Controls.Helpers"
+    xmlns:mainWindow="using:FoxyBrowser716.Controls.MainWindow"
+    xmlns:basic="using:FoxyBrowser716.DataObjects.Basic"
+    mc:Ignorable="d" MinWidth="0" HorizontalAlignment="Stretch">
+
+    <UserControl.Resources>
+        <helpers:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+    </UserControl.Resources>
+    
+    <Grid Name="Root" CornerRadius="5" BorderThickness="2" Height="26" MinWidth="0" HorizontalAlignment="Stretch"
+          ManipulationMode="TranslateX,TranslateY" 
+          ManipulationStarted="Root_OnManipulationStarted" 
+          ManipulationCompleted="Root_OnManipulationCompleted" 
+          ManipulationDelta="Root_OnManipulationDelta"
+          PointerEntered="Root_OnPointerEntered" 
+          PointerExited="Root_OnPointerExited" 
+          PointerPressed="Root_OnPointerPressed" 
+          PointerReleased="Root_OnPointerReleased">
+        
+        <Grid.ContextFlyout>
+            <Flyout Placement="LeftEdgeAlignedTop">
+                <Flyout.FlyoutPresenterStyle>
+                    <Style TargetType="FlyoutPresenter">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="CornerRadius" Value="0"/>
+                        <Setter Property="MinWidth" Value="0"/>
+                        <Setter Property="MinHeight" Value="0"/>
+                    </Style>
+                </Flyout.FlyoutPresenterStyle>
+                
+                <StackPanel BorderBrush="{x:Bind CurrentTheme.SecondaryBackgroundColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
+                            Background="{x:Bind CurrentTheme.PrimaryBackgroundColorVeryTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
+                            CornerRadius="8" 
+                            BorderThickness="2" Margin="0">
+                    <ItemsRepeater x:Name="MenuItemsHolder" ItemsSource="{x:Bind MenuOptions, Mode=OneWay}" Tag="{x:Bind CurrentTheme, Mode=OneWay}">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="basic:FMenuItem">
+                                <generic:FTextButton ButtonText="{x:Bind Text}" 
+                                                     OnClick="{x:Bind ClickedEvent}"
+                                                     CurrentTheme="{Binding ElementName=MenuItemsHolder, Path=Tag}"
+                                                     Margin="2" CornerRadius="5"/>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </StackPanel>
+            </Flyout>
+        </Grid.ContextFlyout>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*" MinWidth="0"/>
+            <ColumnDefinition Width="Auto" MinWidth="0"/>
+            <ColumnDefinition Width="Auto" MinWidth="0"/>
+        </Grid.ColumnDefinitions>
+        
+        <ContentControl Grid.Column="0" Margin="2,2,2,2" Width="18" Height="18" 
+                        Content="{x:Bind Icon, Mode=OneWay}" />
+        <TextBlock Grid.Column="1" Height="22" Margin="2,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" x:Name="IconControl"
+                   Text="{x:Bind Title, Mode=OneWay}" Foreground="{x:Bind CurrentTheme.PrimaryForegroundColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"/>
+        <generic:FIconButton Grid.Column="2" MaxWidth="21" Height="21" MinWidth="0" Visibility="{x:Bind DuplicateVisible, Mode=OneWay}" x:Name="ButtonDuplicate" Padding="3" Content="{material:MaterialIconExt Kind=ContentCopy}" OnClick="ButtonDuplicate_OnOnClick"/>
+        <generic:FIconButton Grid.Column="3" MaxWidth="21" Height="21" MinWidth="0" Visibility="{x:Bind CloseVisible, Mode=OneWay}" Margin="0,0,1,0" x:Name="ButtonClose" Content="{material:MaterialIconExt Kind=Close}" OnClick="ButtonClose_OnOnClick"/>
+    </Grid>
+</UserControl>

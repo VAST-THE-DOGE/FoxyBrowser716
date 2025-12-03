@@ -136,7 +136,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void HomePageOnToggleEditMode(bool inEdit)
     {
-        LeftBar.ToggleEditMode(inEdit, HomePage);
+        // LeftBar.ToggleEditMode(inEdit, HomePage); TODO
         TopBar.ToggleEditMode(inEdit);
     }
 

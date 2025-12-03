@@ -199,7 +199,7 @@ public sealed partial class TabCard : UserControl
         Label.Text = websiteInfo.Title;
     }
 
-    internal Theme CurrentTheme
+    public Theme CurrentTheme
     {
         get;
         set

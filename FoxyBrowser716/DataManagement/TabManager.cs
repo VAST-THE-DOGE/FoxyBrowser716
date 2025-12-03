@@ -6,10 +6,13 @@ using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716.DataManagement;
 
-public class TabManager
+public partial class TabManager : ObservableObject
 {
-	public Instance Instance { get; private set; }
+	[ObservableProperty] public partial Instance Instance { get; private set; }
 
+	[ObservableProperty] public partial ObservableCollection<WebviewTab> Tabs { get; set; } = [];
+	[ObservableProperty] public partial ObservableCollection<TabGroup> Groups { get; set; } = [];
+	
 	private ConcurrentDictionary<int, WebviewTab> _tabs { get; set; } = [];
 	
 	public event Action<WebviewTab> TabAdded;
@@ -99,6 +102,7 @@ public class TabManager
 		
 		if (_tabs.TryRemove(tabId, out var tab))
 		{
+			Tabs.Remove(tab);
 			if (tab.Core.Parent is Grid g)
 			{
 				g.Children.Remove(tab.Core);
@@ -116,7 +120,8 @@ public class TabManager
 	public int AddTab(string? url)
 	{
 		var tab = new WebviewTab(this, url);
-		_tabs.TryAdd(tab.Id, tab);
+		if (_tabs.TryAdd(tab.Id, tab))
+			Tabs.Add(tab);
 		TabAdded?.Invoke(tab);
 		return tab.Id;
 	}

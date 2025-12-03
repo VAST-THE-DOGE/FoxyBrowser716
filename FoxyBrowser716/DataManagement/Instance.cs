@@ -11,7 +11,7 @@ using WinUIEx;
 
 namespace FoxyBrowser716.DataManagement;
 
-public class Instance
+public partial class Instance : ObservableObject
 {
 	public string Name { get; private set; }
 	
@@ -20,13 +20,28 @@ public class Instance
 	
 	public BrowserSettings Settings => _settings.Item;
 	public InstanceCache Cache => _cache.Item;
-	private FoxyAutoSaverField<BrowserSettings> _settings;
-	private FoxyAutoSaverField<InstanceCache> _cache;
-	
 	public ObservableCollection<WebsiteInfo> Pins => _pins.Items;
 	public ObservableCollection<WebsiteInfo> Bookmarks => _bookmarks.Items;
-	private FoxyAutoSaverList<WebsiteInfo> _pins;
-	private FoxyAutoSaverList<WebsiteInfo> _bookmarks;
+	
+	private FoxyAutoSaverField<BrowserSettings> _settings
+	{
+		get;
+		set => SetProperty(ref field, value, nameof(Settings));
+	}
+
+	private FoxyAutoSaverField<InstanceCache> _cache
+	{
+		get;
+		set => SetProperty(ref field, value, nameof(Cache));
+	}
+
+	[ObservableProperty] public partial FoxyAutoSaverList<WebsiteInfo> _pins { get; set; }
+
+	private FoxyAutoSaverList<WebsiteInfo> _bookmarks
+	{
+		get;
+		set => SetProperty(ref field, value, nameof(Bookmarks));
+	}
 	
 	public bool IsPrimaryInstance => Name == AppServer.PrimaryInstance.Name;
 

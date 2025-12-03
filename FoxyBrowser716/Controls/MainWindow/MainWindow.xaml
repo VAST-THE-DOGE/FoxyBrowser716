@@ -37,7 +37,7 @@
             
             <generic:FContextMenu x:Name="ContextMenuPopup" OnClose="ContextMenuPopup_OnOnClose"/>
             
-            <mainWindow:LeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
+            <mainWindow:NewLeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
 
             <mainWindow:AiChatWindow x:Name="ChatWindow" Margin="0,26,0,0" Visibility="Collapsed"/>
             

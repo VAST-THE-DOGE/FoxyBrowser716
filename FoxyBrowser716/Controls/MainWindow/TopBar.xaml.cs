@@ -276,6 +276,8 @@ public sealed partial class TopBar : UserControl
                             UpdateButton.Visibility = Visibility.Visible;
                             return;
                         }
+                        if (newVerNum[i] < curVerNum[i]) 
+                            break; // on new version
                     }
                     
                     // on new version

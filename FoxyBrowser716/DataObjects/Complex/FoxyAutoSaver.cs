@@ -93,13 +93,14 @@ public class FoxyAutoSaverField<T> : IFoxyAutoSaverItem where T : class, INotify
 	}
 }
 
-public class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyPropertyChanged, new()
+[ObservableObject]
+public partial class FoxyAutoSaverList<T> : IFoxyAutoSaverItem where T : class, INotifyPropertyChanged, new()
 {
 	private SavePriority Priority { get; init; } = SavePriority.Normal;
 	protected string FilePath { get; init; }
 	public bool IsLoaded { get; private set; } = false;
 	
-	public ObservableCollection<T>? Items { get; private set; } = null;
+	[ObservableProperty] public partial ObservableCollection<T>? Items { get; private set; } = null;
 	
 	private readonly HashSet<T> _subscribedItems = [];
 

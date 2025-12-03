@@ -56,22 +56,27 @@ public sealed partial class FTextButton : ContentControl
     {
         var control = (FTextButton)d;
         control.Background = new SolidColorBrush(control.ForceHighlight 
-            ? control._currentTheme.PrimaryHighlightColor 
+            ? control.CurrentTheme.PrimaryHighlightColor 
             : control.PointerOver 
                 ? control.CurrentTheme.PrimaryAccentColorVeryTransparent 
                 : control.CurrentTheme.PrimaryAccentColorSlightTransparent);
     }
 
-    private Theme _currentTheme = DefaultThemes.DarkMode;
+    public static readonly DependencyProperty CurrentThemeProperty = DependencyProperty.Register(
+        nameof(CurrentTheme),
+        typeof(Theme),
+        typeof(FTextButton),
+        new PropertyMetadata(DefaultThemes.LightMode, (d, e) => ((FTextButton)d).OnCurrentThemeChanged((Theme)e.NewValue)));
 
-    internal Theme CurrentTheme
+    public Theme CurrentTheme
     {
-        get => _currentTheme;
-        set
-        {
-            _currentTheme = value;
-            ApplyTheme();
-        }
+        get => (Theme)GetValue(CurrentThemeProperty);
+        set => SetValue(CurrentThemeProperty, value);
+    }
+    
+    private void OnCurrentThemeChanged(Theme _)
+    {
+        ApplyTheme();
     }
 
     private void ApplyTheme()

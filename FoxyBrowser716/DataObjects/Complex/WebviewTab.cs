@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using System.Threading;
 using Windows.Foundation;
 using FoxyBrowser716.DataManagement;
@@ -9,26 +10,29 @@ using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716.DataObjects.Complex;
 
-public class WebviewTab
+public partial class WebviewTab : ObservableObject
 {
 	private static int _tabCounter;
 	
-	public WebsiteInfo Info { get; init; }
+	[ObservableProperty] public partial WebsiteInfo Info { get; set; }
 	public TabManager TabManager;
 	private string? _startingUrl;
 	public int Id { get; private set; }
-	public WebView2 Core { get; private set; }
+	public int GroupId { get; private set; }
+	[JsonIgnore] [ObservableProperty] public partial bool MovingTab { get; set; }
+	
+	[ObservableProperty] public partial WebView2 Core { get; private set; }
 	
 	public Task InitializeTask { get; private set; }
 	
 	public WebviewTab(TabManager tabManager, string? url)
 	{
 		var core = new WebView2();
-		var info = new WebsiteInfo()
+		var info = new WebsiteInfo
 		{
 			Url = url ?? "",
 			Title = "Loading...",
-			FavIconUrl = "", //TODO: get an icon on the website setup to grab from
+			FavIconUrl = "",
 		};
 		
 		TabManager = tabManager;
