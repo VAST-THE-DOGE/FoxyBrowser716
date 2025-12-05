@@ -76,10 +76,12 @@ public sealed partial class NewTabCard : UserControl
 	{
 		InitializeComponent();
 	}
+	
+	private SolidColorBrush GetBorderBrush(Theme theme, bool forceHighlight) => new(forceHighlight ? theme.PrimaryHighlightColor : theme.SecondaryBackgroundColor); 
 
 	private void ApplyTheme()
 	{
-		Root.BorderBrush = new SolidColorBrush(ForceHighlight ? CurrentTheme.PrimaryHighlightColor : CurrentTheme.SecondaryBackgroundColor);
+		// Root.BorderBrush = new SolidColorBrush(ForceHighlight ? CurrentTheme.PrimaryHighlightColor : CurrentTheme.SecondaryBackgroundColor);
 		Root.Background = new SolidColorBrush(_mouseOver ? CurrentTheme.PrimaryAccentColorSlightTransparent : CurrentTheme.PrimaryBackgroundColorVeryTransparent);
 
 		if (Icon is FrameworkElement iconElement)

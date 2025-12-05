@@ -114,8 +114,19 @@ public sealed partial class FTextInput : UserControl
             SearchBox.Text = CurrentText;
     }
     
-    internal Theme CurrentTheme
-    { get => field; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
+    public static readonly DependencyProperty CurrentThemeProperty = DependencyProperty.Register(
+        nameof(CurrentTheme),
+        typeof(Theme),
+        typeof(FTextInput),
+        new PropertyMetadata(DefaultThemes.LightMode, (d, e) => ((FTextInput)d).OnCurrentThemeChanged((Theme)e.NewValue)));
+
+    public Theme CurrentTheme
+    {
+        get => (Theme)GetValue(CurrentThemeProperty);
+        set => SetValue(CurrentThemeProperty, value);
+    }
+    
+    private void OnCurrentThemeChanged(Theme _) => ApplyTheme();
 
     private void ApplyTheme()
     {

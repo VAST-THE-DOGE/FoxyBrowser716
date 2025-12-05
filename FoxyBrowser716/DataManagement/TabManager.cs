@@ -105,8 +105,12 @@ public partial class TabManager : ObservableObject
 			var removeFrom = Groups
 				.FirstOrDefault(g => g.Tabs.Contains(tab));
 		
-			if (removeFrom is { } group)
-				group.Tabs.Remove(tab);
+			if (removeFrom is not null)
+			{
+				removeFrom.Tabs.Remove(tab);
+				if (removeFrom.Tabs.Count == 0)
+					Groups.Remove(removeFrom);
+			}
 			else 
 				Tabs.Remove(tab);
 			
@@ -133,7 +137,6 @@ public partial class TabManager : ObservableObject
 		return tab.Id;
 	}
 
-	// tab management
 	private int? _nextToSwap;
 	private bool _swaping;
 	
@@ -157,12 +160,15 @@ public partial class TabManager : ObservableObject
 		}
 		_swaping = true;
 		
+		var oldId = ActiveTabId;
+
 		if (tabId >= 0 && _tabs.TryGetValue(tabId, out var tab))
 		{
 			await tab.InitializeTask;
 			if (tab.Core.CoreWebView2.IsSuspended)
 				tab.Core.CoreWebView2.Resume();
 			tab.Core.Focus(FocusState.Programmatic);
+			tab.IsActive = true;
 			
 		} else if (tabId >= 0)
 		{
@@ -171,7 +177,11 @@ public partial class TabManager : ObservableObject
 			return;
 		}
 		
-		var oldId = ActiveTabId;
+		if (oldId >= 0 && _tabs.TryGetValue(oldId, out var oldTab))
+		{
+			oldTab.IsActive = false;
+		}
+		
 		ActiveTabId = tabId;
 		
 		if (false) //TODO
@@ -245,7 +255,7 @@ public partial class TabManager : ObservableObject
 		var group = Groups.FirstOrDefault(g => g.Id == groupId);
 		if (group is null) return;
 		
-		foreach (var tab in group.Tabs)
+		foreach (var tab in group.Tabs.ToList())
 			RemoveTab(tab.Id);
 		Groups.Remove(group);
 	}

@@ -43,6 +43,7 @@
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="complex:WebviewTab">
                             <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
+                                                   ForceHighlight="{x:Bind IsActive, Mode=OneWay}"
                                                    Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
                                                    CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
                                                    Tag="{x:Bind}"
@@ -104,7 +105,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <mainWindow:TabCard Grid.Row="6" x:Name="PinCard" ShowClose="False" ShowDuplicate="False" Visibility="Collapsed" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
-        <mainWindow:TabCard Grid.Row="7" x:Name="BookmarkCard" ShowClose="False" ShowDuplicate="False" Visibility="Collapsed" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+        <mainWindow:TabCard Grid.Row="6" x:Name="PinCard" ShowClose="False" ShowDuplicate="False" Visibility="Collapsed" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="PinCard_OnOnClick"/>
+        <mainWindow:TabCard Grid.Row="7" x:Name="BookmarkCard" ShowClose="False" ShowDuplicate="False" Visibility="Collapsed" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="BookmarkCard_OnOnClick"/>
     </Grid>
 </UserControl>

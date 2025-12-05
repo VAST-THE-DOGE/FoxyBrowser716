@@ -14,6 +14,7 @@ public partial class WebviewTab : ObservableObject
 {
 	private static int _tabCounter;
 	
+	[ObservableProperty] public partial bool IsActive { get; set; }
 	[ObservableProperty] public partial WebsiteInfo Info { get; set; }
 	public TabManager TabManager;
 	private string? _startingUrl;

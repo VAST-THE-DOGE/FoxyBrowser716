@@ -89,4 +89,9 @@ public sealed partial class NewTabGroupCard : UserControl
     private void NewTabCard_OnOnDragCompleted(NewTabCard arg1, ManipulationCompletedRoutedEventArgs arg2)
     {
     }
+
+    private void ButtonClose_OnOnClick(object sender, RoutedEventArgs e)
+    {
+        TabGroup.TabManager.RemoveGroup(TabGroup.Id);
+    }
 }

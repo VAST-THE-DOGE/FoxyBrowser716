@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -50,9 +51,69 @@ public sealed partial class NewLeftBar : UserControl
     internal async Task Initialize(TabManager tabManager)
     {
         TabManager = tabManager;
+        TabManager.ActiveTabChanged += TabManagerOnActiveTabChanged;
+        
+        
+        PinCard.Visibility = TabManager.ActiveTabId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        BookmarkCard.Visibility = TabManager.ActiveTabId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        HomeCard.ForceHighlight = TabManager.ActiveTabId == -1;
+        
+        if (TabManager.ActiveTabId > 0 && TabManager.TryGetTab(TabManager.ActiveTabId, out var wt))
+        {
+            wt!.Info.PropertyChanged += InfoOnPropertyChanged;
+        }
     }
 
+    private void InfoOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WebsiteInfo.Url) 
+            && sender is WebsiteInfo wi
+            && PinCard.Icon.Child is MaterialIcon pmi
+            && BookmarkCard.Icon.Child is MaterialIcon bmi)
+        {
+            pmi.Kind = TabManager!.Instance.Pins.Any(p => string.Equals(wi.Url, p.Url, StringComparison.CurrentCultureIgnoreCase)) 
+                ? MaterialIconKind.Pin 
+                : MaterialIconKind.PinOutline;
+            
+            bmi.Kind = TabManager.Instance.Bookmarks.Any(p => string.Equals(wi.Url, p.Url, StringComparison.CurrentCultureIgnoreCase)) 
+                ? MaterialIconKind.Bookmark
+                : MaterialIconKind.BookmarkOutline;
+        }
+    }
+
+    private void TabManagerOnActiveTabChanged((int oldId, int newId) args) 
+        => RefreshActiveTabUi(args.oldId, args.newId);
     
+
+    private void RefreshActiveTabUi(int oldId, int newId)
+    {
+        PinCard.Visibility = newId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        BookmarkCard.Visibility = newId < 0 ? Visibility.Collapsed : Visibility.Visible;
+        HomeCard.ForceHighlight = newId == -1;
+
+        if (oldId >= 0 && TabManager!.TryGetTab(oldId, out var owt))
+        {
+            owt!.Info.PropertyChanged -= InfoOnPropertyChanged;
+        }
+        
+        if (newId >= 0 && TabManager!.TryGetTab(newId, out var nwt))
+        {
+            nwt!.Info.PropertyChanged += InfoOnPropertyChanged;
+            if (PinCard.Icon.Child is MaterialIcon pmi
+                && BookmarkCard.Icon.Child is MaterialIcon bmi)
+            {
+                pmi.Kind = TabManager!.Instance.Pins.Any(p => string.Equals(nwt.Info.Url, p.Url, StringComparison.CurrentCultureIgnoreCase)) 
+                    ? MaterialIconKind.Pin 
+                    : MaterialIconKind.PinOutline;
+            
+                bmi.Kind = TabManager.Instance.Bookmarks.Any(p => string.Equals(nwt.Info.Url, p.Url, StringComparison.CurrentCultureIgnoreCase)) 
+                    ? MaterialIconKind.Bookmark
+                    : MaterialIconKind.BookmarkOutline;
+            }
+        }
+    }
+
+
     [ObservableProperty] internal partial Theme CurrentTheme
     {
         get;
@@ -215,5 +276,47 @@ public sealed partial class NewLeftBar : UserControl
     private void HomeCard_OnOnClick(int id)
     {
         TabManager?.SwapActiveTabTo(id);
+    }
+
+    private void PinCard_OnOnClick(int obj)
+    {
+        if (TabManager!.ActiveTabId >= 0 && TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+        {
+            if (TabManager.Instance.Pins.FirstOrDefault(p => string.Equals(p.Url, tab!.Info.Url, StringComparison.CurrentCultureIgnoreCase)) is { } pinToRemove)
+            {
+                TabManager.Instance.Pins.Remove(pinToRemove);
+                
+                if (PinCard.Icon.Child is MaterialIcon mi) 
+                    mi.Kind = MaterialIconKind.PinOutline;
+            }
+            else
+            {
+                TabManager.Instance.Pins.Add(tab!.Info);
+                
+                if (PinCard.Icon.Child is MaterialIcon mi) 
+                    mi.Kind = MaterialIconKind.Pin;
+            }
+        }
+    }
+
+    private void BookmarkCard_OnOnClick(int obj)
+    {
+        if (TabManager!.ActiveTabId >= 0 && TabManager.TryGetTab(TabManager.ActiveTabId, out var tab))
+        {
+            if (TabManager.Instance.Bookmarks.FirstOrDefault(p => string.Equals(p.Url, tab!.Info.Url, StringComparison.CurrentCultureIgnoreCase)) is { } pinToRemove)
+            {
+                TabManager.Instance.Bookmarks.Remove(pinToRemove);
+                
+                if (BookmarkCard.Icon.Child is MaterialIcon mi) 
+                    mi.Kind = MaterialIconKind.BookmarkOutline;
+            }
+            else
+            {
+                TabManager.Instance.Bookmarks.Add(tab!.Info);
+                
+                if (BookmarkCard.Icon.Child is MaterialIcon mi) 
+                    mi.Kind = MaterialIconKind.Bookmark;
+            }
+        }
     }
 }

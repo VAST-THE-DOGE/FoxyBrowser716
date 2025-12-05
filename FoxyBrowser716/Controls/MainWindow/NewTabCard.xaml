@@ -17,15 +17,17 @@
     </UserControl.Resources>
     
     <Grid Name="Root" CornerRadius="5" BorderThickness="2" Height="26" MinWidth="0" HorizontalAlignment="Stretch"
+          BorderBrush="{x:Bind GetBorderBrush(CurrentTheme, ForceHighlight), Mode=OneWay}"
+          
           ManipulationMode="TranslateX,TranslateY" 
           ManipulationStarted="Root_OnManipulationStarted" 
           ManipulationCompleted="Root_OnManipulationCompleted" 
           ManipulationDelta="Root_OnManipulationDelta"
+          
           PointerEntered="Root_OnPointerEntered" 
           PointerExited="Root_OnPointerExited" 
           PointerPressed="Root_OnPointerPressed" 
           PointerReleased="Root_OnPointerReleased">
-        
         <Grid.ContextFlyout>
             <Flyout Placement="LeftEdgeAlignedTop">
                 <Flyout.FlyoutPresenterStyle>

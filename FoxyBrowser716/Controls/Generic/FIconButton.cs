@@ -44,8 +44,20 @@ public sealed partial class FIconButton : ContentControl
         ((FIconButton)d).CornerRadius = new CornerRadius(((FIconButton)d).Rounded ? (Math.Min(((FIconButton)d).ActualWidth, ((FIconButton)d).ActualHeight) / 2 ) : 0);
     }
     
-    internal Theme CurrentTheme { get; set { field = value; ApplyTheme(); } } = DefaultThemes.DarkMode;
+    public static readonly DependencyProperty CurrentThemeProperty = DependencyProperty.Register(
+        nameof(CurrentTheme),
+        typeof(Theme),
+        typeof(FIconButton),
+        new PropertyMetadata(DefaultThemes.LightMode, (d, e) => ((FIconButton)d).OnCurrentThemeChanged((Theme)e.NewValue)));
 
+    public Theme CurrentTheme
+    {
+        get => (Theme)GetValue(CurrentThemeProperty);
+        set => SetValue(CurrentThemeProperty, value);
+    }
+    
+    private void OnCurrentThemeChanged(Theme _) => ApplyTheme();
+    
     private void ApplyTheme()
     {
         if (ForceHighlight)
