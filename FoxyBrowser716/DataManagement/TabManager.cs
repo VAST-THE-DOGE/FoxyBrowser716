@@ -230,7 +230,11 @@ public partial class TabManager : ObservableObject
 			.FirstOrDefault(g => g.Tabs.Contains(tab));
 		
 		if (removeFrom is { } group)
+		{
 			group.Tabs.Remove(tab);
+			if (group.Tabs.Count == 0)
+				Groups.Remove(group);
+		}	
 		else 
 			Tabs.Remove(tab);
 

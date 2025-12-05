@@ -18,7 +18,7 @@
     </UserControl.Resources>
     
     <Grid Name="Root" CornerRadius="5" BorderThickness="0" MinWidth="0" HorizontalAlignment="Stretch"
-          Background="Red">
+          Background="{x:Bind TabGroup.GroupColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
