@@ -18,7 +18,7 @@
     </UserControl.Resources>
     
     <Grid Name="Root" CornerRadius="5" BorderThickness="0" MinWidth="0" HorizontalAlignment="Stretch"
-          Background="{x:Bind TabGroup.GroupColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}">
+          Background="Red">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -30,8 +30,8 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <!-- <Viewbox Grid.Column="0" Margin="2,1,1,1" Width="17" Height="17" x:Name="Icon" x:FieldModifier="public" /> -->
-            <generic:FTextInput Grid.Column="1" Height="22" Margin="2,0" x:Name="Label" x:FieldModifier="public" Text="{x:Bind TabGroup.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
-            <generic:FIconButton Grid.Column="2" Width="21" Height="21" Margin="0,0,1,0" x:Name="ButtonCollapse" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=ExpandLess}" OnClick="ButtonCollapse_OnOnClick" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+            <generic:FTextInput Grid.Column="1" Height="22" Margin="2,0" x:Name="Label" x:FieldModifier="public" Text="{x:Bind TabGroup.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <generic:FIconButton Grid.Column="2" Width="21" Height="21" Margin="0,0,1,0" x:Name="ButtonCollapse" x:FieldModifier="public" Content="{material:MaterialIconExt Kind=ExpandLess}" OnClick="ButtonCollapse_OnOnClick"/>
         </Grid>
         <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,2">
             <ItemsRepeater ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}">

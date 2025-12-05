@@ -45,10 +45,10 @@ public sealed partial class NewTabGroupCard : UserControl
 
     public void SetCollapsed(bool isCollapsed)
     {
-        // IsCollapsed = isCollapsed;
-        // TabHolder.Visibility = IsCollapsed ? Visibility.Collapsed : Visibility.Visible;
-        // if (ButtonCollapse.Content is MaterialIcon icon)
-        //     icon.Kind = IsCollapsed ? MaterialIconKind.ExpandMore : MaterialIconKind.ExpandLess;
+        IsCollapsed = isCollapsed;
+        TabHolder.Visibility = IsCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        if (ButtonCollapse.Content is MaterialIcon icon)
+            icon.Kind = IsCollapsed ? MaterialIconKind.ExpandMore : MaterialIconKind.ExpandLess;
     }
     
     private void TabCard_OnSizeChanged(object sender, SizeChangedEventArgs e)

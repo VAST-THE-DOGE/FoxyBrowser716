@@ -225,7 +225,7 @@ public partial class TabManager : ObservableObject
 			Tabs.Remove(tab);
 
         if (groupId >= 0)
-			Groups[groupId].Tabs.Add(tab);
+			Groups.FirstOrDefault(g => g.Id == groupId)?.Tabs.Add(tab);
 		else
 			Tabs.Add(tab);
 	}
@@ -235,12 +235,16 @@ public partial class TabManager : ObservableObject
 		var group = new TabGroup(this);
 		group.Name = $"Group {group.Id}";
 		
+		Groups.Add(group);
+		
 		return group.Id;
 	}
 
 	public void RemoveGroup(int groupId)
 	{
-		var group = Groups[groupId];
+		var group = Groups.FirstOrDefault(g => g.Id == groupId);
+		if (group is null) return;
+		
 		foreach (var tab in group.Tabs)
 			RemoveTab(tab.Id);
 		Groups.Remove(group);
