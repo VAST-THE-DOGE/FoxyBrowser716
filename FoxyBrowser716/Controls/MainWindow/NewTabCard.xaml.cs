@@ -47,6 +47,8 @@ public sealed partial class NewTabCard : UserControl
 			new() { Text = "test4", Action = () => Debug.WriteLine("hey4") },
 		];
 	
+	[ObservableProperty] public partial Func<ObservableCollection<FMenuItem>>? MenuItemFactory { get; set; }
+	
 	public event Action<NewTabCard>? DuplicateRequested;
 	public event Action<NewTabCard>? CloseRequested;
 	public event Action<NewTabCard>? OnClick;
@@ -158,5 +160,11 @@ public sealed partial class NewTabCard : UserControl
 	private void Root_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
 	{
 		OnDragMoved?.Invoke(this, e);
+	}
+
+	private void FlyoutBase_OnOpened(object? sender, object e)
+	{
+		if (MenuItemFactory is not null)
+			MenuOptions = MenuItemFactory();
 	}
 }

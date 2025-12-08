@@ -29,7 +29,7 @@
           PointerPressed="Root_OnPointerPressed" 
           PointerReleased="Root_OnPointerReleased">
         <Grid.ContextFlyout>
-            <Flyout Placement="LeftEdgeAlignedTop">
+            <Flyout Placement="LeftEdgeAlignedTop" Opened="FlyoutBase_OnOpened">
                 <Flyout.FlyoutPresenterStyle>
                     <Style TargetType="FlyoutPresenter">
                         <Setter Property="Background" Value="Transparent"/>

@@ -46,6 +46,23 @@ public partial class WebviewTab : ObservableObject
 		Core = core;
 		
 		InitializeTask = CoreWebView2Initialization();
+		
+		GetMenuItems = () =>
+		{
+			var items = new ObservableCollection<FMenuItem>(BaseItems);
+
+			if (!TabManager.Tabs.Contains(this))
+			{
+				items.Add(new() { Text = "Remove from group", Action = () => TabManager.MoveTabToGroup(Id, -1) });
+			}
+
+			foreach (var group in TabManager.Groups.Where(g => !g.Tabs.Contains(this)))
+			{
+				items.Add(new() { Text = $"Move to {group.Name}", Action = () => TabManager.MoveTabToGroup(Id, group.Id) });
+			}
+
+			return items;
+		};
 	}
 
 	private async Task CoreWebView2Initialization()
@@ -136,7 +153,7 @@ public partial class WebviewTab : ObservableObject
 
 	private void CoreWebView2OnPermissionRequested(CoreWebView2 sender, CoreWebView2PermissionRequestedEventArgs args)
 	{
-		//temp to get rid of the camera request
+		//temp to get rid of the camera request - TODO nvm, does not work
 		if (args.PermissionKind == CoreWebView2PermissionKind.Camera)
 			args.Handled = true;
 		
@@ -187,7 +204,7 @@ public partial class WebviewTab : ObservableObject
 		}
 		catch
 		{
-			if (url.Contains('.') || url.Contains(':') || url.Contains('/'))
+			if (url.Contains('.') || url.Contains(':') || url.Contains('/')) //TODO: got to fix this
 				try
 				{
 					Core.CoreWebView2.Navigate("https://" + url);
@@ -221,24 +238,17 @@ public partial class WebviewTab : ObservableObject
 	private ObservableCollection<FMenuItem> BaseItems =>
 	[
 		new() { Text = "Close", Action = () => TabManager.RemoveTab(Id) },
-		new() { Text = "Duplicate", Action = () => TabManager.SwapActiveTabTo(TabManager.AddTab(Info.Url)) },
+		new() { Text = "Duplicate", Action = () =>
+		{
+			var groupId = TabManager.Groups.FirstOrDefault(g => g.Tabs.Contains(this))?.Id;
+			var id = TabManager.AddTab(Core.Source.ToString());
+			TabManager.SwapActiveTabTo(id);
+			if (groupId is { } gid)
+				TabManager.MoveTabToGroup(id, gid);
+			
+		} },
 		new() { Text = "Move to new group", Action = () => TabManager.MoveTabToGroup(Id, TabManager.CreateGroup()) },
 	];
 
-	public ObservableCollection<FMenuItem> GetMenuItems()
-	{
-		var items = new ObservableCollection<FMenuItem>(BaseItems);
-		
-		if (TabManager.Tabs.Contains(this))
-		{
-			items.Add(new() { Text="", Action = () => TabManager.MoveTabToGroup(Id, -1)});
-		}
-		
-		foreach (var group in TabManager.Groups.Where(g => !g.Tabs.Contains(this)))
-		{
-			items.Add(new() { Text = $"Move to {group.Name}", Action = () => TabManager.MoveTabToGroup(Id, group.Id) });
-		}
-		
-		return items;
-	}
+	public readonly Func<ObservableCollection<FMenuItem>> GetMenuItems;
 }

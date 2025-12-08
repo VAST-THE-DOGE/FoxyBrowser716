@@ -28,15 +28,48 @@ namespace FoxyBrowser716.Controls.MainWindow;
 public sealed partial class NewTabGroupCard : UserControl
 {
     public bool IsCollapsed { get; private set; }
+
+    private FRGBInput? rgbInput;
     
-    [ObservableProperty] public partial TabGroup TabGroup { get; set; }
+    public TabGroup TabGroup
+    {
+        get;
+        set
+        {
+            SetProperty(ref field, value);
+
+            if (rgbInput is not null)
+            {
+                contextStack.Children.Remove(rgbInput);
+            }
+
+            rgbInput = new FRGBInput(TabGroup.GroupColor.A, TabGroup.GroupColor.R, TabGroup.GroupColor.G, TabGroup.GroupColor.B)
+            {
+                CurrentTheme = CurrentTheme,
+            };
+            rgbInput.OnValueChanged += c =>
+            {
+                TabGroup.GroupColor = c;
+            };
+            contextStack.Children.Add(rgbInput);
+        }
+    }
     
     public NewTabGroupCard()
     {
         InitializeComponent();
     }
-    
-    [ObservableProperty] public partial Theme CurrentTheme { get; set; } = DefaultThemes.DarkMode;
+
+    public Theme CurrentTheme
+    {
+        get;
+        set
+        {
+            SetProperty(ref field, value);
+            rgbInput?.CurrentTheme = CurrentTheme;
+            ButtonClose.CurrentTheme = CurrentTheme with {SecondaryForegroundColor = CurrentTheme.NoColor, PrimaryHighlightColor = CurrentTheme.NoColor};
+        }
+    } = DefaultThemes.DarkMode;
     
     private void ButtonCollapse_OnOnClick(object sender, RoutedEventArgs e)
     {
@@ -93,5 +126,24 @@ public sealed partial class NewTabGroupCard : UserControl
     private void ButtonClose_OnOnClick(object sender, RoutedEventArgs e)
     {
         TabGroup.TabManager.RemoveGroup(TabGroup.Id);
+    }
+
+    private void DuplicateButton_OnOnClick(object sender, RoutedEventArgs e)
+    {
+        int? newGroupId = null;
+        
+        foreach (var tab in TabGroup.Tabs)
+        {
+            var newTab = TabGroup.TabManager.AddTab(tab.Info.Url);
+
+            newGroupId ??= TabGroup.TabManager.CreateGroup();
+            
+            TabGroup.TabManager.MoveTabToGroup(newTab, newGroupId.Value);
+        }
+        
+        var group = TabGroup.TabManager.Groups.First(g => g.Id == newGroupId);
+        TabGroup.TabManager.SwapActiveTabTo(group.Tabs.First().Id);
+        group.Name = $"Copy of {group.Name}";
+        group.GroupColor = TabGroup.GroupColor;
     }
 }

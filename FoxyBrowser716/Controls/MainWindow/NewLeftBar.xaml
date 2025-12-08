@@ -50,7 +50,7 @@
                                                    OnClick="TabCard_OnClick"
                                                    CloseRequested="TabCard_OnCloseRequested"
                                                    DuplicateRequested="TabCard_OnDuplicateRequested"
-                                                   MenuOptions="{x:Bind GetMenuItems(), Mode=OneWay}"
+                                                   MenuItemFactory="{x:Bind GetMenuItems, Mode=OneWay}"
         
                                                    OnDragStarted="NewTabCard_OnOnDragStarted"
                                                    OnDragMoved="NewTabCard_OnOnDragMoved"
