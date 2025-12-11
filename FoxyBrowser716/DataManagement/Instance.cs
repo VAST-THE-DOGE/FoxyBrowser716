@@ -142,6 +142,10 @@ public partial class Instance : ObservableObject
 				else
 					throw new InvalidOperationException(
 						$"Cannot remove browser application window from instance '{Name}', sender type mismatch.");
+
+				// last window closed
+				if (AppServer.Instances.All(i => i.Windows.Count == 0))
+					BackupManagement.ClearBackup(); 
 			};
 
 			newWindow.SearchEngineChangeRequested += (se) => { Cache.CurrentSearchEngine = se; };

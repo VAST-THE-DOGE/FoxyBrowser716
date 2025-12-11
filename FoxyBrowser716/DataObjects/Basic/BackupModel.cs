@@ -4,14 +4,16 @@ namespace FoxyBrowser716.DataObjects.Basic;
 
 public record AppBackupModel
 {
-    public WindowBackupModel[] Windows;
+    public WindowBackupModel[] Windows { get; set; } = [];
 }
 
 public record WindowBackupModel
 {
     public string InstanceName { get; set; } = string.Empty;
     
-    public string[] Tabs { get; set; } = [];
+    public int ActiveTabId { get; set; }
+    
+    public Dictionary<int, string> Tabs { get; set; } = [];
     public TabGroupBackupModel[] TabGroups { get; set; } = [];
     
     public Rect Bounds { get; set; } = new();
@@ -22,5 +24,5 @@ public record TabGroupBackupModel
 {
     public string Name { get; set; } = string.Empty;
     public Color GroupColor { get; set; }
-    public string[] Tabs { get; set; } = [];
+    public Dictionary<int, string>  Tabs { get; set; } = [];
 }

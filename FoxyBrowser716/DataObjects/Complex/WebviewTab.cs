@@ -265,7 +265,7 @@ public partial class WebviewTab : ObservableObject
 				TabManager.MoveTabToGroup(id, gid);
 			
 		} },
-		new() { Text = "Move to new group", Action = () => TabManager.MoveTabToGroup(Id, TabManager.CreateGroup()) },
+		new() { Text = "Move to new group", Action = () => TabManager.MoveTabToGroup(Id, TabManager.CreateGroup().Id) },
 	];
 
 	public readonly Func<ObservableCollection<FMenuItem>> GetMenuItems;

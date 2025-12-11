@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using System.Timers;
+using System.Threading;
 using Windows.ApplicationModel;
 using FoxyBrowser716.Controls.MainWindow;
 using FoxyBrowser716.DataObjects.Basic;
@@ -27,6 +27,8 @@ public static class AppServer
 	public static MainWindow? CurrentWindow => CurrentInstance?.CurrentWindow;
 	
 	public static readonly List<Instance> Instances = [];
+
+	private static Timer _backupTimer;
 	
 	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded, bool fromStartup = false)
 	{
@@ -91,6 +93,15 @@ public static class AppServer
 
 				CurrentInstance = PrimaryInstance;
 			
+				var backupRestored = false;
+				if (BackupManagement.CheckForRestore())
+				{
+					await BackupManagement.RestoreBackup();
+					backupRestored = true;
+				}
+				
+				_backupTimer = new Timer(async _ => await BackupManagement.BackupData(), null, 10000, 5000);
+				
 				if (VersionInfo?.Version is null)
 				{
 					//TODO: 100% new
@@ -109,7 +120,7 @@ public static class AppServer
 
 				if (uris.Length > 0)
 					await CurrentInstance.CreateWindow(uris);
-				else if (!fromStartup)
+				else if (!fromStartup && !backupRestored)
 					await CurrentInstance.CreateWindow();
 			}
 			else

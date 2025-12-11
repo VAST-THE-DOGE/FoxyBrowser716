@@ -130,20 +130,21 @@ public sealed partial class NewTabGroupCard : UserControl
 
     private void DuplicateButton_OnOnClick(object sender, RoutedEventArgs e)
     {
-        int? newGroupId = null;
+        TabGroup? newGroup = null;
         
         foreach (var tab in TabGroup.Tabs)
         {
             var newTab = TabGroup.TabManager.AddTab(tab.Info.Url);
 
-            newGroupId ??= TabGroup.TabManager.CreateGroup();
+            newGroup ??= TabGroup.TabManager.CreateGroup();
             
-            TabGroup.TabManager.MoveTabToGroup(newTab, newGroupId.Value);
+            TabGroup.TabManager.MoveTabToGroup(newTab, newGroup.Id);
         }
         
-        var group = TabGroup.TabManager.Groups.First(g => g.Id == newGroupId);
-        TabGroup.TabManager.SwapActiveTabTo(group.Tabs.First().Id);
-        group.Name = $"Copy of {group.Name}";
-        group.GroupColor = TabGroup.GroupColor;
+        if (newGroup is null) return;
+        
+        TabGroup.TabManager.SwapActiveTabTo(newGroup.Tabs.First().Id);
+        newGroup.Name = $"Copy of {newGroup.Name}";
+        newGroup.GroupColor = TabGroup.GroupColor;
     }
 }

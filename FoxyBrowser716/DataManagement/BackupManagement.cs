@@ -1,48 +1,129 @@
+using System.Diagnostics;
+using CommunityToolkit.WinUI;
+using FoxyBrowser716.ErrorHandeler;
+
 namespace FoxyBrowser716.DataManagement;
 
 public static class BackupManagement
 {
+	private static readonly string BackupPath = FoxyFileManager.BuildFilePath("Backup.json", FoxyFileManager.FolderType.Cache);
+	
 	public static bool CheckForRestore()
 	{
-		throw new NotImplementedException();
+		var response = FoxyFileManager.ReadFromFile<AppBackupModel>(BackupPath);
+		
+		if (response.code != FoxyFileManager.ReturnCode.Success) return false;
+		
+		return true;
+	}
+
+	public static void ClearBackup()
+	{
+		FoxyFileManager.DeleteFile(BackupPath);
 	}
 
 	public static async Task RestoreBackup()
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var response = FoxyFileManager.ReadFromFile<AppBackupModel>(BackupPath);
+		
+			if (response is { code: FoxyFileManager.ReturnCode.Success, content: { } backup })
+			{
+				List<Task> windowInitTasks = [];
+				foreach (var window in backup.Windows)
+				{
+					if (AppServer.Instances.FirstOrDefault(x => x.Name == window.InstanceName) is { } instance)
+					{
+						windowInitTasks.Add(Task.Run(() => AppServer.UiDispatcherQueue.TryEnqueue(async () =>
+						{
+							var newWindow = await instance.CreateWindow(null, window.Bounds, window.State);
+							List<Task> tabInitTasks = [];
+							tabInitTasks.AddRange(
+								window.Tabs.Select(tab => 
+									Task.Run(() => AppServer.UiDispatcherQueue.TryEnqueue(async () => 
+									{
+										var id = newWindow.TabManager.AddTab(tab.Value);
+										if (tab.Key == window.ActiveTabId) newWindow.TabManager.SwapActiveTabTo(id); 
+									})))
+							);
+							tabInitTasks.AddRange(
+								window.TabGroups.Select(g => 
+									Task.Run(() => AppServer.UiDispatcherQueue.TryEnqueue(async () => 
+									{
+										var group = newWindow.TabManager.CreateGroup();
+										group.Name = g.Name;
+										group.GroupColor = g.GroupColor;
+										foreach (var tab in g.Tabs)
+										{
+											var id = newWindow.TabManager.AddTab(tab.Value);
+											newWindow.TabManager.MoveTabToGroup(id, group.Id);
+											if (tab.Key == window.ActiveTabId) 
+												newWindow.TabManager.SwapActiveTabTo(id);
+										}
+									})))
+							);
+							await Task.WhenAll(tabInitTasks);
+						})));
+					}
+				}
+				await Task.WhenAll(windowInitTasks);
+			}	
+		}
+		catch (Exception e)
+		{
+			ErrorInfo.AddError(e);
+			Debug.WriteLine(e);
+		}
 	}
 
 	public static async Task BackupData()
 	{
-		List<WindowBackupModel> windows = [];
-		
-		foreach (var instance in AppServer.Instances)
+		try
 		{
-			foreach (var window in instance.Windows)
+			AppServer.UiDispatcherQueue.TryEnqueue(async () =>
 			{
-				windows.Add(new WindowBackupModel
+				try
 				{
-					InstanceName = instance.Name,
-					
-					State = window.StateFromWindow(),
-					Bounds = window.Bounds,
-					
-					Tabs = window.TabManager.Tabs.Select(t => t.Info.Url).ToArray(),
-					TabGroups = window.TabManager.Groups.Select(g => new TabGroupBackupModel
-					{
-						Name = g.Name,
-						GroupColor = g.GroupColor,
-						Tabs = g.Tabs.Select(t => t.Info.Url).ToArray()
-					}).ToArray()
-				});
-			}
-		}
+					List<WindowBackupModel> windows = [];
+					windows.AddRange(
+						from instance in AppServer.Instances 
+						from window in instance.Windows 
+						select new WindowBackupModel
+						{
+							InstanceName = instance.Name,
+							State = window.StateFromWindow(),
+							Bounds = window.Bounds,
+							ActiveTabId = window.TabManager.ActiveTabId,
+							Tabs = window.TabManager.Tabs.ToDictionary(x => x.Id, y => y.Info.Url),
+							TabGroups = window.TabManager.Groups.Select(g => new TabGroupBackupModel
+							{
+								Name = g.Name, 
+								GroupColor = g.GroupColor, 
+								Tabs = g.Tabs.ToDictionary(x => x.Id, y => y.Info.Url)
+							}).ToArray()
+						});
 
-		var backup = new AppBackupModel()
-		{
-			Windows = windows.ToArray(),
-		};
+					var backup = new AppBackupModel()
+					{
+						Windows = windows.ToArray(),
+					};
 		
-		throw new NotImplementedException();
+					await FoxyFileManager.SaveToFileAsync(BackupPath, backup); // saving to appdata, not cache
+				}
+				catch (Exception e)
+				{
+					ErrorInfo.AddError(e);
+					Debug.WriteLine(e);
+				}
+			});
+			
+		}
+		catch (Exception e)
+		{
+			ErrorInfo.AddError(e);
+			Debug.WriteLine(e);
+		}
+		
 	}
 }

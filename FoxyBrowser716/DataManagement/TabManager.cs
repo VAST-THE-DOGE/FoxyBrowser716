@@ -244,14 +244,14 @@ public partial class TabManager : ObservableObject
 			Tabs.Add(tab);
 	}
 
-	public int CreateGroup()
+	public TabGroup CreateGroup()
 	{
 		var group = new TabGroup(this);
 		group.Name = $"Group {group.Id}";
 		
 		Groups.Add(group);
 		
-		return group.Id;
+		return group;
 	}
 
 	public void RemoveGroup(int groupId)
