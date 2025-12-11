@@ -205,23 +205,41 @@ public partial class WebviewTab : ObservableObject
 		catch
 		{
 			if (url.Contains('.') || url.Contains(':') || url.Contains('/')) //TODO: got to fix this
-				try
-				{
-					Core.CoreWebView2.Navigate("https://" + url);
-				}
-				catch
-				{
-					try
-					{
-						Core.CoreWebView2.Navigate("http://" + url);
-					}
-					catch
-					{
-						Core.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(TabManager.Instance.Cache.CurrentSearchEngine, url));
-					}
-				}
+			{
+				if (!await TryNavigateAsync("https://" + url))
+					if (!await TryNavigateAsync("http://" + url))
+						Core.CoreWebView2.Navigate(
+							InfoGetter.GetSearchUrl(TabManager.Instance.Cache.CurrentSearchEngine, url));
+			}
 			else
 				Core.CoreWebView2.Navigate(InfoGetter.GetSearchUrl(TabManager.Instance.Cache.CurrentSearchEngine, url));
+		}
+	}
+	
+	private async Task<bool> TryNavigateAsync(string url)
+	{
+		var tcs = new TaskCompletionSource<bool>();
+
+		void OnNavigationCompleted(CoreWebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
+		{
+			Core.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+			tcs.TrySetResult(args.IsSuccess || args.WebErrorStatus == CoreWebView2WebErrorStatus.Unknown);
+		}
+
+		try
+		{
+			Core.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+			Core.CoreWebView2.Navigate(url);
+
+			using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+			cts.Token.Register(() => tcs.TrySetResult(false));
+
+			return await tcs.Task;
+		}
+		catch
+		{
+			Core.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+			return false;
 		}
 	}
 
