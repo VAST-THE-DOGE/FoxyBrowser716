@@ -8,15 +8,13 @@
         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
         xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-        IgnorableNamespaces="uap rescap">
+        IgnorableNamespaces="uap uap3 uap5 rescap">
 
   <Identity
           Name="b823390d-1193-4b3e-9ba9-be9328c2fdf4"
           Publisher="CN=William Herbert"
           Version="0.7.0.0" />
-
-  <mp:PhoneIdentity PhoneProductId="b823390d-1193-4b3e-9ba9-be9328c2fdf4" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
-
+  
   <Properties>
     <DisplayName>FoxyBrowser716</DisplayName>
     <PublisherDisplayName>William Herbert</PublisherDisplayName>
@@ -24,8 +22,8 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
 
   <Resources>
@@ -47,13 +45,13 @@
       </uap:VisualElements>
 
       <Extensions>
-          <uap5:Extension Category="windows.startupTask" EntryPoint="Windows.FullTrustApplication">
+          <uap5:Extension Category="windows.startupTask" EntryPoint="$targetentrypoint$">
               <uap5:StartupTask TaskId="FoxyBrowserStartup" Enabled="false" DisplayName="FoxyBrowser716 Startup Task" />
           </uap5:Extension>
 
         <uap3:Extension
                 Category="windows.appExecutionAlias"
-                EntryPoint="Windows.FullTrustApplication">
+                EntryPoint="$targetentrypoint$">
           <uap3:AppExecutionAlias>
             <desktop:ExecutionAlias Alias="FoxyBrowser716.exe" />
           </uap3:AppExecutionAlias>
@@ -134,5 +132,7 @@
     <rescap:Capability Name="runFullTrust" />
     <Capability Name="internetClient"/>
     <DeviceCapability Name="graphicsCapture"/>
+    <rescap:Capability Name="extendedExecutionUnconstrained" />
+    <rescap:Capability Name="extendedBackgroundTaskTime" />
   </Capabilities>
 </Package>

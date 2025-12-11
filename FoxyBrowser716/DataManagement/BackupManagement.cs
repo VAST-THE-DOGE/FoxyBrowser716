@@ -93,7 +93,12 @@ public static class BackupManagement
 						{
 							InstanceName = instance.Name,
 							State = window.StateFromWindow(),
-							Bounds = window.Bounds,
+							Bounds = new Rect(
+								window.AppWindow.Position.X,
+								window.AppWindow.Position.Y,
+								window.AppWindow.Size.Width,
+								window.AppWindow.Size.Height
+							),
 							ActiveTabId = window.TabManager.ActiveTabId,
 							Tabs = window.TabManager.Tabs.ToDictionary(x => x.Id, y => y.Info.Url),
 							TabGroups = window.TabManager.Groups.Select(g => new TabGroupBackupModel
@@ -104,7 +109,7 @@ public static class BackupManagement
 							}).ToArray()
 						});
 
-					var backup = new AppBackupModel()
+					var backup = new AppBackupModel
 					{
 						Windows = windows.ToArray(),
 					};

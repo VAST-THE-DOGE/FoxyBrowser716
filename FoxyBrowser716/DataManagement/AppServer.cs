@@ -123,7 +123,7 @@ public static class AppServer
 				else if (!fromStartup && !backupRestored)
 					await CurrentInstance.CreateWindow();
 			}
-			else
+			else if (!fromStartup)
 			{
 				UiDispatcherQueue.TryEnqueue(async () =>
 				{
