@@ -81,7 +81,7 @@
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="0">
                         <StackPanel Orientation="Horizontal" 
-                                    HorizontalAlignment="{TemplateBinding ContentHorizontalAlignment}" 
+                                    HorizontalAlignment="Stretch"
                                     VerticalAlignment="Center">
                             <Viewbox x:Name="IconViewbox"
                                      Height="{Binding ActualHeight, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HeightToIconSizeConverter}}"
@@ -98,7 +98,7 @@
                                        FontWeight="{TemplateBinding FontWeight}"
                                        FontFamily="{TemplateBinding FontFamily}"
                                        VerticalAlignment="Center"
-                                       HorizontalAlignment="Center"
+                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                        TextAlignment="Left"
                                        TextWrapping="NoWrap"
                                        Padding="0"

@@ -33,8 +33,14 @@ public sealed partial class TopBar : UserControl
     public event Action? RefreshClicked;
     public event Action<string>? SearchClicked;
     public event Action? EngineClicked;
+
+    public event Action<string>? SearchTextChanged;
     
-    public event Action<bool>? RequestSnapLayout;
+    public event Action? UpdateClicked;
+    
+    public event Action? SearchBarUnfocused;
+    
+    public event Action<bool>? RequestSnapLayout; //TODO implement
     
     private Timer refreshTimer;
     
@@ -169,7 +175,7 @@ public sealed partial class TopBar : UserControl
     {
         ChangeColorAnimation(SearchBackground.BorderBrush, CurrentTheme.SecondaryAccentColorSlightTransparent);
         ChangeColorAnimation(SearchBackground.Background, CurrentTheme.PrimaryAccentColorSlightTransparent);
-
+        SearchBarUnfocused?.Invoke();
     }
 
     private void SearchBox_OnGotFocus(object sender, RoutedEventArgs e)
@@ -185,13 +191,22 @@ public sealed partial class TopBar : UserControl
         ButtonForward.Visibility = showForward ? Visibility.Visible : Visibility.Collapsed;
 
         if (searchText is { } text)
+        {
+            LastChanged = text;
             SearchBox.Text = text;
+        }
     }
 
     public double GetSearchEngineOffset()
     {
         var transform = ButtonEngine.TransformToVisual(null);
         return transform.TransformPoint(new Point(0, 0)).X;
+    }
+
+    public (double offset, double width) GetSearchBarOffsetAndWidth()
+    {
+        var transform = SearchBackground.TransformToVisual(null);
+        return (transform.TransformPoint(new Point(0, 0)).X, SearchBackground.ActualWidth);
     }
     
     public void UpdateSearchEngineIcon(InfoGetter.SearchEngine se)
@@ -239,7 +254,7 @@ public sealed partial class TopBar : UserControl
         {
             try
             {
-                using var response = await client.GetAsync("https://foxybrowser716.com/api/latest-version");
+                using var response = await client.GetAsync(InfoGetter.LatestVersionApiUrl);
                 response.EnsureSuccessStatusCode();
             
                 var json = await response.Content.ReadAsStringAsync();
@@ -294,5 +309,18 @@ public sealed partial class TopBar : UserControl
                 ErrorHandeler.ErrorInfo.AddError(ex);
             }
         });
+    }
+
+    private string? LastChanged = null;
+    private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (SearchBox.Text == LastChanged && SearchBox.Text != string.Empty) return;
+        SearchTextChanged?.Invoke(SearchBox.Text);
+    }
+
+    private void UpdateButton_OnOnClick(object sender, RoutedEventArgs e)
+    {
+        UpdateClicked?.Invoke();
+            
     }
 }

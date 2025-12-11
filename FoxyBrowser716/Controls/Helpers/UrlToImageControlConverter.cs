@@ -3,9 +3,9 @@ using Material.Icons.WinUI3;
 
 namespace FoxyBrowser716.Controls.Helpers;
 
-public class UrlToImageControlConverter : IValueConverter
+public partial class UrlToImageControlConverter : IValueConverter
 {
-	public object Convert(object value, Type targetType, object parameter, string language)
+	public static UIElement StaticConvert(object value)
 	{
 		if (value is string { Length: > 0 } url)
 		{
@@ -35,6 +35,9 @@ public class UrlToImageControlConverter : IValueConverter
 			Foreground = new SolidColorBrush(Colors.Gray)
 		};
 	}
+	
+	public object Convert(object value, Type targetType, object parameter, string language)
+		=> StaticConvert(value);
 
 	public object ConvertBack(object value, Type targetType, object parameter, string language)
 		=> throw new NotImplementedException();

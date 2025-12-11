@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http;
 using Windows.Graphics.Display;
 using Windows.UI.ViewManagement;
 using FoxyBrowser716.Controls.Generic;
@@ -263,6 +264,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         ChatWindow.CurrentTheme = CurrentTheme;
         SettingsPage.CurrentTheme = CurrentTheme;
 
+        SuggestionPanel.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
+        SuggestionPanel.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
         
         PopupRoot.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
         PopupRoot.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColorSlightTransparent);
@@ -667,5 +670,168 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             });
         
         CenterPopupRootRoot.IsOpen = true;
+    }
+
+    private readonly HttpClient _httpClient = new();
+    private async void TopBar_OnSearchTextChanged(string searchText) //TODO: optimize this jumble letters 
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            SuggestionPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+        
+        List<string> suggestions = [];
+        
+        for (var i = 0; i < 3; i++)
+        {
+            try
+            {
+                var url = InfoGetter.GetSearchCompletionUrl(searchText);
+                var json = await _httpClient.GetStringAsync(url);
+                var data = JsonSerializer.Deserialize<JsonElement>(json);
+
+                if (data.GetArrayLength() > 1)
+                {
+                    suggestions = [];
+                    foreach (var item in data[1].EnumerateArray())
+                    {
+                        suggestions.Add(item.GetString());
+                    }
+                
+                }
+                
+                break;
+            }
+            catch (Exception e)
+            {
+                ErrorInfo.AddError(e);
+                Debug.WriteLine(e);
+            }
+        }
+
+        var offsetWidth = TopBar.GetSearchBarOffsetAndWidth();
+        SuggestionPanel.Margin = new Thickness(offsetWidth.offset, 
+            SuggestionPanel.Margin.Top, SuggestionPanel.Margin.Right, 
+            SuggestionPanel.Margin.Bottom);
+        SuggestionPanel.Width = offsetWidth.width;
+        SuggestionPanel.Visibility = Visibility.Visible;
+        
+        SearchCompletions.Children.Clear();
+        if (suggestions.Count == 0)
+            SearchCompletionsLabel.Visibility = Visibility.Collapsed;
+        else
+        {
+            SearchCompletionsLabel.Visibility = Visibility.Visible;
+            foreach (var suggestion in suggestions)
+            {
+                var button = new FTextButton {
+                    ButtonText = suggestion, CurrentTheme = CurrentTheme,
+                    CornerRadius = new CornerRadius(8), Margin = new Thickness(2),
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
+                };
+                
+                button.OnClick += (_, _) => TopBar_OnSearchClicked(suggestion);
+                SearchCompletions.Children.Add(button);
+            }
+        }
+        
+        var openTabs = TabManager.Groups.SelectMany(g => g.Tabs)
+            .Concat(TabManager.Tabs)
+            .Where(t => t.Info.Title.Contains(searchText, StringComparison.CurrentCultureIgnoreCase) ||
+                        t.Info.Url.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
+        
+        OpenTabSuggestions.Children.Clear();
+        if (openTabs.Count == 0)
+            OpenTabsLabel.Visibility = Visibility.Collapsed;
+        else
+        {
+            OpenTabsLabel.Visibility = Visibility.Visible;
+            foreach (var ot in openTabs)
+            {
+                var button = new FTextButton {
+                    Icon = UrlToImageControlConverter.StaticConvert(ot.Info.FavIconUrl), 
+                    ButtonText = $"{ot.Info.Title} - {ot.Info.Url}", CurrentTheme = CurrentTheme,
+                    CornerRadius = new CornerRadius(8), Margin = new Thickness(2),
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
+                };
+                
+                button.OnClick += (_, _) => TabManager.SwapActiveTabTo(ot.Id);
+                OpenTabSuggestions.Children.Add(button);
+            }
+        }
+
+        var bookmarks = Instance.Bookmarks
+            .Where(b => b.Url.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
+                || b.Title.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
+        
+        BookmarkSuggestions.Children.Clear();
+        if (bookmarks.Count == 0)
+            BookmarkSuggestionsLabel.Visibility = Visibility.Collapsed;
+        else
+        {
+            BookmarkSuggestionsLabel.Visibility = Visibility.Visible;
+            foreach (var book in bookmarks)
+            {
+                var button = new FTextButton {
+                    Icon = UrlToImageControlConverter.StaticConvert(book.FavIconUrl), 
+                    ButtonText = $"{book.Title} - {book.Url}", CurrentTheme = CurrentTheme,
+                    CornerRadius = new CornerRadius(8), Margin = new Thickness(2),
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
+                };
+                
+                button.OnClick += (_, _) => TopBar_OnSearchClicked(book.Url);
+                BookmarkSuggestions.Children.Add(button);
+            }
+        }
+
+        var pins = Instance.Pins
+            .Where(b => b.Url.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
+                        || b.Title.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
+        
+        PinSuggestions.Children.Clear();
+        if (pins.Count == 0)
+            PinSuggestionsLabel.Visibility = Visibility.Collapsed;
+        else
+        {
+            PinSuggestionsLabel.Visibility = Visibility.Visible;
+            foreach (var pin in pins)
+            {
+                var button = new FTextButton {
+                    Icon = UrlToImageControlConverter.StaticConvert(pin.FavIconUrl), 
+                    ButtonText = $"{pin.Title} - {pin.Url}", CurrentTheme = CurrentTheme,
+                    CornerRadius = new CornerRadius(8), Margin = new Thickness(2),
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left,
+                };
+                
+                button.OnClick += (_, _) => TopBar_OnSearchClicked(pin.Url);
+                PinSuggestions.Children.Add(button);
+            }
+        }
+        
+        List<string> history = [];
+        
+        HistorySuggestions.Children.Clear();
+        if (history.Count == 0)
+            HistorySuggestionsLabel.Visibility = Visibility.Collapsed;
+        else
+        {
+            HistorySuggestionsLabel.Visibility = Visibility.Visible;
+            //TODO
+        }
+    }
+
+    private void TopBar_OnSearchBarUnfocused()
+    {
+        SuggestionPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void TopBar_OnUpdateClicked()
+    {
+        // throw new NotImplementedException();
+        //TODO open MS Store
     }
 }

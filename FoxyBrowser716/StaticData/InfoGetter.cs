@@ -22,10 +22,11 @@ public static class InfoGetter
     public static readonly string AppName = Assembly.GetExecutingAssembly().GetName().Name;
 
     #region URLs
-
     public const string GitHubUrl = "https://github.com/VAST-THE-DOGE/FoxyBrowser716";
     public const string WebsiteUrl = "https://FoxyBrowser716.com";
     public const string LatestVersionApiUrl = "https://foxybrowser716.com/api/latest-version";
+    
+    public static string GetSearchCompletionUrl(string query) => $"https://suggestqueries.google.com/complete/search?client=chrome&q={Uri.EscapeDataString(query)}";
     #endregion
 
     #region SearchEngines

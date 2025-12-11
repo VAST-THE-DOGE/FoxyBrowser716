@@ -25,7 +25,8 @@
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
                                BorderlessToggled="TopBar_OnBorderlessToggled" SearchClicked="TopBar_OnSearchClicked" MenuClicked="TopBar_OnMenuClicked"
                                BackClicked="TopBar_OnBackClicked" EngineClicked="TopBar_OnEngineClicked" ForwardClicked="TopBar_OnForwardClicked"
-                               RefreshClicked="TopBar_OnRefreshClicked" ToggleSidebarLock="TopBar_OnToggleSidebarLock" />
+                               RefreshClicked="TopBar_OnRefreshClicked" ToggleSidebarLock="TopBar_OnToggleSidebarLock" SearchTextChanged="TopBar_OnSearchTextChanged" 
+                               SearchBarUnfocused="TopBar_OnSearchBarUnfocused"  UpdateClicked="TopBar_OnUpdateClicked"/>
             <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,26,0,0">
                 <homePage:HomePage x:Name="HomePage" Visibility="Collapsed"/>
                 <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
@@ -40,6 +41,57 @@
             <mainWindow:NewLeftBar x:Name="LeftBar" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,26,0,0"/>
 
             <mainWindow:AiChatWindow x:Name="ChatWindow" Margin="0,26,0,0" Visibility="Collapsed"/>
+            
+            <Grid x:Name="SuggestionPanel" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,26,0,0" Visibility="Collapsed" CornerRadius="11" BorderThickness="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"  Orientation="Horizontal" Height="22" x:Name="OpenTabsLabel">
+                    <material:MaterialIcon Kind="Web" Height="20" Width="20"/>
+                    <TextBlock Text="Open Tabs" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" x:Name="OpenTabSuggestions"/>
+
+                <StackPanel Grid.Row="2"  Orientation="Horizontal" Height="22" x:Name="SearchCompletionsLabel">
+                    <material:MaterialIcon Kind="Search" Height="20" Width="20"/>
+                    <TextBlock Text="Search Suggestions" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="3" HorizontalAlignment="Stretch" x:Name="SearchCompletions"/>
+                
+                <StackPanel Grid.Row="4"  Orientation="Horizontal" Height="22" x:Name="HistorySuggestionsLabel">
+                    <material:MaterialIcon Kind="History" Height="20" Width="20"/>
+                    <TextBlock Text="History" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="5" HorizontalAlignment="Stretch" x:Name="HistorySuggestions"/>
+                
+                <StackPanel Grid.Row="6"  Orientation="Horizontal" Height="22" x:Name="BookmarkSuggestionsLabel">
+                    <material:MaterialIcon Kind="Bookmark" Height="20" Width="20"/>
+                    <TextBlock Text="Bookmarks" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="7" HorizontalAlignment="Stretch" x:Name="BookmarkSuggestions"/>
+
+                
+                <StackPanel Grid.Row="8"  Orientation="Horizontal" Height="22" x:Name="PinSuggestionsLabel">
+                    <material:MaterialIcon Kind="Pin" Height="20" Width="20"/>
+                    <TextBlock Text="Pins" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="9" HorizontalAlignment="Stretch" x:Name="PinSuggestions"/>
+            </Grid>
             
             <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
                 <ScrollViewer x:Name="PopupRoot"
