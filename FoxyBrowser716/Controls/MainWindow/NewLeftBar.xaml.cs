@@ -33,6 +33,10 @@ namespace FoxyBrowser716.Controls.MainWindow;
 [ObservableObject]
 public sealed partial class NewLeftBar : UserControl
 {
+    [ObservableProperty] private partial Visibility TabsVisible { get; set; } = Visibility.Visible;
+    [ObservableProperty] private partial Visibility WidgetsVisible { get; set; } = Visibility.Collapsed;
+
+    
     private TabManager? TabManager;
     
     public NewLeftBar()
@@ -318,5 +322,67 @@ public sealed partial class NewLeftBar : UserControl
                     mi.Kind = MaterialIconKind.Bookmark;
             }
         }
+    }
+
+    private bool _editMode = false;
+    public void ToggleEditMode(bool inEdit, HomePage.HomePage home)
+    {
+        if (inEdit && home is not null)
+        {
+            
+            _editMode = true;
+            
+            Widgets.Children.Clear();
+            EditOptions.Children.Clear();
+            
+            HomeCard.Visibility = Visibility.Collapsed;
+            BookmarkCard.Visibility = Visibility.Collapsed;
+            PinCard.Visibility = Visibility.Collapsed;
+
+            var groupedWidgetOptions = home.GetWidgetOptions().OrderBy(w => w.name).GroupBy(w => w.category);
+            var homeOptions = home.GetHomeOptions();
+
+            foreach (var g in groupedWidgetOptions)
+            {
+                var category = g.Key;
+                var widgets = g.ToList();
+
+                var groupCard = new TabGroupCard(category.GetIcon(), category.GetName());
+                foreach (var w in widgets)
+                {
+                    var card = new TabCard(w.icon, w.name);
+                    card.CurrentTheme = CurrentTheme;
+                    card.OnClick += async _ => await home.AddWidgetClicked(w.name);
+                    groupCard.AddTabCard(card);
+                }
+
+                groupCard.CurrentTheme = CurrentTheme;
+                Widgets.Children.Add(groupCard);
+            }
+
+            foreach (var o in homeOptions)
+            {
+                var card = new TabCard(o.icon, o.name);
+                card.CurrentTheme = CurrentTheme;
+                card.OnClick += async _ => await home.OptionClicked(o.type);
+                EditOptions.Children.Add(card);
+            }
+            
+            TabsVisible = Visibility.Collapsed;
+            WidgetsVisible = Visibility.Visible;
+        }
+        else if (!inEdit)
+        {
+            _editMode = false;
+            
+            TabsVisible = Visibility.Visible;
+            WidgetsVisible = Visibility.Collapsed;
+            
+            HomeCard.Visibility = Visibility.Visible;
+            BookmarkCard.Visibility = TabManager!.ActiveTabId >= 0 ? Visibility.Visible : Visibility.Collapsed;
+            PinCard.Visibility = TabManager.ActiveTabId >= 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+            throw new Exception("Home is null, cannot enter edit mode");
     }
 }

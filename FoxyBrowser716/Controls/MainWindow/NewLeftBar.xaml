@@ -33,7 +33,7 @@
         </Grid.RowDefinitions>
         
         <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="HomeCard_OnOnClick"/>
-        <ScrollViewer Grid.Row="1"
+        <ScrollViewer Grid.Row="1" Visibility="{x:Bind TabsVisible}"
                       VerticalScrollBarVisibility="Hidden"
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
@@ -72,6 +72,15 @@
             </StackPanel>
         </ScrollViewer>
         
+        
+        <ScrollViewer Grid.Row="1" Visibility="{x:Bind WidgetsVisible, Mode=OneWay}"
+                      VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Stretch"
+                      ZoomMode="Disabled">
+            <StackPanel x:Name="Widgets" HorizontalAlignment="Stretch"/>
+        </ScrollViewer>
+        
         <Border Grid.Row="2" CornerRadius="5" Margin="5" Padding="15" Visibility="Collapsed"
                 Background="{x:Bind CurrentTheme.SecondaryAccentColorVeryTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}">
             <TextBlock  Text="Create New Tab Group" TextAlignment="Center"
@@ -82,7 +91,7 @@
         <Border Grid.Row="3" x:Name="Div" Height="2" Margin="2,4" CornerRadius="1" HorizontalAlignment="Stretch" 
                 Background="{x:Bind CurrentTheme.SecondaryAccentColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"/>
         
-        <ScrollViewer Grid.Row="4"
+        <ScrollViewer Grid.Row="4" Visibility="{x:Bind TabsVisible, Mode=OneWay}"
                       VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalAlignment="Stretch"
@@ -103,6 +112,14 @@
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
             </StackPanel>
+        </ScrollViewer>
+        
+        <ScrollViewer Grid.Row="4" Visibility="{x:Bind WidgetsVisible, Mode=OneWay}"
+                      VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Stretch"
+                      ZoomMode="Disabled">
+            <StackPanel x:Name="EditOptions" HorizontalAlignment="Stretch"/>
         </ScrollViewer>
 
         <mainWindow:TabCard Grid.Row="6" x:Name="PinCard" ShowClose="False" ShowDuplicate="False" Visibility="Collapsed" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="PinCard_OnOnClick"/>
