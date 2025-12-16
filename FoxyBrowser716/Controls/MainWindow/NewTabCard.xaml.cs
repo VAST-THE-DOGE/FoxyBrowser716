@@ -48,6 +48,8 @@ public sealed partial class NewTabCard : UserControl
 		];
 	
 	[ObservableProperty] public partial Func<ObservableCollection<FMenuItem>>? MenuItemFactory { get; set; }
+
+	public bool InDrag { get; set; } = false;
 	
 	public event Action<NewTabCard>? DuplicateRequested;
 	public event Action<NewTabCard>? CloseRequested;
@@ -126,7 +128,7 @@ public sealed partial class NewTabCard : UserControl
 	private void Root_OnPointerReleased(object sender, PointerRoutedEventArgs e)
 	{
 		if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonReleased) return;
-		if (ButtonDuplicate.PointerOver || ButtonClose.PointerOver) return;
+		if (ButtonDuplicate.PointerOver || ButtonClose.PointerOver || InDrag) return;
         
 		ChangeColorAnimation(Root.Background, CurrentTheme.PrimaryBackgroundColorVeryTransparent, 0.3);
 		OnClick?.Invoke(this);
@@ -150,16 +152,19 @@ public sealed partial class NewTabCard : UserControl
 		}
 		
 		OnDragStarted?.Invoke(this, e);
+		e.Handled = true;
 	}
 
 	private void Root_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
 	{
 		OnDragCompleted?.Invoke(this, e);
+		e.Handled = true;
 	}
 
 	private void Root_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
 	{
 		OnDragMoved?.Invoke(this, e);
+		e.Handled = true;
 	}
 
 	private void FlyoutBase_OnOpened(object? sender, object e)

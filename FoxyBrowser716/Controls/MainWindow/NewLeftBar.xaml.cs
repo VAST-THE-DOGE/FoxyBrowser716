@@ -117,39 +117,11 @@ public sealed partial class NewLeftBar : UserControl
         }
     }
 
-
     [ObservableProperty] internal partial Theme CurrentTheme
     {
         get;
         set;
     } = DefaultThemes.LightMode;
-
-    private void ApplyTheme()
-    {
-        //TODO get all these applied
-        Root.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
-        Root.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorVeryTransparent);
-        
-        Div.Background = new SolidColorBrush(CurrentTheme.SecondaryAccentColorSlightTransparent);
-
-        HomeCard.CurrentTheme = CurrentTheme;
-        PinCard.CurrentTheme = CurrentTheme;
-        BookmarkCard.CurrentTheme = CurrentTheme;
-        
-        /*foreach (var card in Tabs.Children)
-            switch (card)
-            {
-                case TabGroupCard groupCard:
-                    groupCard.CurrentTheme = CurrentTheme;
-                    break;
-                case TabCard tabCard:
-                    tabCard.CurrentTheme = CurrentTheme;
-                    break;
-            }*/
-        // foreach (var card in Pins.Children)
-        //     if (card is TabCard tabCard)
-        //         tabCard.CurrentTheme = CurrentTheme;
-    }
 
     #region SidebarAnimator
     public bool LockSideBar { get; set; }
@@ -234,23 +206,6 @@ public sealed partial class NewLeftBar : UserControl
         {
             TabManager?.Instance.Pins.Remove(wi);
         }
-    }
-
-    private void NewTabCard_OnOnDragStarted(NewTabCard obj, ManipulationStartedRoutedEventArgs arg)
-    {
-        Debug.WriteLine("Drag started");
-    }
-
-    private void NewTabCard_OnOnDragCompleted(NewTabCard obj, ManipulationCompletedRoutedEventArgs arg)
-    {
-        Debug.WriteLine("Drag Moved");
-
-    }
-
-    private void NewTabCard_OnOnDragMoved(NewTabCard obj, ManipulationDeltaRoutedEventArgs arg)
-    {
-        Debug.WriteLine("Drag Completed");
-
     }
 
     private void TabCard_OnClick(NewTabCard obj)
@@ -384,5 +339,55 @@ public sealed partial class NewLeftBar : UserControl
         }
         else
             throw new Exception("Home is null, cannot enter edit mode");
+    }
+    
+    private NewTabCard? _draggingPinCard;
+    private int _draggingPinIndex = -1;
+    private double _dragStartY;
+
+    private void NewTabCard_OnOnDragStarted(NewTabCard obj, ManipulationStartedRoutedEventArgs arg)
+    {
+        if (obj.Tag is WebsiteInfo wi && TabManager?.Instance.Pins is { } pins)
+        {
+            _draggingPinCard = obj;
+            _draggingPinIndex = pins.IndexOf(wi);
+            _dragStartY = arg.Position.Y;
+        
+            obj.Opacity = 0.6;
+            
+            arg.Handled = true;
+            obj.InDrag = true;
+        }
+    }
+
+    private void NewTabCard_OnOnDragMoved(NewTabCard obj, ManipulationDeltaRoutedEventArgs arg)
+    {
+        if (_draggingPinCard != obj || obj.Tag is not WebsiteInfo wi) return;
+        if (TabManager?.Instance.Pins is not { } pins) return;
+    
+        var currentIndex = pins.IndexOf(wi);
+        if (currentIndex < 0) return;
+    
+        var deltaY = arg.Cumulative.Translation.Y;
+        var cardHeight = obj.ActualHeight;
+        var indexDelta = (int)(deltaY / cardHeight);
+        var targetIndex = Math.Clamp(_draggingPinIndex + indexDelta, 0, pins.Count - 1);
+    
+        if (targetIndex != currentIndex)
+        {
+            pins.Move(currentIndex, targetIndex);
+        }
+    }
+
+    private void NewTabCard_OnOnDragCompleted(NewTabCard obj, ManipulationCompletedRoutedEventArgs arg)
+    {
+        if (_draggingPinCard != null)
+        {
+            _draggingPinCard.Opacity = 1.0;
+            obj.InDrag = false;
+        }
+    
+        _draggingPinCard = null;
+        _draggingPinIndex = -1;
     }
 }
