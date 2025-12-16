@@ -277,8 +277,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         TabHolder.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
-        
-        BlurredBackgroundGrid.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColor);
     }
 
     #region Window Events
@@ -837,6 +835,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void HomePage_OnHomeImageUrlChanged(Uri? obj)
     {
-        BackImage.Source = obj is null ? null : new BitmapImage(obj) { };
+        BackImage.Source = obj is null ? null : new BitmapImage(new Uri(obj.ToString())); { };
     }
 }

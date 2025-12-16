@@ -91,6 +91,7 @@ public sealed partial class HomePage : UserControl
             Stretch = Stretch.UniformToFill,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(-30, -26, 0, 0)
         };
         ApplySettings();
         
