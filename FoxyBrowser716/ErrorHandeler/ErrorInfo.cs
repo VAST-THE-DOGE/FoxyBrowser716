@@ -294,11 +294,11 @@ public sealed class ErrorInfo
                     FileAccess.Write,
                     FileShare.Read,
                     4096,
-                    FileOptions.WriteThrough | FileOptions.Asynchronous); // WriteThrough improves crash durability
+                    FileOptions.WriteThrough); // WriteThrough improves crash durability
                 using var sw = new StreamWriter(fs, Encoding.UTF8);
                 sw.WriteLine(line);
                 sw.Flush(); // ensure persisted
-                fs.Flush(true);
+                //fs.Flush(true);
                 return;
             }
             catch (IOException)

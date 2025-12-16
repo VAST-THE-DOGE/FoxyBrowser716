@@ -29,6 +29,7 @@ public sealed partial class HomePage : UserControl
     const int MidwayColumn = ColumnCount / 2;
     const int MidwayRow = RowCount / 2;
 
+    public event Action<Uri?>? HomeImageUrlChanged;
     
     public event Action<bool>? ToggleEditMode;
     public bool InEditMode { get; private set; }
@@ -87,7 +88,9 @@ public sealed partial class HomePage : UserControl
         _imageControl = new Image
         {
             Source = null,
-            Stretch = Stretch.UniformToFill
+            Stretch = Stretch.UniformToFill,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
         };
         ApplySettings();
         
@@ -222,14 +225,17 @@ public sealed partial class HomePage : UserControl
         {
             if (!_settings.DoSlideshow)
             {
-                var source = new BitmapImage(new Uri(_settings.BackgroundPath));
+                var imageUri = new Uri(_settings.BackgroundPath);
+                var source = new BitmapImage(imageUri);
+                HomeImageUrlChanged?.Invoke(imageUri);
                 _imageControl.Source = source;
-                // ImageBehavior.SetAnimatedSource(_imageControl, source); TODO
+                // ImageBehavior.SetAnimatedSource(_imageControl, source); TODO - nvm, looks like this just works out of the box?
             }
         }
         catch (IOException _)
         {
             _imageControl.Source = null;
+            HomeImageUrlChanged?.Invoke(null);
         }
     }
 

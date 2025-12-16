@@ -834,4 +834,9 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         // throw new NotImplementedException();
         //TODO open MS Store
     }
+
+    private void HomePage_OnHomeImageUrlChanged(Uri? obj)
+    {
+        BackImage.Source = obj is null ? null : new BitmapImage(obj) { };
+    }
 }
