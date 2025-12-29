@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using CommunityToolkit.WinUI.Animations;
@@ -389,5 +390,135 @@ public sealed partial class NewLeftBar : UserControl
     
         _draggingPinCard = null;
         _draggingPinIndex = -1;
+    }
+
+    private void TabsList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        if (e.Items.FirstOrDefault() is WebviewTab tab)
+        {
+            e.Data.Properties.Add("WebviewTab", tab);
+            e.Data.RequestedOperation = DataPackageOperation.Move;
+        }
+    }
+
+    private void TabsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        // Native reordering is handled automatically by ListView
+        // This is called after drag completes
+    }
+
+    private void TabsList_DragOver(object sender, DragEventArgs e)
+    {
+        e.AcceptedOperation = DataPackageOperation.Move;
+        
+        if (e.DataView.Properties.ContainsKey("SourceGroupId"))
+        {
+            e.DragUIOverride.Caption = "Remove from group";
+        }
+        else
+        {
+            e.DragUIOverride.Caption = "Move tab";
+        }
+    }
+
+    private void TabsList_Drop(object sender, DragEventArgs e)
+    {
+        // If dropping a tab from a group back to main list
+        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && 
+            tabObj is WebviewTab tab &&
+            e.DataView.Properties.TryGetValue("SourceGroupId", out var sourceGroupIdObj) &&
+            sourceGroupIdObj is int sourceGroupId)
+        {
+            var listView = sender as ListView;
+            var position = e.GetPosition(listView);
+            int targetIndex = TabManager?.Tabs.Count ?? 0; // Default to end
+            
+            if (listView?.Items != null && TabManager != null)
+            {
+                for (int i = 0; i < listView.Items.Count; i++)
+                {
+                    var container = listView.ContainerFromIndex(i) as ListViewItem;
+                    if (container != null)
+                    {
+                        var bounds = container.TransformToVisual(listView).TransformBounds(
+                            new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+                        
+                        if (position.Y < bounds.Top + bounds.Height / 2)
+                        {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Move tab out of group (use -1 to represent no group)
+            TabManager?.MoveTabToGroup(tab.Id, -1, targetIndex);
+        }
+        // Otherwise, drop is handled by ListView's native reordering
+    }
+    
+    private void TabsList_DragEnter(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        {
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsContentVisible = true;
+        }
+    }
+
+    private void GroupsList_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        {
+            e.AcceptedOperation = DataPackageOperation.Move;
+            e.DragUIOverride.Caption = "Move to group";
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
+    }
+
+    private void GroupsList_Drop(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && tabObj is WebviewTab tab)
+        {
+            // Determine which group was dropped on
+            var position = e.GetPosition(sender as UIElement);
+            var listView = sender as ListView;
+            
+            if (listView?.Items != null)
+            {
+                foreach (var item in listView.Items)
+                {
+                    if (item is TabGroup group)
+                    {
+                        var container = listView.ContainerFromItem(item) as ListViewItem;
+                        if (container != null)
+                        {
+                            var bounds = container.TransformToVisual(listView).TransformBounds(
+                                new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+                            
+                            if (bounds.Contains(position))
+                            {
+                                // Add to end of group by default (or you can calculate position within group)
+                                TabManager?.MoveTabToGroup(tab.Id, group.Id);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void GroupsList_DragEnter(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        {
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsContentVisible = true;
+        }
     }
 }

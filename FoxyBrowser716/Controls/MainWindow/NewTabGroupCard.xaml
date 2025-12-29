@@ -18,7 +18,12 @@
     </UserControl.Resources>
     
     <Grid Name="Root" CornerRadius="5" BorderThickness="0" MinWidth="0" HorizontalAlignment="Stretch"
-          Background="{x:Bind TabGroup.GroupColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}">
+          Background="{x:Bind TabGroup.GroupColor, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
+          AllowDrop="True"
+          DragOver="Root_DragOver"
+          Drop="Root_Drop"
+          DragEnter="Root_DragEnter"
+          DragLeave="Root_DragLeave">
         
         <Grid.ContextFlyout>
             <Flyout Placement="LeftEdgeAlignedTop">
@@ -61,9 +66,19 @@
             <generic:FIconButton Grid.Column="3" MaxWidth="21" Height="21" MinWidth="0" Margin="0,0,1,0" x:Name="ButtonClose" Content="{material:MaterialIconExt Kind=Close}" OnClick="ButtonClose_OnOnClick"/>
         </Grid>
         
-        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,2">
-            <ItemsRepeater ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}">
-                <ItemsRepeater.ItemTemplate>
+        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,5">
+            <ListView ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}"
+                      Background="{x:Bind CurrentTheme.PrimaryBackgroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
+                      SelectionMode="None"
+                      IsItemClickEnabled="False"
+                      CanReorderItems="True"
+                      CanDragItems="True"
+                      AllowDrop="True"
+                      DragItemsStarting="TabsList_DragItemsStarting"
+                      DragItemsCompleted="TabsList_DragItemsCompleted"
+                      DragOver="TabsList_DragOver"
+                      Drop="TabsList_Drop">
+                <ListView.ItemTemplate>
                     <DataTemplate x:DataType="complex:WebviewTab">
                         <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
                                                Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
@@ -73,14 +88,45 @@
                                                CloseRequested="TabCard_OnCloseRequested"
                                                DuplicateRequested="TabCard_OnDuplicateRequested"
                                                MenuItemFactory="{x:Bind GetMenuItems, Mode=OneWay}"
-                                               
-                                               OnDragStarted="NewTabCard_OnOnDragStarted"
-                                               OnDragMoved="NewTabCard_OnOnDragMoved"
-                                               OnDragCompleted="NewTabCard_OnOnDragCompleted"
                         />
                     </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-            </ItemsRepeater>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="MinHeight" Value="0"/>
+                        <Setter Property="Height" Value="26"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <ListViewItemPresenter
+                                        ContentTransitions="{TemplateBinding ContentTransitions}"
+                                        Control.IsTemplateFocusTarget="True"
+                                        FocusVisualMargin="{TemplateBinding FocusVisualMargin}"
+                                        DragBackground="Transparent"
+                                        PlaceholderBackground="Transparent"
+                                        PointerOverBackground="Transparent"
+                                        SelectedBackground="Transparent"
+                                        SelectedPointerOverBackground="Transparent"
+                                        PressedBackground="Transparent"
+                                        SelectedPressedBackground="Transparent"
+                                        DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
+                                        DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}"
+                                        ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}"
+                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                        ContentMargin="{TemplateBinding Padding}"
+                                        RevealBackground="Transparent"
+                                        RevealBorderThickness="0"
+                                        RevealBorderBrush="Transparent"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
         </StackPanel>
     </Grid>
 </UserControl>

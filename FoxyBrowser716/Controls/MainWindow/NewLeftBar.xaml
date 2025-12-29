@@ -34,43 +34,115 @@
         
         <mainWindow:TabCard Grid.Row="0" x:Name="HomeCard" ShowClose="False" ShowDuplicate="False" Id="-1" CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}" OnClick="HomeCard_OnOnClick"/>
         <ScrollViewer Grid.Row="1" Visibility="{x:Bind TabsVisible}"
-                      VerticalScrollBarVisibility="Hidden"
-                      HorizontalScrollBarVisibility="Disabled"
-                      HorizontalAlignment="Stretch"
-                      ZoomMode="Disabled">
-            <StackPanel x:Name="Tabs" HorizontalAlignment="Stretch">
-                <ItemsRepeater ItemsSource="{x:Bind TabManager.Tabs, Mode=OneWay}">
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="complex:WebviewTab">
-                            <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
-                                                   ForceHighlight="{x:Bind IsActive, Mode=OneWay}"
-                                                   Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
-                                                   CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
-                                                   Tag="{x:Bind}"
-                                                   OnClick="TabCard_OnClick"
-                                                   CloseRequested="TabCard_OnCloseRequested"
-                                                   DuplicateRequested="TabCard_OnDuplicateRequested"
-                                                   MenuItemFactory="{x:Bind GetMenuItems, Mode=OneWay}"
+              VerticalScrollBarVisibility="Hidden"
+              HorizontalScrollBarVisibility="Disabled"
+              HorizontalAlignment="Stretch"
+              ZoomMode="Disabled">
+    <StackPanel x:Name="Tabs" HorizontalAlignment="Stretch">
         
-                                                   OnDragStarted="NewTabCard_OnOnDragStarted"
-                                                   OnDragMoved="NewTabCard_OnOnDragMoved"
-                                                   OnDragCompleted="NewTabCard_OnOnDragCompleted"
-                            />
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                </ItemsRepeater>
+        <!-- Tabs with native reordering -->
+        <ListView ItemsSource="{x:Bind TabManager.Tabs, Mode=OneWay}"
+                  SelectionMode="None"
+                  IsItemClickEnabled="False"
+                  CanReorderItems="True"
+                  CanDragItems="True"
+                  AllowDrop="True"
+                  DragItemsStarting="TabsList_DragItemsStarting"
+                  DragItemsCompleted="TabsList_DragItemsCompleted"
+                  DragOver="TabsList_DragOver"
+                  Drop="TabsList_Drop"
+                  DragEnter="TabsList_DragEnter">
+            
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="complex:WebviewTab">
+                    <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
+                                           ForceHighlight="{x:Bind IsActive, Mode=OneWay}"
+                                           Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
+                                           CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
+                                           Tag="{x:Bind}"
+                                           OnClick="TabCard_OnClick"
+                                           CloseRequested="TabCard_OnCloseRequested"
+                                           DuplicateRequested="TabCard_OnDuplicateRequested"
+                                           MenuItemFactory="{x:Bind GetMenuItems, Mode=OneWay}"
+                    />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="MinHeight" Value="0"/>
+                    <Setter Property="Height" Value="26"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+
+        <!-- Groups -->
+        <ListView ItemsSource="{x:Bind TabManager.Groups, Mode=OneWay}"
+                  SelectionMode="None"
+                  IsItemClickEnabled="False"
+                  CanReorderItems="True"
+                  CanDragItems="True"
+                  AllowDrop="True"
+                  DragOver="GroupsList_DragOver"
+                  Drop="GroupsList_Drop"
+                  DragEnter="GroupsList_DragEnter">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="basic:TabGroup">
+                    <mainWindow:NewTabGroupCard CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
+                                                Tag="{x:Bind}" 
+                                                TabGroup="{x:Bind}"
+                    />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <!-- Fix for hover animation hiding content -->
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <ListViewItemPresenter
+                                    ContentTransitions="{TemplateBinding ContentTransitions}"
+                                    Control.IsTemplateFocusTarget="True"
+                                    FocusVisualMargin="{TemplateBinding FocusVisualMargin}"
+                                    SelectionCheckMarkVisualEnabled="{ThemeResource ListViewItemSelectionCheckMarkVisualEnabled}"
+                                    CheckBrush="{ThemeResource ListViewItemCheckBrush}"
+                                    CheckBoxBrush="{ThemeResource ListViewItemCheckBoxBrush}"
+                                    DragBackground="Transparent"
+                                    DragForeground="{ThemeResource ListViewItemDragForeground}"
+                                    FocusBorderBrush="{ThemeResource ListViewItemFocusBorderBrush}"
+                                    FocusSecondaryBorderBrush="{ThemeResource ListViewItemFocusSecondaryBorderBrush}"
+                                    PlaceholderBackground="Transparent"
+                                    PointerOverBackground="Transparent"
+                                    PointerOverForeground="{ThemeResource ListViewItemForegroundPointerOver}"
+                                    SelectedBackground="Transparent"
+                                    SelectedForeground="{ThemeResource ListViewItemForegroundSelected}"
+                                    SelectedPointerOverBackground="Transparent"
+                                    PressedBackground="Transparent"
+                                    SelectedPressedBackground="Transparent"
+                                    DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
+                                    DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}"
+                                    ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}"
+                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                    ContentMargin="{TemplateBinding Padding}"
+                                    CheckMode="{ThemeResource ListViewItemCheckMode}"
+                                    RevealBackground="Transparent"
+                                    RevealBorderThickness="0"
+                                    RevealBorderBrush="Transparent"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
         
-                <ItemsRepeater ItemsSource="{x:Bind TabManager.Groups, Mode=OneWay}">
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="basic:TabGroup">
-                            <mainWindow:NewTabGroupCard CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"
-                                                    Tag="{x:Bind}" TabGroup="{x:Bind}"
-                                                    />
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                </ItemsRepeater>
-            </StackPanel>
-        </ScrollViewer>
+    </StackPanel>
+</ScrollViewer>
         
         
         <ScrollViewer Grid.Row="1" Visibility="{x:Bind WidgetsVisible, Mode=OneWay}"

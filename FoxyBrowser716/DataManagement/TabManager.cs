@@ -220,9 +220,7 @@ public partial class TabManager : ObservableObject
 	/// <summary>
 	/// -1 group id for no group
 	/// </summary>
-	/// <param name="tabId"></param>
-	/// <param name="groupId"></param>
-	public void MoveTabToGroup(int tabId, int groupId)
+	public void MoveTabToGroup(int tabId, int groupId, int? targetIndex = null)
 	{
 		var tab = _tabs[tabId];
 		
@@ -239,10 +237,13 @@ public partial class TabManager : ObservableObject
 			Tabs.Remove(tab);
 
         if (groupId >= 0)
-			Groups.FirstOrDefault(g => g.Id == groupId)?.Tabs.Add(tab);
-		else
-			Tabs.Add(tab);
-	}
+        {
+	        var groupToAdd = Groups.FirstOrDefault(g => g.Id == groupId);
+	        if (targetIndex is { } index) groupToAdd?.Tabs.Insert(index, tab);
+	        else groupToAdd?.Tabs.Add(tab);
+        }		else
+        if (targetIndex is { } index) Tabs.Insert(index, tab);
+        else Tabs.Add(tab);	}
 
 	public TabGroup CreateGroup()
 	{

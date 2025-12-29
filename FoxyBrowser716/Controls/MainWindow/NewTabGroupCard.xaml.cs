@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using FoxyBrowser716.Controls.Generic;
@@ -111,16 +112,113 @@ public sealed partial class NewTabGroupCard : UserControl
         }
     }
 
-    private void NewTabCard_OnOnDragStarted(NewTabCard arg1, ManipulationStartedRoutedEventArgs arg2)
+// Group card drag events (for receiving tabs from outside)
+    private void Root_DragOver(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        {
+            e.AcceptedOperation = DataPackageOperation.Move;
+            e.DragUIOverride.Caption = $"Add to {TabGroup.Name}";
+            
+            // Visual feedback - highlight the group
+            Root.Opacity = 0.7;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
     }
 
-    private void NewTabCard_OnOnDragMoved(NewTabCard arg1, ManipulationDeltaRoutedEventArgs arg2)
+    private void Root_Drop(object sender, DragEventArgs e)
     {
+        Root.Opacity = 1.0;
+        
+        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && tabObj is WebviewTab tab)
+        {
+            TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id);
+        }
     }
 
-    private void NewTabCard_OnOnDragCompleted(NewTabCard arg1, ManipulationCompletedRoutedEventArgs arg2)
+    private void Root_DragEnter(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        {
+            Root.Opacity = 0.7;
+        }
+    }
+
+    private void Root_DragLeave(object sender, DragEventArgs e)
+    {
+        Root.Opacity = 1.0;
+    }
+
+    // Tabs within group drag events (for reordering within the group)
+    private void TabsList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        if (e.Items.FirstOrDefault() is WebviewTab tab)
+        {
+            e.Data.Properties.Add("WebviewTab", tab);
+            e.Data.Properties.Add("SourceGroupId", TabGroup.Id);
+            e.Data.RequestedOperation = DataPackageOperation.Move;
+        }
+    }
+
+    private void TabsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        // Reordering within the group is handled automatically by ListView
+    }
+
+    private void TabsList_DragOver(object sender, DragEventArgs e)
+    {
+        e.AcceptedOperation = DataPackageOperation.Move;
+        
+        if (e.DataView.Properties.ContainsKey("SourceGroupId"))
+        {
+            e.DragUIOverride.Caption = "Reorder";
+        }
+        else
+        {
+            e.DragUIOverride.Caption = $"Move to {TabGroup.Name}";
+        }
+    }
+
+    private void TabsList_Drop(object sender, DragEventArgs e)
+    {
+        var listView = sender as ListView;
+        
+        // If dropping from another group, add the tab
+        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && 
+            tabObj is WebviewTab tab &&
+            e.DataView.Properties.TryGetValue("SourceGroupId", out var sourceGroupIdObj) &&
+            sourceGroupIdObj is int sourceGroupId &&
+            sourceGroupId != TabGroup.Id)
+        {
+            // Find the drop position
+            var position = e.GetPosition(listView);
+            int targetIndex = TabGroup.Tabs.Count; // Default to end
+            
+            if (listView?.Items != null)
+            {
+                for (int i = 0; i < listView.Items.Count; i++)
+                {
+                    var container = listView.ContainerFromIndex(i) as ListViewItem;
+                    if (container != null)
+                    {
+                        var bounds = container.TransformToVisual(listView).TransformBounds(
+                            new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+                        
+                        if (position.Y < bounds.Top + bounds.Height / 2)
+                        {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id, targetIndex);
+        }
+        // Otherwise, ListView handles reordering automatically
     }
 
     private void ButtonClose_OnOnClick(object sender, RoutedEventArgs e)
