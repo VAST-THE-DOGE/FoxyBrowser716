@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using FoxyBrowser716.ErrorHandeler;
 
 namespace FoxyBrowser716.DataManagement;
 
@@ -173,9 +174,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: log this error
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
