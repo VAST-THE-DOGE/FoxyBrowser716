@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using FoxyBrowser716.ErrorHandeler;
 
 namespace FoxyBrowser716.DataManagement;
 
@@ -173,9 +174,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: log this error
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
@@ -220,9 +221,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: log this error
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
@@ -276,8 +277,9 @@ public static class FoxyFileManager
 			{
 				return (ReturnCode.Unauthorized, null);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				return (ReturnCode.UnknownError, null);
 			}
 		}
@@ -331,11 +333,10 @@ public static class FoxyFileManager
 			{
 				return (ReturnCode.Unauthorized, null);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: log this error
+				ErrorInfo.AddError(ex);
 				throw;
-				return (ReturnCode.UnknownError, null);
 			}
 		}
 
@@ -361,11 +362,10 @@ public static class FoxyFileManager
 			{
 				return (ReturnCode.Unauthorized, null);
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//TODO: log this error
+				ErrorInfo.AddError(ex);
 				throw;
-				return (ReturnCode.UnknownError, null);
 			}
 		}
 
@@ -390,8 +390,9 @@ public static class FoxyFileManager
 			{
 				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, FoxyJsonSerializerOptions));
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				return (ReturnCode.UnknownError, null);
 			}
 		}
@@ -416,10 +417,10 @@ public static class FoxyFileManager
 			{
 				return (ReturnCode.Success, JsonSerializer.Deserialize<T>(content, FoxyJsonSerializerOptions));
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				throw;
-				return (ReturnCode.UnknownError, null);
 			}
 		}
 		#endregion
@@ -452,8 +453,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
@@ -483,8 +485,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
@@ -551,8 +554,9 @@ public static class FoxyFileManager
 			{
 				return ReturnCode.Unauthorized;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				ErrorInfo.AddError(ex);
 				return ReturnCode.UnknownError;
 			}
 		}
