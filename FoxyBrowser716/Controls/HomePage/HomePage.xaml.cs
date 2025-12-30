@@ -3,6 +3,7 @@ using Windows.UI.Core;
 using FoxyBrowser716.Controls.HomePage.Widgets;
 using FoxyBrowser716.DataManagement;
 using FoxyBrowser716.DataObjects.Settings;
+using FoxyBrowser716.ErrorHandeler;
 using Material.Icons;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml.Shapes;
@@ -902,6 +903,7 @@ public sealed partial class HomePage : UserControl
         {
             //TODO: log error
             // there are errors, but might not matter too much
+            ErrorInfo.AddError(exception);
             
             // just reset
             _currentBorder = originalBorder;
