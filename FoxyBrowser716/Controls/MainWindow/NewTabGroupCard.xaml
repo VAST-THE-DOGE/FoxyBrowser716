@@ -66,9 +66,10 @@
             <generic:FIconButton Grid.Column="3" MaxWidth="21" Height="21" MinWidth="0" Margin="0,0,1,0" x:Name="ButtonClose" Content="{material:MaterialIconExt Kind=Close}" OnClick="ButtonClose_OnOnClick"/>
         </Grid>
         
-        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,5">
+        <StackPanel Grid.Row="1" Name="TabHolder" Margin="0,0,0,3">
             <ListView ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}"
                       Background="{x:Bind CurrentTheme.PrimaryBackgroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
+                      CornerRadius="8"
                       SelectionMode="None"
                       IsItemClickEnabled="True"
                       CanReorderItems="True"

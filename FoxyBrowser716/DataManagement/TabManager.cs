@@ -278,6 +278,7 @@ public partial class TabManager : ObservableObject
 	public void MoveTabFromWindowToGroup(WebviewTab tab, TabManager sourceManager, int groupId, int targetIndex = -1)
 	{
 		sourceManager.RemoveTab(tab.Id, true);
+		this.AddTab(tab);
 		MoveTabToGroup(tab.Id, groupId, targetIndex);
 	}
 

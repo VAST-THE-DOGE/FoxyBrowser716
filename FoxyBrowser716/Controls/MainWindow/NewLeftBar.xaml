@@ -109,8 +109,8 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
                 
-                <Border x:Name="DropArea" DragOver="UIElement_OnDragOver" DragEnter="UIElement_OnDragEnter" Drop="UIElement_OnDrop" CornerRadius="8" Height="42" Background="{x:Bind CurrentTheme.PrimaryBackgroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}" Visibility="{x:Bind MoveTipsVisible, Mode=OneWay}">
-                    <TextBlock x:Name="DropAreaText" Text="+ New Tab Group" Foreground="{x:Bind CurrentTheme.PrimaryForegroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Border x:Name="DropArea" AllowDrop="True" DragOver="UIElement_OnDragOver" DragEnter="UIElement_OnDragEnter" Drop="UIElement_OnDrop" CornerRadius="8" Height="42" Background="{x:Bind CurrentTheme.PrimaryBackgroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}" Visibility="{x:Bind MoveTipsVisible, Mode=OneWay}">
+                    <TextBlock x:Name="DropAreaText" Text="{x:Bind GroupDropAreaTextContent, Mode=OneWay}" Foreground="{x:Bind CurrentTheme.PrimaryForegroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
             </StackPanel>
         </ScrollViewer>

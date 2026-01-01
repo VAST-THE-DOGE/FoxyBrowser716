@@ -1,34 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using CommunityToolkit.WinUI.Animations;
-using FoxyBrowser716.Controls.Generic;
 using FoxyBrowser716.Controls.HomePage;
 using FoxyBrowser716.DataManagement;
-using FoxyBrowser716.DataObjects.Basic;
 using FoxyBrowser716.DataObjects.Complex;
-using Material.Icons;
 using Material.Icons.WinUI3;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Navigation;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace FoxyBrowser716.Controls.MainWindow;
 
@@ -39,6 +17,9 @@ public sealed partial class NewLeftBar : UserControl
     [ObservableProperty] private partial Visibility WidgetsVisible { get; set; } = Visibility.Collapsed;
     
     [ObservableProperty] private partial Visibility MoveTipsVisible { get; set; } = Visibility.Collapsed;
+    [ObservableProperty] private partial string GroupDropAreaTextContent { get; set; } = "+ New Tab Group";
+    [ObservableProperty] private partial string TabDropAreaTextContent { get; set; } = "Move Tab To Window";
+
     
     private TabManager? TabManager;
     
@@ -401,6 +382,9 @@ public sealed partial class NewLeftBar : UserControl
             e.Data.Properties.Add("DragType", "Tab");
             e.Data.Properties.Add("DragItem", tab);
             e.Data.Properties.Add("SourceManager", TabManager);
+
+            GroupDropAreaTextContent = "+ New Tab Group";
+            MoveTipsVisible = Visibility.Visible;
         }
     }
 
@@ -411,6 +395,9 @@ public sealed partial class NewLeftBar : UserControl
             e.Data.Properties.Add("DragType", "TabGroup");
             e.Data.Properties.Add("DragItem", group);
             e.Data.Properties.Add("SourceManager", TabManager);
+
+            GroupDropAreaTextContent = "Dissolve Group";
+            MoveTipsVisible = Visibility.Visible;
         }
     }
     
@@ -570,6 +557,12 @@ public sealed partial class NewLeftBar : UserControl
     private void TabsList_DragEnter(object sender, DragEventArgs e)
     {
         e.Handled = false;
+        
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+        }
+
         if (e.DataView.Properties.ContainsKey("DragItem"))
         {
             e.DragUIOverride.IsCaptionVisible = true;
@@ -662,21 +655,6 @@ public sealed partial class NewLeftBar : UserControl
                     }
                     element = element.Parent as FrameworkElement;
                 }
-                
-                // Dropped in empty space between groups - create new group
-                var tab = tabObj as WebviewTab;
-                if (tab != null && TabManager != null)
-                {
-                    if (isSameWindow)
-                    {
-                        var newGroup = TabManager.CreateGroup();
-                        TabManager.MoveTabToGroup(tab.Id, newGroup.Id);
-                    }
-                    else
-                    {
-                        TabManager.MoveTabFromWindowToNewGroup(tab, sourceManager);
-                    }
-                }
             }
     }
 
@@ -693,6 +671,23 @@ public sealed partial class NewLeftBar : UserControl
         if (e.ClickedItem is WebviewTab wt)
         {
             TabManager?.SwapActiveTabTo(wt.Id);
+        }
+    }
+
+    private void UpdateDropAreaText(DataPackageView view)
+    {
+        if (view.Properties.TryGetValue("DragType", out var typeObj) && typeObj is string type &&
+            view.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            var isSameWindow = sourceManager == TabManager;
+            if (type == "Tab")
+            {
+                GroupDropAreaTextContent = "+ New Tab Group";
+            }
+            else if (type == "TabGroup")
+            {
+                GroupDropAreaTextContent = isSameWindow ? "Dissolve Group" : "Move Group Here";
+            }
         }
     }
 
@@ -713,19 +708,16 @@ public sealed partial class NewLeftBar : UserControl
             
             if (type.ToString() == "Tab")
             {
-                DropAreaText.Text = "+ New Tab Group";
                 e.DragUIOverride.Caption = "Create new group";
             }
             else if (type.ToString() == "TabGroup")
             {
                 if (sourceManager != TabManager)
                 {
-                    DropAreaText.Text = "Move Group Here";
                     e.DragUIOverride.Caption = "Move Group Here";
                 }
                 else
                 {
-                    DropAreaText.Text = "Dissolve Group";
                     e.DragUIOverride.Caption = "Dissolve Group";
                 }
             }
@@ -735,9 +727,16 @@ public sealed partial class NewLeftBar : UserControl
     private void UIElement_OnDragEnter(object sender, DragEventArgs e)
     {
         e.Handled = false;
+        
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+        }
+
         if (e.DataView.Properties.ContainsKey("DragItem"))
         {
             MoveTipsVisible = Visibility.Visible;
+            UpdateDropAreaText(e.DataView);
         }
     }
 
@@ -790,6 +789,7 @@ public sealed partial class NewLeftBar : UserControl
         }
 
         OpenSideBar();
+        UpdateDropAreaText(e.DataView);
         MoveTipsVisible = Visibility.Visible;
     }
 
