@@ -102,6 +102,7 @@ public sealed partial class FIconButton : ContentControl
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
             
             ChangeColorAnimation(Foreground, CurrentTheme.PrimaryHighlightColor, 0.05);
+            e.Handled = true;
         };
 
         PointerReleased += (_, e) =>
@@ -111,6 +112,7 @@ public sealed partial class FIconButton : ContentControl
             OnClick?.Invoke(this, new RoutedEventArgs());
             
             ChangeColorAnimation(Foreground, PointerOver ? CurrentTheme.SecondaryForegroundColor : CurrentTheme.PrimaryForegroundColor, 0.3);
+            e.Handled = true;
         };
 
         ApplyTheme();

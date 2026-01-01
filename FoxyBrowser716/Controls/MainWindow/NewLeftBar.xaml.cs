@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
@@ -36,7 +37,8 @@ public sealed partial class NewLeftBar : UserControl
 {
     [ObservableProperty] private partial Visibility TabsVisible { get; set; } = Visibility.Visible;
     [ObservableProperty] private partial Visibility WidgetsVisible { get; set; } = Visibility.Collapsed;
-
+    
+    [ObservableProperty] private partial Visibility MoveTipsVisible { get; set; } = Visibility.Collapsed;
     
     private TabManager? TabManager;
     
@@ -394,73 +396,159 @@ public sealed partial class NewLeftBar : UserControl
 
     private void TabsList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
-        if (e.Items.FirstOrDefault() is WebviewTab tab)
+        if (e.Items.Count > 0 && e.Items[0] is WebviewTab tab)
         {
-            e.Data.Properties.Add("WebviewTab", tab);
-            e.Data.RequestedOperation = DataPackageOperation.Move;
+            e.Data.Properties.Add("DragType", "Tab");
+            e.Data.Properties.Add("DragItem", tab);
+            e.Data.Properties.Add("SourceManager", TabManager);
         }
     }
 
+    private void GroupsList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        if (e.Items.Count > 0 && e.Items[0] is TabGroup group)
+        {
+            e.Data.Properties.Add("DragType", "TabGroup");
+            e.Data.Properties.Add("DragItem", group);
+            e.Data.Properties.Add("SourceManager", TabManager);
+        }
+    }
+    
+    
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+    
     private void TabsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
-        // Native reordering is handled automatically by ListView
-        // This is called after drag completes
+        if (args.DropResult == DataPackageOperation.None)
+        {
+            // Drop occurred outside the app or was cancelled
+            if (args.Items.FirstOrDefault() is WebviewTab tab)
+            {
+                // Create new window with this tab
+                var cursorPosition = new Point(0, 0);
+                if (GetCursorPos(out var lpPoint))
+                {
+                    cursorPosition.X = lpPoint.X;
+                    cursorPosition.Y = lpPoint.Y;
+                    
+                    TabManager?.CreateWindowWithTab(tab, new Rect(cursorPosition, new Size(250, 100)));
+                }
+                else
+                    throw new Exception("Failed to get cursor position for drop operation outside app.");
+            }
+            else if (args.Items.FirstOrDefault() is TabGroup group)
+            {
+                // Create new window with this group
+                var cursorPosition = new Point(0, 0);
+                if (GetCursorPos(out var lpPoint))
+                {
+                    cursorPosition.X = lpPoint.X;
+                    cursorPosition.Y = lpPoint.Y;
+                    
+                    TabManager?.CreateWindowWithGroup(group, new Rect(cursorPosition, new Size(250, 100)));
+                }
+            }
+        }
     }
 
     private void TabsList_DragOver(object sender, DragEventArgs e)
     {
         e.AcceptedOperation = DataPackageOperation.Move;
         
-        if (e.DataView.Properties.ContainsKey("SourceGroupId"))
+        if (e.DataView.Properties.TryGetValue("DragType", out var typeObj) && typeObj is string type)
         {
-            e.DragUIOverride.Caption = "Remove from group";
-        }
-        else
-        {
-            e.DragUIOverride.Caption = "Move tab";
+            if (type == "Tab")
+            {
+                if (e.DataView.Properties.ContainsKey("SourceGroupId"))
+                    e.DragUIOverride.Caption = "Ungroup Tab";
+                else if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm != TabManager)
+                    e.DragUIOverride.Caption = "Move Tab to Window";
+                else
+                    e.DragUIOverride.Caption = "Reorder Tabs";
+            }
+            else if (type == "TabGroup")
+            {
+                if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm != TabManager)
+                    e.DragUIOverride.Caption = "Move Group Tabs to Window";
+                else
+                    e.DragUIOverride.Caption = "Dissolve Group";
+            }
         }
     }
 
     private void TabsList_Drop(object sender, DragEventArgs e)
     {
-        // If dropping a tab from a group back to main list
-        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && 
-            tabObj is WebviewTab tab &&
-            e.DataView.Properties.TryGetValue("SourceGroupId", out var sourceGroupIdObj) &&
-            sourceGroupIdObj is int sourceGroupId)
+        if (!e.DataView.Properties.TryGetValue("DragType", out var typeObj) || typeObj is not string type) return;
+        if (!e.DataView.Properties.TryGetValue("SourceManager", out var smObj) || smObj is not TabManager sourceManager) return;
+        if (!e.DataView.Properties.TryGetValue("DragItem", out var item)) return;
+
+        var isSameWindow = sourceManager == TabManager;
+
+        // Calculate Drop Index
+        var listView = sender as ListView;
+        var position = e.GetPosition(listView);
+        var targetIndex = TabManager?.Tabs.Count ?? 0;
+        
+        if (listView?.Items != null && TabManager != null)
         {
-            var listView = sender as ListView;
-            var position = e.GetPosition(listView);
-            int targetIndex = TabManager?.Tabs.Count ?? 0; // Default to end
-            
-            if (listView?.Items != null && TabManager != null)
+            for (int i = 0; i < listView.Items.Count; i++)
             {
-                for (int i = 0; i < listView.Items.Count; i++)
+                var container = listView.ContainerFromIndex(i) as ListViewItem;
+                if (container != null)
                 {
-                    var container = listView.ContainerFromIndex(i) as ListViewItem;
-                    if (container != null)
+                    var bounds = container.TransformToVisual(listView).TransformBounds(
+                        new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+                    
+                    if (position.Y < bounds.Top + bounds.Height / 2)
                     {
-                        var bounds = container.TransformToVisual(listView).TransformBounds(
-                            new Rect(0, 0, container.ActualWidth, container.ActualHeight));
-                        
-                        if (position.Y < bounds.Top + bounds.Height / 2)
-                        {
-                            targetIndex = i;
-                            break;
-                        }
+                        targetIndex = i;
+                        break;
                     }
                 }
             }
-            
-            // Move tab out of group (use -1 to represent no group)
-            TabManager?.MoveTabToGroup(tab.Id, -1, targetIndex);
         }
-        // Otherwise, drop is handled by ListView's native reordering
+
+        if (type == "Tab" && item is WebviewTab tab)
+        {
+            if (isSameWindow)
+            {
+                // If it has a SourceGroupId, it's coming from a group -> Ungroup it
+                if (e.DataView.Properties.ContainsKey("SourceGroupId"))
+                {
+                    TabManager?.MoveTabToGroup(tab.Id, -1, targetIndex);
+                }
+                // Else: It's already in this list, ListView handles reordering automatically
+            }
+            else
+            {
+                TabManager.MoveTabFromWindow(tab, sourceManager, targetIndex);
+            }
+        }
+        else if (type == "TabGroup" && item is TabGroup group)
+        {
+            if (isSameWindow)
+            {
+                TabManager.DissolveGroup(group, targetIndex);
+            }
+            else
+            {
+                TabManager.MoveGroupTabsFromWindow(group, sourceManager, targetIndex);
+            }
+        }
     }
     
     private void TabsList_DragEnter(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        e.Handled = false;
+        if (e.DataView.Properties.ContainsKey("DragItem"))
         {
             e.DragUIOverride.IsCaptionVisible = true;
             e.DragUIOverride.IsContentVisible = true;
@@ -469,56 +557,173 @@ public sealed partial class NewLeftBar : UserControl
 
     private void GroupsList_DragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        if (e.DataView.Properties.TryGetValue("DragType", out object dragType))
         {
-            e.AcceptedOperation = DataPackageOperation.Move;
-            e.DragUIOverride.Caption = "Move to group";
-        }
-        else
-        {
-            e.AcceptedOperation = DataPackageOperation.None;
+            if (dragType.ToString() == "TabGroup")
+            {
+                if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm != TabManager)
+                    e.DragUIOverride.Caption = "Move Group to Window";
+                else
+                    e.DragUIOverride.Caption = "Reorder groups";
+                
+                e.AcceptedOperation = DataPackageOperation.Move;
+            }
+            else if (dragType.ToString() == "Tab")
+            {
+                // Don't handle at ListView level - let it bubble to NewTabGroupCard
+                // Only set AcceptedOperation if we're not over a group card
+                var element = e.OriginalSource as FrameworkElement;
+                
+                // Walk up the visual tree to see if we're over a NewTabGroupCard
+                while (element != null)
+                {
+                    if (element is NewTabGroupCard)
+                    {
+                        // We're over a group card - don't handle here
+                        e.Handled = false;
+                        return;
+                    }
+                    element = element.Parent as FrameworkElement;
+                }
+                
+                // Not over a group card, could be creating a new group
+                e.AcceptedOperation = DataPackageOperation.Move;
+                e.DragUIOverride.Caption = "Create new group";
+            }
         }
     }
 
     private void GroupsList_Drop(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && tabObj is WebviewTab tab)
-        {
-            // Determine which group was dropped on
-            var position = e.GetPosition(sender as UIElement);
-            var listView = sender as ListView;
-            
-            if (listView?.Items != null)
+        if (!e.DataView.Properties.TryGetValue("DragType", out object dragType)) return;
+        if (!e.DataView.Properties.TryGetValue("SourceManager", out var smObj) || smObj is not TabManager sourceManager) return;
+        
+        var isSameWindow = sourceManager == TabManager;
+
+            if (dragType.ToString() == "TabGroup")
             {
-                foreach (var item in listView.Items)
+                if (isSameWindow)
                 {
-                    if (item is TabGroup group)
+                    // Handle group reordering (ListView handles this automatically)
+                }
+                else
+                {
+                    TabManager.MoveGroupFromWindow(e.DataView.Properties["DragItem"] as TabGroup, sourceManager);
+                }
+                return;
+            }
+            else if (dragType.ToString() == "Tab" && e.DataView.Properties.TryGetValue("DragItem", out object tabObj))
+            {
+                var element = e.OriginalSource as FrameworkElement;
+                
+                // Walk up the visual tree to see if we're over a NewTabGroupCard
+                while (element != null)
+                {
+                    if (element is NewTabGroupCard groupCard)
                     {
-                        var container = listView.ContainerFromItem(item) as ListViewItem;
-                        if (container != null)
-                        {
-                            var bounds = container.TransformToVisual(listView).TransformBounds(
-                                new Rect(0, 0, container.ActualWidth, container.ActualHeight));
-                            
-                            if (bounds.Contains(position))
-                            {
-                                // Add to end of group by default (or you can calculate position within group)
-                                TabManager?.MoveTabToGroup(tab.Id, group.Id);
-                                break;
-                            }
-                        }
+                        // We're over a group card - don't handle here, let NewTabGroupCard handle it
+                        e.Handled = false;
+                        return;
+                    }
+                    element = element.Parent as FrameworkElement;
+                }
+                
+                // Dropped in empty space between groups - create new group
+                var tab = tabObj as WebviewTab;
+                if (tab != null && TabManager != null)
+                {
+                    if (isSameWindow)
+                    {
+                        var newGroup = TabManager.CreateGroup();
+                        TabManager.MoveTabToGroup(tab.Id, newGroup.Id);
+                    }
+                    else
+                    {
+                        TabManager.MoveTabFromWindowToNewGroup(tab, sourceManager);
                     }
                 }
             }
-        }
     }
 
     private void GroupsList_DragEnter(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        // Remove this handler or make it similar to DragOver
+        // The individual NewTabGroupCard controls handle their own DragEnter
+        e.Handled = false;
+    }
+
+
+    private void ListViewBase_OnItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is WebviewTab wt)
         {
-            e.DragUIOverride.IsCaptionVisible = true;
-            e.DragUIOverride.IsContentVisible = true;
+            TabManager?.SwapActiveTabTo(wt.Id);
         }
+    }
+
+    private void UIElement_OnDragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Properties.TryGetValue("DragType", out var type))
+        {
+            e.AcceptedOperation = DataPackageOperation.Move;
+            MoveTipsVisible = Visibility.Visible;
+            
+            if (type.ToString() == "Tab")
+            {
+                DropAreaText.Text = "+ New Tab Group";
+                e.DragUIOverride.Caption = "Create new group";
+            }
+            else if (type.ToString() == "TabGroup")
+            {
+                DropAreaText.Text = "Dissolve Group"; // Or "Move Group Here" depending on context
+                e.DragUIOverride.Caption = "Dissolve Group";
+            }
+        }
+    }
+
+    private void UIElement_OnDragEnter(object sender, DragEventArgs e)
+    {
+        e.Handled = false;
+        if (e.DataView.Properties.ContainsKey("DragItem"))
+        {
+            MoveTipsVisible = Visibility.Visible;
+        }
+    }
+
+    private void UIElement_OnDrop(object sender, DragEventArgs e)
+    {
+        MoveTipsVisible = Visibility.Collapsed;
+        
+        // This handles the specific "Drop Area" at the bottom of the list
+        if (e.DataView.Properties.TryGetValue("DragItem", out var item) && 
+            e.DataView.Properties.TryGetValue("DragType", out var type))
+        {
+            if (type.ToString() == "Tab" && item is WebviewTab tab)
+            {
+                // Logic for dropping a tab on the "New Group" area
+                var newGroup = TabManager?.CreateGroup();
+                if (newGroup != null)
+                {
+                    TabManager?.MoveTabToGroup(tab.Id, newGroup.Id);
+                }
+            }
+            else if (type.ToString() == "TabGroup" && item is TabGroup group)
+            {
+                TabManager.DissolveGroup(group);
+            }
+        }
+    }
+
+
+    private void Root_OnDragEnter(object sender, DragEventArgs e)
+    {
+        OpenSideBar();
+        MoveTipsVisible = Visibility.Visible;
+    }
+
+    private void Root_OnDragLeave(object sender, DragEventArgs e)
+    {
+        CloseSideBar();
+        MoveTipsVisible = Visibility.Collapsed;
     }
 }

@@ -19,4 +19,9 @@ public partial class TabGroup : ObservableObject
         TabManager = tabManager;
         GroupColor = TabManager.Instance.CurrentTheme.SecondaryHighlightColor; 
     }
+
+    public void UpdateTabManager(TabManager newManager)
+    {
+        TabManager = newManager;
+    }
 }

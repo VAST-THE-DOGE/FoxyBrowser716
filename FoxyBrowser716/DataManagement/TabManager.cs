@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using FoxyBrowser716.DataObjects.Complex;
 using Microsoft.Web.WebView2.Core;
+using WinUIEx;
 
 namespace FoxyBrowser716.DataManagement;
 
@@ -137,6 +138,15 @@ public partial class TabManager : ObservableObject
 		return tab.Id;
 	}
 
+	public void AddTab(WebviewTab tab)
+	{
+		if (_tabs.TryAdd(tab.Id, tab))
+		{
+			Tabs.Add(tab);
+			TabAdded?.Invoke(tab);
+		}
+	}
+
 	private int? _nextToSwap;
 	private bool _swaping;
 	
@@ -262,6 +272,109 @@ public partial class TabManager : ObservableObject
 		
 		foreach (var tab in group.Tabs.ToList())
 			RemoveTab(tab.Id);
+		Groups.Remove(group);
+	}
+
+	public void MoveTabFromWindowToGroup(WebviewTab tab, TabManager sourceManager, int groupId, int targetIndex = -1)
+	{
+		sourceManager.RemoveTab(tab.Id, true);
+		MoveTabToGroup(tab.Id, groupId, targetIndex);
+	}
+
+	public void MoveGroupFromWindow(TabGroup group, TabManager sourceManager)
+	{
+		// 1. Remove group from source manager's collection
+		sourceManager.Groups.Remove(group);
+		
+		// 2. Update the group's manager reference
+		group.UpdateTabManager(this);
+		
+		// 3. Add to this manager
+		this.Groups.Add(group); 
+		
+		// 4. Transfer ownership of all tabs within the group
+		foreach (var tab in group.Tabs.ToList())
+		{
+			// Remove from source (keeps the Core alive, unparents from old UI)
+			sourceManager.RemoveTab(tab.Id, true);
+			
+			// Update tab's manager reference
+			tab.UpdateTabManager(this);
+			
+			// Register in this manager's dictionary (but do not add to root Tabs list, as it's in the group)
+			if (_tabs.TryAdd(tab.Id, tab))
+			{
+				TabAdded?.Invoke(tab);
+			}
+		}
+	}
+
+	public void MoveTabFromWindowToNewGroup(WebviewTab tab, TabManager sourceManager)
+	{
+		var newGroup = CreateGroup();
+		MoveTabFromWindowToGroup(tab, sourceManager, newGroup.Id);
+	}
+
+	public void MoveGroupTabsFromWindow(TabGroup group, TabManager sourceManager, int targetIndex)
+	{
+		var tabsToMove = group.Tabs.ToList();
+		
+		// Remove the group from the source
+		sourceManager.RemoveGroup(group.Id);
+
+		// Move each tab individually to this manager's root list
+		foreach (var tab in tabsToMove)
+		{
+			MoveTabFromWindow(tab, sourceManager, targetIndex);
+			targetIndex++; // Increment index to keep order
+		}
+	}
+
+	public void MoveTabFromWindow(WebviewTab tab, TabManager sourceManager, int targetIndex)
+	{
+		// Remove from source
+		sourceManager.RemoveTab(tab.Id, true);
+		
+		// Update Manager
+		tab.UpdateTabManager(this);
+
+		// Add to this manager
+		if (_tabs.TryAdd(tab.Id, tab))
+		{
+			if (targetIndex >= 0 && targetIndex <= Tabs.Count)
+				Tabs.Insert(targetIndex, tab);
+			else
+				Tabs.Add(tab);
+			
+			TabAdded?.Invoke(tab);
+			SwapActiveTabTo(tab.Id);
+		}
+	}
+	
+	public async Task CreateWindowWithGroup(TabGroup group, Rect bounds)
+	{
+		var window = await Instance.CreateWindow([], bounds);
+		window.TabManager.MoveGroupFromWindow(group, this);
+		window.Show();
+	}
+
+	public async Task CreateWindowWithTab(WebviewTab tab, Rect bounds)
+	{
+		var window = await Instance.CreateWindow([], bounds);
+		window.TabManager.MoveTabFromWindow(tab, this, 0);
+		window.Show();
+	}
+
+	public void DissolveGroup(TabGroup group, int? targetIndex = null)
+	{
+		var index = targetIndex ?? Tabs.Count;
+		
+		foreach (var tab in group.Tabs.ToList())
+		{
+			group.Tabs.Remove(tab);
+			Tabs.Insert(index++, tab);
+		}
+		
 		Groups.Remove(group);
 	}
 }

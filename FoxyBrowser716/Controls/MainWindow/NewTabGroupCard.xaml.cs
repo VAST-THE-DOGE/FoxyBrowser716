@@ -7,6 +7,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using FoxyBrowser716.Controls.Generic;
+using FoxyBrowser716.DataManagement;
 using FoxyBrowser716.DataObjects.Basic;
 using FoxyBrowser716.DataObjects.Complex;
 using Material.Icons;
@@ -28,6 +29,8 @@ namespace FoxyBrowser716.Controls.MainWindow;
 [ObservableObject]
 public sealed partial class NewTabGroupCard : UserControl
 {
+    [ObservableProperty] public partial Visibility MoveTipsVisible { get; set; } = Visibility.Collapsed;
+    
     public bool IsCollapsed { get; private set; }
 
     private FRGBInput? rgbInput;
@@ -77,6 +80,14 @@ public sealed partial class NewTabGroupCard : UserControl
         SetCollapsed(!IsCollapsed);
     }
 
+    private void ListViewBase_OnItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is WebviewTab wt)
+        {
+            TabGroup.TabManager?.SwapActiveTabTo(wt.Id);
+        }
+    }
+    
     public void SetCollapsed(bool isCollapsed)
     {
         IsCollapsed = isCollapsed;
@@ -115,7 +126,7 @@ public sealed partial class NewTabGroupCard : UserControl
 // Group card drag events (for receiving tabs from outside)
     private void Root_DragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab")
         {
             e.AcceptedOperation = DataPackageOperation.Move;
             e.DragUIOverride.Caption = $"Add to {TabGroup.Name}";
@@ -133,15 +144,22 @@ public sealed partial class NewTabGroupCard : UserControl
     {
         Root.Opacity = 1.0;
         
-        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && tabObj is WebviewTab tab)
+        if (e.DataView.Properties.TryGetValue("DragItem", out var tabObj) && tabObj is WebviewTab tab)
         {
-            TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id);
+            if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm == TabGroup.TabManager)
+            {
+                TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id);
+            }
+            else
+            {
+                TabGroup.TabManager.MoveTabFromWindowToGroup(tab, tab.TabManager, TabGroup.Id);
+            }
         }
     }
 
     private void Root_DragEnter(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.ContainsKey("WebviewTab"))
+        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab")
         {
             Root.Opacity = 0.7;
         }
@@ -157,7 +175,9 @@ public sealed partial class NewTabGroupCard : UserControl
     {
         if (e.Items.FirstOrDefault() is WebviewTab tab)
         {
-            e.Data.Properties.Add("WebviewTab", tab);
+            e.Data.Properties.Add("DragType", "Tab");
+            e.Data.Properties.Add("DragItem", tab);
+            e.Data.Properties.Add("SourceManager", TabGroup.TabManager);
             e.Data.Properties.Add("SourceGroupId", TabGroup.Id);
             e.Data.RequestedOperation = DataPackageOperation.Move;
         }
@@ -186,13 +206,14 @@ public sealed partial class NewTabGroupCard : UserControl
     {
         var listView = sender as ListView;
         
-        // If dropping from another group, add the tab
-        if (e.DataView.Properties.TryGetValue("WebviewTab", out var tabObj) && 
+        if (e.DataView.Properties.TryGetValue("DragItem", out var tabObj) && 
             tabObj is WebviewTab tab &&
-            e.DataView.Properties.TryGetValue("SourceGroupId", out var sourceGroupIdObj) &&
-            sourceGroupIdObj is int sourceGroupId &&
-            sourceGroupId != TabGroup.Id)
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) &&
+            smObj is TabManager sourceManager)
         {
+            var isSameWindow = sourceManager == TabGroup.TabManager;
+            var sourceGroupId = e.DataView.Properties.TryGetValue("SourceGroupId", out var idObj) ? (int)idObj : -1;
+
             // Find the drop position
             var position = e.GetPosition(listView);
             int targetIndex = TabGroup.Tabs.Count; // Default to end
@@ -216,7 +237,18 @@ public sealed partial class NewTabGroupCard : UserControl
                 }
             }
             
-            TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id, targetIndex);
+            if (isSameWindow)
+            {
+                // Only move if it's not from this group (ListView handles reorder within same group)
+                if (sourceGroupId != TabGroup.Id)
+                {
+                    TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id, targetIndex);
+                }
+            }
+            else
+            {
+                TabGroup.TabManager.MoveTabFromWindowToGroup(tab, sourceManager, TabGroup.Id, targetIndex);
+            }
         }
         // Otherwise, ListView handles reordering automatically
     }

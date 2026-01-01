@@ -11,6 +11,7 @@ using FoxyBrowser716.Controls.MainWindow;
 using FoxyBrowser716.DataManagement;
 using FoxyBrowser716.ErrorHandeler;
 using Microsoft.Windows.AppLifecycle;
+using static System.Diagnostics.Process;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 
 namespace FoxyBrowser716;
@@ -76,7 +77,7 @@ public partial class App : Application
             {
                 try
                 {
-                    Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
+                    GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
                     //ThreadPool.SetMinThreads(Environment.ProcessorCount * 4, Environment.ProcessorCount * 2);
                     //ThreadPool.SetMaxThreads(Environment.ProcessorCount * 8, Environment.ProcessorCount * 4);
                 }
@@ -96,6 +97,8 @@ public partial class App : Application
         {
             Debug.WriteLine(e);
             ErrorInfo.AddError(e);
+            
+            RequestRestartAfterClose();
         }
     }
 
@@ -113,6 +116,7 @@ public partial class App : Application
         if (e.Exception is Exception ex)
         {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
         }
         //TODO
         // throw new NotImplementedException();
@@ -124,7 +128,9 @@ public partial class App : Application
         if (e.ExceptionObject is Exception ex)
         {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
         }
+        // applica
         //TODO
         // throw new NotImplementedException();
     }
@@ -134,6 +140,7 @@ public partial class App : Application
         if (e.Exception is Exception ex)
         {
             Debug.WriteLine(ex);
+            ErrorInfo.AddError(ex);
         }
         //TODO
         // throw new NotImplementedException();
@@ -194,6 +201,31 @@ public partial class App : Application
                         );
                 }
                 break;
+        }
+    }
+
+    private void RequestRestartAfterClose()
+    {
+        try
+        {
+            var currentPid = Environment.ProcessId;
+            var appUserModelId = Windows.ApplicationModel.AppInfo.Current.AppUserModelId;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments =
+                    $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process shell:AppsFolder\\{appUserModelId}!App\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            Process.Start(psi);
+            Environment.Exit(1);
+        }
+        catch (Exception e)
+        {
+            ErrorInfo.AddError(e);
         }
     }
 }

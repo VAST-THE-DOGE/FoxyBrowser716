@@ -70,10 +70,11 @@
             <ListView ItemsSource="{x:Bind TabGroup.Tabs, Mode=OneWay}"
                       Background="{x:Bind CurrentTheme.PrimaryBackgroundColorSlightTransparent, Converter={StaticResource ColorToBrushConverter}, Mode=OneWay}"
                       SelectionMode="None"
-                      IsItemClickEnabled="False"
+                      IsItemClickEnabled="True"
                       CanReorderItems="True"
                       CanDragItems="True"
                       AllowDrop="True"
+                      ItemClick="ListViewBase_OnItemClick"
                       DragItemsStarting="TabsList_DragItemsStarting"
                       DragItemsCompleted="TabsList_DragItemsCompleted"
                       DragOver="TabsList_DragOver"
@@ -81,6 +82,7 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="complex:WebviewTab">
                         <mainWindow:NewTabCard Title="{x:Bind Info.Title, Mode=OneWay}"
+                                               ForceHighlight="{x:Bind IsActive, Mode=OneWay}"
                                                Icon="{x:Bind Info.FavIconUrl, Converter={StaticResource UrlToImageControlConverter}, Mode=OneWay}"
                                                CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}" 
                                                Tag="{x:Bind}"   
@@ -97,6 +99,7 @@
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
                         <Setter Property="MinHeight" Value="0"/>
+                        <Setter Property="MinWidth" Value="0"/>
                         <Setter Property="Height" Value="26"/>
                         <Setter Property="Template">
                             <Setter.Value>
