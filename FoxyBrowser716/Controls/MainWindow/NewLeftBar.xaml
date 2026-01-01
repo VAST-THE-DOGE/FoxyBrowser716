@@ -88,7 +88,8 @@
                           DragOver="GroupsList_DragOver"
                           Drop="GroupsList_Drop"
                           DragEnter="GroupsList_DragEnter"
-                          DragItemsStarting="GroupsList_DragItemsStarting">
+                          DragItemsStarting="GroupsList_DragItemsStarting"
+                          DragItemsCompleted="GroupsList_DragItemsCompleted">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="basic:TabGroup">
                             <mainWindow:NewTabGroupCard CurrentTheme="{x:Bind TabManager.Instance.CurrentTheme, Mode=OneWay}"

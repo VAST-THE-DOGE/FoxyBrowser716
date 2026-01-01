@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
@@ -126,8 +127,15 @@ public sealed partial class NewTabGroupCard : UserControl
 // Group card drag events (for receiving tabs from outside)
     private void Root_DragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab")
+        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab" &&
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
         {
+            if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+
             e.AcceptedOperation = DataPackageOperation.Move;
             e.DragUIOverride.Caption = $"Add to {TabGroup.Name}";
             
@@ -144,23 +152,28 @@ public sealed partial class NewTabGroupCard : UserControl
     {
         Root.Opacity = 1.0;
         
-        if (e.DataView.Properties.TryGetValue("DragItem", out var tabObj) && tabObj is WebviewTab tab)
+        if (e.DataView.Properties.TryGetValue("DragItem", out var tabObj) && tabObj is WebviewTab tab &&
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
         {
-            if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm == TabGroup.TabManager)
+            if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name) return;
+
+            if (sourceManager == TabGroup.TabManager)
             {
                 TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id);
             }
             else
             {
-                TabGroup.TabManager.MoveTabFromWindowToGroup(tab, tab.TabManager, TabGroup.Id);
+                TabGroup.TabManager.MoveTabFromWindowToGroup(tab, sourceManager, TabGroup.Id);
             }
         }
     }
 
     private void Root_DragEnter(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab")
+        if (e.DataView.Properties.TryGetValue("DragType", out var type) && type.ToString() == "Tab" &&
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
         {
+            if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name) return;
             Root.Opacity = 0.7;
         }
     }
@@ -183,13 +196,45 @@ public sealed partial class NewTabGroupCard : UserControl
         }
     }
 
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
     private void TabsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
-        // Reordering within the group is handled automatically by ListView
+        if (args.DropResult == DataPackageOperation.None)
+        {
+            if (args.Items.FirstOrDefault() is WebviewTab tab)
+            {
+                var cursorPosition = new Point(0, 0);
+                if (GetCursorPos(out var lpPoint))
+                {
+                    cursorPosition.X = lpPoint.X;
+                    cursorPosition.Y = lpPoint.Y;
+                    
+                    TabGroup.TabManager.CreateWindowWithTab(tab, new Rect(cursorPosition, new Size(250, 100)));
+                }
+            }
+        }
     }
 
     private void TabsList_DragOver(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+        }
+
         e.AcceptedOperation = DataPackageOperation.Move;
         
         if (e.DataView.Properties.ContainsKey("SourceGroupId"))
@@ -211,6 +256,8 @@ public sealed partial class NewTabGroupCard : UserControl
             e.DataView.Properties.TryGetValue("SourceManager", out var smObj) &&
             smObj is TabManager sourceManager)
         {
+            if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name) return;
+
             var isSameWindow = sourceManager == TabGroup.TabManager;
             var sourceGroupId = e.DataView.Properties.TryGetValue("SourceGroupId", out var idObj) ? (int)idObj : -1;
 

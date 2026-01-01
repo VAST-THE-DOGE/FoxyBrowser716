@@ -427,6 +427,7 @@ public sealed partial class NewLeftBar : UserControl
     
     private void TabsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
+        MoveTipsVisible = Visibility.Collapsed;
         if (args.DropResult == DataPackageOperation.None)
         {
             // Drop occurred outside the app or was cancelled
@@ -444,7 +445,15 @@ public sealed partial class NewLeftBar : UserControl
                 else
                     throw new Exception("Failed to get cursor position for drop operation outside app.");
             }
-            else if (args.Items.FirstOrDefault() is TabGroup group)
+        }
+    }
+
+    private void GroupsList_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        MoveTipsVisible = Visibility.Collapsed;
+        if (args.DropResult == DataPackageOperation.None)
+        {
+            if (args.Items.FirstOrDefault() is TabGroup group)
             {
                 // Create new window with this group
                 var cursorPosition = new Point(0, 0);
@@ -461,6 +470,15 @@ public sealed partial class NewLeftBar : UserControl
 
     private void TabsList_DragOver(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+        }
+
         e.AcceptedOperation = DataPackageOperation.Move;
         
         if (e.DataView.Properties.TryGetValue("DragType", out var typeObj) && typeObj is string type)
@@ -489,6 +507,10 @@ public sealed partial class NewLeftBar : UserControl
         if (!e.DataView.Properties.TryGetValue("DragType", out var typeObj) || typeObj is not string type) return;
         if (!e.DataView.Properties.TryGetValue("SourceManager", out var smObj) || smObj is not TabManager sourceManager) return;
         if (!e.DataView.Properties.TryGetValue("DragItem", out var item)) return;
+
+        if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+
+        MoveTipsVisible = Visibility.Collapsed;
 
         var isSameWindow = sourceManager == TabManager;
 
@@ -557,6 +579,15 @@ public sealed partial class NewLeftBar : UserControl
 
     private void GroupsList_DragOver(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+        }
+
         if (e.DataView.Properties.TryGetValue("DragType", out object dragType))
         {
             if (dragType.ToString() == "TabGroup")
@@ -598,6 +629,10 @@ public sealed partial class NewLeftBar : UserControl
         if (!e.DataView.Properties.TryGetValue("DragType", out object dragType)) return;
         if (!e.DataView.Properties.TryGetValue("SourceManager", out var smObj) || smObj is not TabManager sourceManager) return;
         
+        if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+
+        MoveTipsVisible = Visibility.Collapsed;
+
         var isSameWindow = sourceManager == TabManager;
 
             if (dragType.ToString() == "TabGroup")
@@ -663,8 +698,16 @@ public sealed partial class NewLeftBar : UserControl
 
     private void UIElement_OnDragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.TryGetValue("DragType", out var type))
+        if (e.DataView.Properties.TryGetValue("DragType", out var type) &&
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && 
+            smObj is TabManager sourceManager)
         {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
+
             e.AcceptedOperation = DataPackageOperation.Move;
             MoveTipsVisible = Visibility.Visible;
             
@@ -675,8 +718,16 @@ public sealed partial class NewLeftBar : UserControl
             }
             else if (type.ToString() == "TabGroup")
             {
-                DropAreaText.Text = "Dissolve Group"; // Or "Move Group Here" depending on context
-                e.DragUIOverride.Caption = "Dissolve Group";
+                if (sourceManager != TabManager)
+                {
+                    DropAreaText.Text = "Move Group Here";
+                    e.DragUIOverride.Caption = "Move Group Here";
+                }
+                else
+                {
+                    DropAreaText.Text = "Dissolve Group";
+                    e.DragUIOverride.Caption = "Dissolve Group";
+                }
             }
         }
     }
@@ -695,21 +746,37 @@ public sealed partial class NewLeftBar : UserControl
         MoveTipsVisible = Visibility.Collapsed;
         
         // This handles the specific "Drop Area" at the bottom of the list
-        if (e.DataView.Properties.TryGetValue("DragItem", out var item) && 
-            e.DataView.Properties.TryGetValue("DragType", out var type))
+        if (e.DataView.Properties.TryGetValue("DragItem", out var item) &&
+            e.DataView.Properties.TryGetValue("DragType", out var type) &&
+            e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && 
+            smObj is TabManager sourceManager)
         {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+
+            var isSameWindow = sourceManager == TabManager;
+
             if (type.ToString() == "Tab" && item is WebviewTab tab)
             {
                 // Logic for dropping a tab on the "New Group" area
-                var newGroup = TabManager?.CreateGroup();
-                if (newGroup != null)
+                if (isSameWindow)
                 {
-                    TabManager?.MoveTabToGroup(tab.Id, newGroup.Id);
+                    var newGroup = TabManager?.CreateGroup();
+                    if (newGroup != null)
+                    {
+                        TabManager?.MoveTabToGroup(tab.Id, newGroup.Id);
+                    }
+                }
+                else
+                {
+                    TabManager?.MoveTabFromWindowToNewGroup(tab, sourceManager);
                 }
             }
             else if (type.ToString() == "TabGroup" && item is TabGroup group)
             {
-                TabManager.DissolveGroup(group);
+                if (isSameWindow)
+                    TabManager.DissolveGroup(group);
+                else
+                    TabManager.MoveGroupFromWindow(group, sourceManager);
             }
         }
     }
@@ -717,6 +784,11 @@ public sealed partial class NewLeftBar : UserControl
 
     private void Root_OnDragEnter(object sender, DragEventArgs e)
     {
+        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        {
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+        }
+
         OpenSideBar();
         MoveTipsVisible = Visibility.Visible;
     }
