@@ -19,7 +19,9 @@
         <winUiEx:TransparentTintBackdrop x:Name="Backdrop"/>
     </Window.SystemBackdrop>-->
     <Grid x:Name="Root" Background="Black">
-        <Image x:Name="BackImage" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Border Margin="2" CornerRadius="8">
+            <Image x:Name="BackImage" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
         <Grid x:Name="BorderGrid" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="8">
             <mainWindow:TopBar x:Name="TopBar" 
                                MinimizeClicked="TopBar_OnMinimizeClicked" MaximizeClicked="TopBar_OnMaximizeClicked" CloseClicked="TopBar_OnCloseClicked"
@@ -27,9 +29,10 @@
                                BackClicked="TopBar_OnBackClicked" EngineClicked="TopBar_OnEngineClicked" ForwardClicked="TopBar_OnForwardClicked"
                                RefreshClicked="TopBar_OnRefreshClicked" ToggleSidebarLock="TopBar_OnToggleSidebarLock" SearchTextChanged="TopBar_OnSearchTextChanged" 
                                SearchBarUnfocused="TopBar_OnSearchBarUnfocused"  UpdateClicked="TopBar_OnUpdateClicked"/>
-            <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" CornerRadius="8" Background="Black" BorderThickness="2" BorderBrush="DarkGray" Margin="30,26,0,0">
-                <homePage:HomePage x:Name="HomePage" Visibility="Collapsed" HomeImageUrlChanged="HomePage_OnHomeImageUrlChanged"/>
-                <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed"/>
+            
+            <Grid x:Name="TabHolder" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Black" BorderThickness="2" CornerRadius="8" Margin="30,26,0,0" BorderBrush="DarkGray" >
+                <homePage:HomePage x:Name="HomePage" Visibility="Collapsed" HomeImageUrlChanged="HomePage_OnHomeImageUrlChanged" CornerRadius="8"/>
+                <settingsPage:SettingsPage x:Name="SettingsPage" Visibility="Collapsed" CornerRadius="8"/>
             </Grid>
             
             <Popup x:Name="ExtensionPopupRoot" Width="350" MaxHeight="600" Margin="34,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
