@@ -53,9 +53,9 @@ public partial class Instance : ObservableObject
 	public Theme CurrentTheme
 	{
 		get;
-		set
+		private set
 		{
-			field = value;
+			SetProperty(ref field, value);
 			foreach (var window in Windows)
 				window.CurrentTheme = value;
 		}
