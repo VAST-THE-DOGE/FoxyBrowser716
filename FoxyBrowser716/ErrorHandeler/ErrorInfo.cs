@@ -13,6 +13,7 @@ public enum ErrorSeverity
     Info,
     Warning,
     Error,
+    Critical,
 }
 
 public sealed class ErrorInfo
@@ -28,7 +29,6 @@ public sealed class ErrorInfo
         MaxDepth = 64,
     };
 
-    // In‑memory circular buffer (most recent first)
     private static readonly LinkedList<ErrorInfo> _errors = [];
     private static int _maxEntries = DefaultMaxEntries;
     private static volatile bool _loaded;
@@ -39,7 +39,6 @@ public sealed class ErrorInfo
     [JsonPropertyName("Src")]
     public string? Source { get; init; }
 
-    // Store lightweight method info instead of MethodBase (safer for serialization)
     [JsonPropertyName("M")]
     public string? MethodDisplay { get; init; }
 
@@ -81,21 +80,12 @@ public sealed class ErrorInfo
 
     public static void AddError(Exception ex)
     {
-        EnsureLoaded();
         var root = Build(ex, ErrorSeverity.Error);
-        lock (_sync)
-        {
-            _errors.AddFirst(root);
-            TrimInMemory_NoLock();
-            AppendLineSafe(root);
-            if (_errors.Count > _maxEntries) // extra guard
-                CleanupFileSafe();
-        }
+        AddItem(root);
     }
     
     public static void AddInfo(string message, string details)
     {
-        EnsureLoaded();
         var info = new ErrorInfo
         {
             Severity = ErrorSeverity.Info,
@@ -103,18 +93,10 @@ public sealed class ErrorInfo
             StackTrace = details,
             TimeStampUtc = DateTimeOffset.UtcNow
         };
-        lock (_sync)
-        {
-            _errors.AddFirst(info);
-            TrimInMemory_NoLock();
-            AppendLineSafe(info);
-            if (_errors.Count > _maxEntries)
-                CleanupFileSafe();
-        }
+        AddItem(info);
     }
     public static void AddWarning(string message, string? details = null)
     {
-        EnsureLoaded();
         var info = new ErrorInfo
         {
             Severity = ErrorSeverity.Warning,
@@ -122,11 +104,46 @@ public sealed class ErrorInfo
             StackTrace = details,
             TimeStampUtc = DateTimeOffset.UtcNow
         };
+        AddItem(info);
+    }
+    
+    public static void AddCritical(string message, string? details = null)
+    {
+        var info = new ErrorInfo
+        {
+            Severity = ErrorSeverity.Critical,
+            Message = message,
+            StackTrace = details,
+            TimeStampUtc = DateTimeOffset.UtcNow
+        };
+        AddItem(info);
+    }
+
+    private static void AddItem(ErrorInfo item)
+    {
+        EnsureLoaded();
+        
         lock (_sync)
         {
-            _errors.AddFirst(info);
+#if DEBUG
+            Console.ResetColor();
+
+            var writeColor = item.Severity switch
+                {
+                    ErrorSeverity.Info => ConsoleColor.Cyan,
+                    ErrorSeverity.Warning => ConsoleColor.Yellow,
+                    ErrorSeverity.Error => ConsoleColor.Red,
+                    ErrorSeverity.Critical => ConsoleColor.DarkRed,
+                };
+        
+            Console.ForegroundColor = writeColor;
+
+            Debug.WriteLine("TODO"); //TODO
+#endif
+            
+            _errors.AddFirst(item);
             TrimInMemory_NoLock();
-            AppendLineSafe(info);
+            AppendLineSafe(item);
             if (_errors.Count > _maxEntries)
                 CleanupFileSafe();
         }
@@ -169,26 +186,24 @@ public sealed class ErrorInfo
                         var entry = JsonSerializer.Deserialize<ErrorInfo>(line, _jsonOptions);
                         if (entry != null)
                         {
-                            _errors.AddLast(entry); // oldest at start
+                            _errors.AddLast(entry);
                             if (_errors.Count > _maxEntries)
                                 _errors.RemoveFirst();
                         }
                     }
                     catch
                     {
-                        if (++errors > 100) break; // TODO: stack overflow ono line error
-                        
-                        continue;
+                        if (++errors > 100) break;
                     }
                 }
-                // Reorder to most recent first
+
                 var reversed = _errors.Reverse().ToList();
                 _errors.Clear();
                 foreach (var e in reversed) _errors.AddLast(e);
             }
             catch
             {
-                // Ignore load failure
+                // Ignore 
             }
             _loaded = true;
         }
@@ -216,18 +231,12 @@ public sealed class ErrorInfo
                 Message = cursor.Message,
                 StackTrace = cursor.StackTrace,
                 TimeStampUtc = DateTimeOffset.UtcNow,
-                InnerError = currentInner // build chain in reverse
+                InnerError = currentInner
             };
             cursor = cursor.InnerException;
             depth++;
         }
 
-        // currentInner now holds the outermost built from last iteration; rebuild ordering:
-        // Because we built from outer->inner incorrectly we need the first created (outermost).
-        // Simpler: rebuild in forward order:
-        // Re-implement clean:
-
-        // Forward rebuild (clear and redo)
         currentInner = null;
         cursor = ex;
         depth = 0;
@@ -247,7 +256,7 @@ public sealed class ErrorInfo
             cursor = cursor.InnerException;
             depth++;
         }
-        // currentInner is now OUTERMOST with InnerError chain inward
+
         return currentInner!;
     }
 
@@ -294,11 +303,10 @@ public sealed class ErrorInfo
                     FileAccess.Write,
                     FileShare.Read,
                     4096,
-                    FileOptions.WriteThrough); // WriteThrough improves crash durability
+                    FileOptions.WriteThrough);
                 using var sw = new StreamWriter(fs, Encoding.UTF8);
                 sw.WriteLine(line);
-                sw.Flush(); // ensure persisted
-                //fs.Flush(true);
+                sw.Flush();
                 return;
             }
             catch (IOException)
@@ -314,7 +322,6 @@ public sealed class ErrorInfo
 
     private static void CleanupFileSafe()
     {
-        // Rewrite keeping latest _maxEntries lines
         try
         {
             if (!File.Exists(_errorFile)) return;
@@ -327,7 +334,6 @@ public sealed class ErrorInfo
             File.WriteAllLines(temp, trimmed);
             File.Move(temp, _errorFile, true);
             
-            // Reload in-memory (most recent first)
             _errors.Clear();
             for (var i = trimmed.Count - 1; i >= 0; i--)
             {
@@ -344,7 +350,7 @@ public sealed class ErrorInfo
         }
         catch
         {
-            // ignore cleanup failure
+            // ignore
         }
     }
 }

@@ -34,7 +34,7 @@ public enum SettingsCategory
     Misc
 }
 
-public sealed class BrowserSettings : INotifyPropertyChanged
+public sealed partial class BrowserSettings : ObservableObject
 {
     public Dictionary<SettingsCategory, List<ISetting>> GetSettingControls(MainWindow mainWindow)
     {
@@ -141,9 +141,13 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     }
 
     #region General
-
+    //TODO this should be app wide.
+    [SettingInfo(Category = SettingsCategory.General, Name = "Browser Data Folder Path", Description = "The path to the folder where the browser should load data and save data to. Tip: this feature is intended for use with something like OneDrive to sync browsing data across computers without using accounts and whatnot.")]
+    public string BrowserDataPath { get; set => SetProperty(ref field, value); } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/FoxyBrowser716";
+    
+    
     [SettingInfo(Category = SettingsCategory.General)]
-    public string TestString { get; set => SetField(ref field, value); } = "default value here";
+    public string TestString { get; set => SetProperty(ref field, value); } = "default value here";
 
     //TODO: enum support would be nice here:
     // dictionary map of enum to human readable.
@@ -152,15 +156,15 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     // public string TestCombo = "1";
     
     [SettingInfo(Category = SettingsCategory.General)]
-    public bool TestBool { get; set => SetField(ref field, value); } = true;
+    public bool TestBool { get; set => SetProperty(ref field, value); } = true;
     
     [SettingInfo(Category = SettingsCategory.General, Name = "Another Test Name")]
-    public int TestInt { get; set => SetField(ref field, value); } = 42;
+    public int TestInt { get; set => SetProperty(ref field, value); } = 42;
     
     
     // ONLY REAL ONE HERE (NVM, one below too)
     [SettingInfo(Category = SettingsCategory.General, Description = "Another Test Description", Options = nameof(GetComboOptions))]
-    public string ThemeName { get; set => SetField(ref field, value); } = "Vast Seas";
+    public string ThemeName { get; set => SetProperty(ref field, value); } = "Vast Seas";
 
     [JsonIgnore] // VERY IMPORTANT. Without this, the entire control will be serialized/saved as JSON. Will inflate the size of the file!!!
     [SettingInfo(Category = SettingsCategory.General, Name = "Extensions", Description = "Managed installed extensions for the current instance only.")]
@@ -176,15 +180,15 @@ public sealed class BrowserSettings : INotifyPropertyChanged
     
     #region WebView2
     [SettingInfo(Category = SettingsCategory.WebView2)]
-    public string TestWebView2 { get; set => SetField(ref field, value); } = "default value here";
+    public string TestWebView2 { get; set => SetProperty(ref field, value); } = "default value here";
     
     [SettingInfo(Category = SettingsCategory.WebView2)]
-    public string TestWebView3 { get; set => SetField(ref field, value); } = "default value here";
+    public string TestWebView3 { get; set => SetProperty(ref field, value); } = "default value here";
     #endregion
     
     #region Misc
     [SettingInfo(Category = SettingsCategory.Misc)]
-    public string TestMisc { get; set => SetField(ref field, value); } = "default value here";
+    public string TestMisc { get; set => SetProperty(ref field, value); } = "default value here";
     
     #endregion
 
@@ -220,20 +224,6 @@ public sealed class BrowserSettings : INotifyPropertyChanged
      *
      */
     //TODO: need default static setting to use if none.
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
 }
 
 public partial class PerformanceSettings : ObservableObject

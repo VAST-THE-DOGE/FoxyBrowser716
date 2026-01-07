@@ -95,8 +95,7 @@ public partial class App : Application
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e);
-            ErrorInfo.AddError(e);
+            ErrorInfo.AddCritical($"Final Catch App Error: {e.Message}", e.StackTrace);
             
             RequestRestartAfterClose();
         }
@@ -105,45 +104,36 @@ public partial class App : Application
     private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-        {
-            Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
-        }
+            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+        else
+            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
     }
 
     private void TaskSchedulerOnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-        {
-            Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
-        }
-        //TODO
-        // throw new NotImplementedException();
+            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+        else
+            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+        
         e.SetObserved();
     }
 
     private void CurrentDomainOnUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
     {
         if (e.ExceptionObject is Exception ex)
-        {
-            Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
-        }
-        // applica
-        //TODO
-        // throw new NotImplementedException();
+            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+        else
+            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
     }
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-        {
-            Debug.WriteLine(ex);
-            ErrorInfo.AddError(ex);
-        }
-        //TODO
-        // throw new NotImplementedException();
+            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+        else
+            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+
         e.Handled = true;
     }
 
