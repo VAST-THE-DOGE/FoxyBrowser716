@@ -104,6 +104,22 @@ public sealed partial class FContextMenu : UserControl
         
         _popup.IsOpen = true;
     }
+    
+    public void SetCustomItems(IEnumerable<UserControl> items, double menuWidth = 100)
+    {
+        var itemsA = items.ToArray();
+        
+        _menuWidth = menuWidth;
+        
+        _stackPanel.Children.Clear();
+        
+        foreach (var item in itemsA)
+        {
+            _stackPanel.Children.Add(item);
+        }
+        
+        _popup.IsOpen = true;
+    }
 
     private void CreateIconOnlyLayout(MenuItem[] items)
     {
@@ -143,11 +159,11 @@ public sealed partial class FContextMenu : UserControl
                 Padding = new Thickness(item.IconPadding),
                 ButtonText = item.Text ?? string.Empty,
                 //Width = _menuWidth - 4,
-                Margin = new Thickness(0),
+                Margin = new Thickness(1),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 CurrentTheme = CurrentTheme,
                 ContentHorizontalAlignment = HorizontalAlignment.Left,
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(8),
             };
 
             button.OnClick += (_, _) =>
