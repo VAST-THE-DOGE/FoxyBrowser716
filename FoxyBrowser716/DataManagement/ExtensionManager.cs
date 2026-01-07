@@ -1130,7 +1130,7 @@ public static class ExtensionManager
 		return null;
 	}
 	
-	private static bool IsNamesEqual(string name, ExtensionManifestBase manifest, string language = "en")
+	public static bool IsNamesEqual(string name, ExtensionManifestBase manifest, string language = "en")
 	{
 		var localizedName = manifest.GetLocalizedName(language);
 		var localizedShortName = manifest.GetLocalizedShortName(language);
