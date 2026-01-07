@@ -45,12 +45,12 @@
                           CanReorderItems="True"
                           CanDragItems="True"
                           AllowDrop="True"
+                          HorizontalAlignment="Stretch"
                           DragItemsStarting="TabsList_DragItemsStarting"
                           DragItemsCompleted="TabsList_DragItemsCompleted"
                           DragOver="TabsList_DragOver"
                           Drop="TabsList_Drop"
                           DragEnter="TabsList_DragEnter"
-                          HorizontalAlignment="Stretch"
                           ItemClick="ListViewBase_OnItemClick">
                     
                     <ListView.ItemTemplate>
@@ -87,7 +87,6 @@
                           AllowDrop="True"
                           DragOver="GroupsList_DragOver"
                           Drop="GroupsList_Drop"
-                          DragEnter="GroupsList_DragEnter"
                           DragItemsStarting="GroupsList_DragItemsStarting"
                           DragItemsCompleted="GroupsList_DragItemsCompleted">
                     <ListView.ItemTemplate>

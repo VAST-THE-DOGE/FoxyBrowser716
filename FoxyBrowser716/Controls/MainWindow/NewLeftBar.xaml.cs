@@ -383,6 +383,7 @@ public sealed partial class NewLeftBar : UserControl
             e.Data.Properties.Add("DragItem", tab);
             e.Data.Properties.Add("SourceManager", TabManager);
 
+            OpenSideBar();
             GroupDropAreaTextContent = "+ New Tab Group";
             MoveTipsVisible = Visibility.Visible;
         }
@@ -395,7 +396,8 @@ public sealed partial class NewLeftBar : UserControl
             e.Data.Properties.Add("DragType", "TabGroup");
             e.Data.Properties.Add("DragItem", group);
             e.Data.Properties.Add("SourceManager", TabManager);
-
+            
+            OpenSideBar();
             GroupDropAreaTextContent = "Dissolve Group";
             MoveTipsVisible = Visibility.Visible;
         }
@@ -417,10 +419,8 @@ public sealed partial class NewLeftBar : UserControl
         MoveTipsVisible = Visibility.Collapsed;
         if (args.DropResult == DataPackageOperation.None)
         {
-            // Drop occurred outside the app or was cancelled
             if (args.Items.FirstOrDefault() is WebviewTab tab)
             {
-                // Create new window with this tab
                 var cursorPosition = new Point(0, 0);
                 if (GetCursorPos(out var lpPoint))
                 {
@@ -442,7 +442,6 @@ public sealed partial class NewLeftBar : UserControl
         {
             if (args.Items.FirstOrDefault() is TabGroup group)
             {
-                // Create new window with this group
                 var cursorPosition = new Point(0, 0);
                 if (GetCursorPos(out var lpPoint))
                 {
@@ -462,6 +461,7 @@ public sealed partial class NewLeftBar : UserControl
             if (TabManager?.Instance.Name != sourceManager.Instance.Name)
             {
                 e.AcceptedOperation = DataPackageOperation.None;
+                e.Handled = true;
                 return;
             }
         }
@@ -529,12 +529,10 @@ public sealed partial class NewLeftBar : UserControl
         {
             if (isSameWindow)
             {
-                // If it has a SourceGroupId, it's coming from a group -> Ungroup it
                 if (e.DataView.Properties.ContainsKey("SourceGroupId"))
                 {
                     TabManager?.MoveTabToGroup(tab.Id, -1, targetIndex);
                 }
-                // Else: It's already in this list, ListView handles reordering automatically
             }
             else
             {
@@ -560,7 +558,11 @@ public sealed partial class NewLeftBar : UserControl
         
         if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
         {
-            if (TabManager?.Instance.Name != sourceManager.Instance.Name) return;
+            if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+                return;
+            }
         }
 
         if (e.DataView.Properties.ContainsKey("DragItem"))
@@ -572,48 +574,28 @@ public sealed partial class NewLeftBar : UserControl
 
     private void GroupsList_DragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
+        if (e.DataView.Properties.TryGetValue("DragType", out object dragType) && dragType.ToString() == "TabGroup")
         {
-            if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+            if (e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && smObj is TabManager sourceManager)
             {
-                e.AcceptedOperation = DataPackageOperation.None;
-                return;
-            }
-        }
+                if (TabManager?.Instance.Name != sourceManager.Instance.Name)
+                {
+                    e.AcceptedOperation = DataPackageOperation.None;
+                    e.Handled = true;
+                    return;
+                }
 
-        if (e.DataView.Properties.TryGetValue("DragType", out object dragType))
-        {
-            if (dragType.ToString() == "TabGroup")
-            {
                 if (e.DataView.Properties.TryGetValue("SourceManager", out var sm) && sm != TabManager)
                     e.DragUIOverride.Caption = "Move Group to Window";
                 else
                     e.DragUIOverride.Caption = "Reorder groups";
-                
+
                 e.AcceptedOperation = DataPackageOperation.Move;
             }
-            else if (dragType.ToString() == "Tab")
-            {
-                // Don't handle at ListView level - let it bubble to NewTabGroupCard
-                // Only set AcceptedOperation if we're not over a group card
-                var element = e.OriginalSource as FrameworkElement;
-                
-                // Walk up the visual tree to see if we're over a NewTabGroupCard
-                while (element != null)
-                {
-                    if (element is NewTabGroupCard)
-                    {
-                        // We're over a group card - don't handle here
-                        e.Handled = false;
-                        return;
-                    }
-                    element = element.Parent as FrameworkElement;
-                }
-                
-                // Not over a group card, could be creating a new group
-                e.AcceptedOperation = DataPackageOperation.Move;
-                e.DragUIOverride.Caption = "Create new group";
-            }
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
         }
     }
 
@@ -628,41 +610,17 @@ public sealed partial class NewLeftBar : UserControl
 
         var isSameWindow = sourceManager == TabManager;
 
-            if (dragType.ToString() == "TabGroup")
+        if (dragType.ToString() == "TabGroup")
+        {
+            if (!isSameWindow)
             {
-                if (isSameWindow)
-                {
-                    // Handle group reordering (ListView handles this automatically)
-                }
-                else
-                {
-                    TabManager.MoveGroupFromWindow(e.DataView.Properties["DragItem"] as TabGroup, sourceManager);
-                }
-                return;
+                TabManager.MoveGroupFromWindow(e.DataView.Properties["DragItem"] as TabGroup, sourceManager);
             }
-            else if (dragType.ToString() == "Tab" && e.DataView.Properties.TryGetValue("DragItem", out object tabObj))
-            {
-                var element = e.OriginalSource as FrameworkElement;
-                
-                // Walk up the visual tree to see if we're over a NewTabGroupCard
-                while (element != null)
-                {
-                    if (element is NewTabGroupCard groupCard)
-                    {
-                        // We're over a group card - don't handle here, let NewTabGroupCard handle it
-                        e.Handled = false;
-                        return;
-                    }
-                    element = element.Parent as FrameworkElement;
-                }
-            }
-    }
-
-    private void GroupsList_DragEnter(object sender, DragEventArgs e)
-    {
-        // Remove this handler or make it similar to DragOver
-        // The individual NewTabGroupCard controls handle their own DragEnter
-        e.Handled = false;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
     }
 
 
@@ -744,7 +702,6 @@ public sealed partial class NewLeftBar : UserControl
     {
         MoveTipsVisible = Visibility.Collapsed;
         
-        // This handles the specific "Drop Area" at the bottom of the list
         if (e.DataView.Properties.TryGetValue("DragItem", out var item) &&
             e.DataView.Properties.TryGetValue("DragType", out var type) &&
             e.DataView.Properties.TryGetValue("SourceManager", out var smObj) && 
@@ -756,7 +713,6 @@ public sealed partial class NewLeftBar : UserControl
 
             if (type.ToString() == "Tab" && item is WebviewTab tab)
             {
-                // Logic for dropping a tab on the "New Group" area
                 if (isSameWindow)
                 {
                     var newGroup = TabManager?.CreateGroup();

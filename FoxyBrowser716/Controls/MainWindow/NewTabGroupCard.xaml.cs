@@ -141,6 +141,7 @@ public sealed partial class NewTabGroupCard : UserControl
             
             // Visual feedback - highlight the group
             Root.Opacity = 0.7;
+            e.Handled = true;
         }
         else
         {
@@ -165,6 +166,7 @@ public sealed partial class NewTabGroupCard : UserControl
             {
                 TabGroup.TabManager.MoveTabFromWindowToGroup(tab, sourceManager, TabGroup.Id);
             }
+            e.Handled = true;
         }
     }
 
@@ -175,12 +177,14 @@ public sealed partial class NewTabGroupCard : UserControl
         {
             if (TabGroup.TabManager.Instance.Name != sourceManager.Instance.Name) return;
             Root.Opacity = 0.7;
+            e.Handled = true;
         }
     }
 
     private void Root_DragLeave(object sender, DragEventArgs e)
     {
         Root.Opacity = 1.0;
+        e.Handled = true;
     }
 
     // Tabs within group drag events (for reordering within the group)
@@ -245,6 +249,7 @@ public sealed partial class NewTabGroupCard : UserControl
         {
             e.DragUIOverride.Caption = $"Move to {TabGroup.Name}";
         }
+        e.Handled = true;
     }
 
     private void TabsList_Drop(object sender, DragEventArgs e)
@@ -290,11 +295,13 @@ public sealed partial class NewTabGroupCard : UserControl
                 if (sourceGroupId != TabGroup.Id)
                 {
                     TabGroup.TabManager.MoveTabToGroup(tab.Id, TabGroup.Id, targetIndex);
+                    e.Handled = true;
                 }
             }
             else
             {
                 TabGroup.TabManager.MoveTabFromWindowToGroup(tab, sourceManager, TabGroup.Id, targetIndex);
+                e.Handled = true;
             }
         }
         // Otherwise, ListView handles reordering automatically
