@@ -39,13 +39,7 @@ public sealed partial class NewTabCard : UserControl
 	[ObservableProperty] public partial Visibility DuplicateVisible { get; set; } = Visibility.Visible;
 
 	[ObservableProperty] 
-	public partial ObservableCollection<FMenuItem> MenuOptions { get; set; } = 
-		[ 
-			new() { Text = "test1", Action = () => Debug.WriteLine("hey1"), }, 
-			new() { Text = "test2", Action = () => Debug.WriteLine("hey2") }, 
-			new() { Text = "test3", Action = () => Debug.WriteLine("hey3") }, 
-			new() { Text = "test4", Action = () => Debug.WriteLine("hey4") },
-		];
+	public partial ObservableCollection<FMenuItem> MenuOptions { get; set; } = []; // TODO got to disable context menu when empty
 	
 	[ObservableProperty] public partial Func<ObservableCollection<FMenuItem>>? MenuItemFactory { get; set; }
 
