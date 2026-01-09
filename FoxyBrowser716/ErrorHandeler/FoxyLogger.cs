@@ -16,7 +16,7 @@ public enum ErrorSeverity
     Critical,
 }
 
-public sealed class ErrorInfo
+public sealed class FoxyLogger
 {
     private const int DefaultMaxEntries = 5000;
     private const int MaxInnerDepth = 10;
@@ -29,7 +29,7 @@ public sealed class ErrorInfo
         MaxDepth = 64,
     };
 
-    private static readonly LinkedList<ErrorInfo> _errors = [];
+    private static readonly LinkedList<FoxyLogger> _errors = [];
     private static int _maxEntries = DefaultMaxEntries;
     private static volatile bool _loaded;
 
@@ -52,11 +52,11 @@ public sealed class ErrorInfo
     public DateTimeOffset TimeStampUtc { get; init; }
 
     [JsonPropertyName("IE")]
-    public ErrorInfo? InnerError { get; init; }
+    public FoxyLogger? InnerError { get; init; }
 
-    public ErrorInfo() {}
+    public FoxyLogger() {}
 
-    public static ReadOnlyCollection<ErrorInfo> Errors
+    public static ReadOnlyCollection<FoxyLogger> Errors
     {
         get
         {
@@ -86,7 +86,7 @@ public sealed class ErrorInfo
     
     public static void AddInfo(string message, string details)
     {
-        var info = new ErrorInfo
+        var info = new FoxyLogger
         {
             Severity = ErrorSeverity.Info,
             Message = message,
@@ -97,7 +97,7 @@ public sealed class ErrorInfo
     }
     public static void AddWarning(string message, string? details = null)
     {
-        var info = new ErrorInfo
+        var info = new FoxyLogger
         {
             Severity = ErrorSeverity.Warning,
             Message = message,
@@ -109,7 +109,7 @@ public sealed class ErrorInfo
     
     public static void AddCritical(string message, string? details = null)
     {
-        var info = new ErrorInfo
+        var info = new FoxyLogger
         {
             Severity = ErrorSeverity.Critical,
             Message = message,
@@ -119,7 +119,7 @@ public sealed class ErrorInfo
         AddItem(info);
     }
 
-    private static void AddItem(ErrorInfo item)
+    private static void AddItem(FoxyLogger item)
     {
         EnsureLoaded();
         
@@ -137,8 +137,10 @@ public sealed class ErrorInfo
                 };
         
             Console.ForegroundColor = writeColor;
-
-            Debug.WriteLine("TODO"); //TODO
+            
+            Console.WriteLine($"[{item.Severity.ToString()}] {item.Message}");
+            Console.ResetColor();
+            Console.WriteLine(item.StackTrace);
 #endif
             
             _errors.AddFirst(item);
@@ -183,7 +185,7 @@ public sealed class ErrorInfo
                     if (string.IsNullOrWhiteSpace(line)) continue;
                     try
                     {
-                        var entry = JsonSerializer.Deserialize<ErrorInfo>(line, _jsonOptions);
+                        var entry = JsonSerializer.Deserialize<FoxyLogger>(line, _jsonOptions);
                         if (entry != null)
                         {
                             _errors.AddLast(entry);
@@ -215,15 +217,15 @@ public sealed class ErrorInfo
         LoadLog();
     }
 
-    private static ErrorInfo Build(Exception ex, ErrorSeverity severity)
+    private static FoxyLogger Build(Exception ex, ErrorSeverity severity)
     {
-        ErrorInfo? currentInner = null;
+        FoxyLogger? currentInner = null;
         var depth = 0;
         var cursor = ex;
 
         while (cursor != null && depth < MaxInnerDepth)
         {
-            currentInner = new ErrorInfo
+            currentInner = new FoxyLogger
             {
                 Severity = severity,
                 Source = cursor.Source,
@@ -242,7 +244,7 @@ public sealed class ErrorInfo
         depth = 0;
         while (cursor != null && depth < MaxInnerDepth)
         {
-            var node = new ErrorInfo
+            var node = new FoxyLogger
             {
                 Severity = severity,
                 Source = cursor.Source,
@@ -279,7 +281,7 @@ public sealed class ErrorInfo
             _errors.RemoveLast();
     }
 
-    private static void AppendLineSafe(ErrorInfo info)
+    private static void AppendLineSafe(FoxyLogger info)
     {
         string line;
         try
@@ -339,7 +341,7 @@ public sealed class ErrorInfo
             {
                 try
                 {
-                    var e = JsonSerializer.Deserialize<ErrorInfo>(trimmed[i], _jsonOptions);
+                    var e = JsonSerializer.Deserialize<FoxyLogger>(trimmed[i], _jsonOptions);
                     if (e != null) _errors.AddLast(e);
                 }
                 catch

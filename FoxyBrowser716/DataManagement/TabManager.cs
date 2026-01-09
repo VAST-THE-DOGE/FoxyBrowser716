@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using FoxyBrowser716.DataObjects.Complex;
+using FoxyBrowser716.ErrorHandeler;
 using Microsoft.Web.WebView2.Core;
 using WinUIEx;
 
@@ -145,7 +146,7 @@ public partial class TabManager : ObservableObject
 	
 	public async Task SwapActiveTabTo(int tabId, bool waitForTabToInitialize)
 	{
-		Debug.WriteLine($"{ActiveTabId} => {tabId}");
+		FoxyLogger.AddInfo($"{ActiveTabId} => {tabId}");
 		if (ActiveTabId == tabId)
 			return;
 

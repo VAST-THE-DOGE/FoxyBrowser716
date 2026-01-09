@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Windows.ApplicationModel;
 using FoxyBrowser716.Controls.MainWindow;
@@ -29,6 +30,56 @@ public static class AppServer
 	public static readonly List<Instance> Instances = [];
 
 	private static Timer _backupTimer;
+
+#if DEBUG
+	[DllImport("kernel32.dll")]
+	private static extern bool AllocConsole();
+
+	[DllImport("kernel32.dll")]
+	private static extern bool FreeConsole();
+
+	[DllImport("kernel32.dll")]
+	private static extern IntPtr GetConsoleWindow();
+	
+	[DllImport("kernel32.dll")]
+	private static extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate handler, bool add);
+
+	[DllImport("kernel32.dll")]
+	private static extern IntPtr GetStdHandle(int nStdHandle);
+
+	[DllImport("kernel32.dll")]
+	private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+
+	[DllImport("kernel32.dll")]
+	private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+	private const int STD_INPUT_HANDLE = -10;
+	private const uint ENABLE_QUICK_EDIT_MODE = 0x0040;
+	private const uint ENABLE_EXTENDED_FLAGS = 0x0080;
+	
+	private delegate bool ConsoleCtrlDelegate(CtrlType sig);
+
+	private enum CtrlType
+	{
+		CTRL_C_EVENT = 0,
+		CTRL_BREAK_EVENT = 1,
+		CTRL_CLOSE_EVENT = 2,
+		CTRL_LOGOFF_EVENT = 5,
+		CTRL_SHUTDOWN_EVENT = 6
+	}
+
+	// console close should not close the app
+	private static bool ConsoleCtrlCheck(CtrlType sig)
+	{
+		if (sig == CtrlType.CTRL_CLOSE_EVENT)
+		{
+			FreeConsole();
+			return true; 
+		}
+		return false;
+	}
+#endif
+	
 	
 	public static async Task HandleLaunchEvent(string[] uris, bool setupNeeded, bool fromStartup = false)
 	{
@@ -36,6 +87,22 @@ public static class AppServer
 		{
 			if (setupNeeded)
 			{
+#if DEBUG
+				AllocConsole();
+				SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
+
+				IntPtr consoleHandle = GetStdHandle(STD_INPUT_HANDLE);
+				if (GetConsoleMode(consoleHandle, out uint consoleMode))
+				{
+					consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
+					consoleMode |= ENABLE_EXTENDED_FLAGS;
+					SetConsoleMode(consoleHandle, consoleMode);
+				}
+
+				Console.WriteLine("FoxyBrowser716 Debug Console");
+				Console.WriteLine("----------------------------");
+#endif
+				
 				var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
 				
 				switch (startupTask.State)
@@ -141,7 +208,7 @@ public static class AppServer
 					catch (Exception e)
 					{
 						Debug.WriteLine(e);
-						ErrorInfo.AddError(e);
+						FoxyLogger.AddError(e);
 					}
 				});
 			}
@@ -149,7 +216,7 @@ public static class AppServer
 		catch (Exception e)
 		{
 			Debug.WriteLine(e);
-			ErrorInfo.AddError(e);
+			FoxyLogger.AddError(e);
 		}
 	}
 }

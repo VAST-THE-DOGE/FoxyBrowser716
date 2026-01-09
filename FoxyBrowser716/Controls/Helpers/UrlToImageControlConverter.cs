@@ -24,7 +24,7 @@ public partial class UrlToImageControlConverter : IValueConverter
 			}
 			catch (Exception e)
 			{
-				ErrorInfo.AddError(e);
+				FoxyLogger.AddError(e);
 				
 			}
 		}

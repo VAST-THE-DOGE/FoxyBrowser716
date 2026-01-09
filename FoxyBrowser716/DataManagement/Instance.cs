@@ -173,7 +173,7 @@ public partial class Instance : ObservableObject
 		}
 		catch (Exception ex) //TODO: does nothing I think
 		{
-			ErrorInfo.AddError(ex); 
+			FoxyLogger.AddError(ex); 
 			
 			return null;
 		}

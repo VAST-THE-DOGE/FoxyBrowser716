@@ -306,7 +306,7 @@ public sealed partial class TopBar : UserControl
             }
             catch (Exception ex)
             {
-                ErrorHandeler.ErrorInfo.AddError(ex);
+                ErrorHandeler.FoxyLogger.AddError(ex);
             }
         });
     }

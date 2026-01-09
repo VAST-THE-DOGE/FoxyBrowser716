@@ -56,14 +56,14 @@ public partial class App : Application
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"RedirectActivationToAsync failed: {ex}"); 
-                    ErrorInfo.AddError(ex);
+                    FoxyLogger.AddError(ex);
                 }
 
                 Environment.Exit(0);
                 return;
             }
         
-            ErrorInfo.LoadLog();
+            FoxyLogger.LoadLog();
             
             this.UnhandledException += OnUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
@@ -95,7 +95,7 @@ public partial class App : Application
         }
         catch (Exception e)
         {
-            ErrorInfo.AddCritical($"Final Catch App Error: {e.Message}", e.StackTrace);
+            FoxyLogger.AddCritical($"Final Catch App Error: {e.Message}", e.StackTrace);
             
             RequestRestartAfterClose();
         }
@@ -104,17 +104,17 @@ public partial class App : Application
     private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+            FoxyLogger.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
         else
-            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+            FoxyLogger.AddCritical("Uncaught App Error: Unknown", "No error details available.");
     }
 
     private void TaskSchedulerOnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+            FoxyLogger.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
         else
-            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+            FoxyLogger.AddCritical("Uncaught App Error: Unknown", "No error details available.");
         
         e.SetObserved();
     }
@@ -122,17 +122,17 @@ public partial class App : Application
     private void CurrentDomainOnUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
     {
         if (e.ExceptionObject is Exception ex)
-            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+            FoxyLogger.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
         else
-            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+            FoxyLogger.AddCritical("Uncaught App Error: Unknown", "No error details available.");
     }
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (e.Exception is Exception ex)
-            ErrorInfo.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
+            FoxyLogger.AddCritical($"Uncaught App Error: {ex.Message}", ex.StackTrace);
         else
-            ErrorInfo.AddCritical("Uncaught App Error: Unknown", "No error details available.");
+            FoxyLogger.AddCritical("Uncaught App Error: Unknown", "No error details available.");
 
         e.Handled = true;
     }
@@ -215,7 +215,7 @@ public partial class App : Application
         }
         catch (Exception e)
         {
-            ErrorInfo.AddError(e);
+            FoxyLogger.AddError(e);
         }
     }
 }

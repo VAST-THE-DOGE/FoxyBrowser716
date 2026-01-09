@@ -705,7 +705,7 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             }
             catch (Exception e)
             {
-                ErrorInfo.AddError(e);
+                FoxyLogger.AddError(e);
                 Debug.WriteLine(e);
             }
         }

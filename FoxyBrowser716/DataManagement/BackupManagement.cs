@@ -72,7 +72,7 @@ public static class BackupManagement
 		}
 		catch (Exception e)
 		{
-			ErrorInfo.AddError(e);
+			FoxyLogger.AddError(e);
 			Debug.WriteLine(e);
 		}
 	}
@@ -118,7 +118,7 @@ public static class BackupManagement
 				}
 				catch (Exception e)
 				{
-					ErrorInfo.AddError(e);
+					FoxyLogger.AddError(e);
 					Debug.WriteLine(e);
 				}
 			});
@@ -126,7 +126,7 @@ public static class BackupManagement
 		}
 		catch (Exception e)
 		{
-			ErrorInfo.AddError(e);
+			FoxyLogger.AddError(e);
 			Debug.WriteLine(e);
 		}
 		
