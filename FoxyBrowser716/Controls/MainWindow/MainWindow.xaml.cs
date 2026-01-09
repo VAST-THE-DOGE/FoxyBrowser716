@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Http;
 using Windows.Graphics.Display;
@@ -143,13 +144,15 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
 
     private void TabManagerOnTabRemoved(WebviewTab tab)
     {
-        //TODO
+        TabHolder.Children.Remove(tab.Core);
     }
 
     private async void TabManagerOnTabAdded(WebviewTab tab)
     {
         TabHolder.Children.Add(tab.Core);
 
+        //TODO handle this memory leak in the remove function above!
+        
         tab.Info.PropertyChanged += (_, _) =>
         {
             if (TabManager.ActiveTabId == tab.Id)
@@ -167,7 +170,6 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
             }
         };
     }
-
 
     private record PopupSize(double width, double height);
     private async void RefreshCurrentTabUi(WebviewTab? tab, int? browserWindowId = null)

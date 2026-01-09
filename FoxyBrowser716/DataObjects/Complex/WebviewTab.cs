@@ -269,9 +269,4 @@ public partial class WebviewTab : ObservableObject
 	];
 
 	public readonly Func<ObservableCollection<FMenuItem>> GetMenuItems;
-
-	public void UpdateTabManager(TabManager newManager)
-	{
-		TabManager = newManager;
-	}
 }
