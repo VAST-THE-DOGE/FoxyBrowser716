@@ -79,6 +79,9 @@ public static class BackupManagement
 
 	public static async Task BackupData()
 	{
+		if (AppServer.Instances.All(i => i.Windows.Count == 0))
+			return;
+		
 		try
 		{
 			AppServer.UiDispatcherQueue.TryEnqueue(async () =>
@@ -93,12 +96,7 @@ public static class BackupManagement
 						{
 							InstanceName = instance.Name,
 							State = window.StateFromWindow(),
-							Bounds = new Rect(
-								window.AppWindow.Position.X,
-								window.AppWindow.Position.Y,
-								window.AppWindow.Size.Width,
-								window.AppWindow.Size.Height
-							),
+							Bounds = window.GetBounds(),
 							ActiveTabId = window.TabManager.ActiveTabId,
 							Tabs = window.TabManager.Tabs.ToDictionary(x => x.Id, y => y.Info.Url),
 							TabGroups = window.TabManager.Groups.Select(g => new TabGroupBackupModel

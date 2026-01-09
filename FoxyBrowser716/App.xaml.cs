@@ -40,6 +40,10 @@ public partial class App : Application
             ProfileOptimization.SetProfileRoot(profileRoot);
             ProfileOptimization.StartProfile("Startup.profile");
             
+#if DEBUG
+            this.DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
+#endif
+
             // Get the current app instance
             var currentInstance = AppInstance.GetCurrent();
         

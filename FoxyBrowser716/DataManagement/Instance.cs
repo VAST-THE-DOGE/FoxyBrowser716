@@ -135,9 +135,7 @@ public partial class Instance : ObservableObject
 				newWindow.MoveAndResize(sl.X, sl.Y, sl.Width, sl.Height);
 				;
 			}
-
-			newWindow.ApplyWindowState(windowState);
-
+			
 			Windows.AddFirst(newWindow);
 			newWindow.Activated += (s, e) =>
 			{
@@ -168,6 +166,8 @@ public partial class Instance : ObservableObject
 			urls?.ToList().ForEach(url => newWindow.TabManager.SwapActiveTabTo(newWindow.TabManager.AddTab(url)));
 
 			newWindow.Activate();
+			
+			newWindow.ApplyWindowState(windowState);
 
 			return newWindow;
 		}

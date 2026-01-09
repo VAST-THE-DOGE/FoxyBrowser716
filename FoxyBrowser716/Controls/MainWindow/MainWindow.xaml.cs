@@ -333,6 +333,30 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         };
     }
 
+    private Rect _prevBounds = new Rect(0, 0, 400, 200);
+    public Rect GetBounds()
+    {
+        if (InFullscreen) return _prevBounds;
+        
+        switch (WindowState)
+        {
+            case WindowState.Maximized:
+            case WindowState.Minimized:
+                return _prevBounds;
+            case WindowState.Normal:
+                var rect = new Rect(
+                    AppWindow.Position.X,
+                    AppWindow.Position.Y,
+                    AppWindow.Size.Width,
+                    AppWindow.Size.Height
+                );
+                _prevBounds = rect;
+                return rect;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
     public void ApplyWindowState(BrowserWindowState windowState)
     {
         TopBar.ToggleBorderless(windowState == BrowserWindowState.Borderless);
