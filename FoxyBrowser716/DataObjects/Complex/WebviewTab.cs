@@ -94,8 +94,8 @@ public partial class WebviewTab : ObservableObject
 		// Core.CoreWebView2.Settings.AreDevToolsEnabled = true;
 		
 		// Core.CoreWebView2.Settings.IsWebMessageEnabled = false;     
-		// Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
-		// Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
+		Core.CoreWebView2.Settings.IsGeneralAutofillEnabled = false;
+		Core.CoreWebView2.Profile.IsPasswordAutosaveEnabled = false;
 
 		// Core.CoreWebView2.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
 		// Core.CoreWebView2.Settings.IsSwipeNavigationEnabled = false;

@@ -22,7 +22,16 @@ public partial class Instance : ObservableObject
 	public InstanceCache Cache => _cache.Item;
 	public ObservableCollection<WebsiteInfo> Pins => _pins.Items;
 	public ObservableCollection<WebsiteInfo> Bookmarks => _bookmarks.Items;
-	
+
+	private FoxyAutoSaverField<ObservableCollection<string>> PinnedExtensionsList;
+
+	[ObservableProperty]
+	public partial Lazy<ObservableCollection<Extension>> pinnedExtensions { get; set; }
+	private ObservableCollection<Extension> GetAndVerifyPinnedExtensions()
+	{
+		return []; //TODO: needs a webview to verify, but need this for a window?
+	}
+
 	private FoxyAutoSaverField<BrowserSettings> _settings
 	{
 		get;
@@ -94,6 +103,7 @@ public partial class Instance : ObservableObject
 		_cache = new(() => new InstanceCache(), "Cache.json", FoxyFileManager.FolderType.Data, Name);
 		_settings = new(() => new BrowserSettings(), "Settings.json", FoxyFileManager.FolderType.Data, Name, SavePriority.High);
 
+		PinnedExtensionsList = new(() => [], "PinnedExtensions.json", FoxyFileManager.FolderType.Data, Name);
 		
 		_pins = new("Pins.json", FoxyFileManager.FolderType.Data, Name);
 		_bookmarks = new("Bookmarks.json", FoxyFileManager.FolderType.Data, Name);
@@ -102,8 +112,11 @@ public partial class Instance : ObservableObject
 			_settings,
 			_cache,
 			_pins,
-			_bookmarks
+			_bookmarks,
+			PinnedExtensionsList
 		]);
+
+		pinnedExtensions = new Lazy<ObservableCollection<Extension>>(GetAndVerifyPinnedExtensions);
 		
 		_settings.Item.PropertyChanged += HandleSettingsChange;
 		if (DefaultThemeObject.Themes.TryGetValue(Settings.ThemeName, out var theme)) CurrentTheme = theme;
