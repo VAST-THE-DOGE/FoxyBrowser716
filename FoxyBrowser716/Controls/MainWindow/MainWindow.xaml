@@ -9,7 +9,9 @@
     xmlns:homePage="using:FoxyBrowser716.Controls.HomePage"
     xmlns:settingsPage="using:FoxyBrowser716.Controls.SettingsPage"
     xmlns:material="using:Material.Icons.WinUI3"
-    xmlns:winUiEx="using:WinUIEx" mc:Ignorable="d" 
+    xmlns:winUiEx="using:WinUIEx"
+    xmlns:helpers="using:FoxyBrowser716.Controls.Helpers"
+    mc:Ignorable="d" 
     MinWidth="253" MinHeight="43"
     Title="FoxyBrowser716" 
     WindowStateChanged="MainWindow_OnWindowStateChanged"
@@ -94,6 +96,25 @@
                 </StackPanel>
                 
                 <StackPanel Grid.Row="9" HorizontalAlignment="Stretch" x:Name="PinSuggestions"/>
+            </Grid>
+            
+            <Grid Margin="34,30,0,0" Width="100" Height="26" 
+                  BorderThickness="2" CornerRadius="8" 
+                  HorizontalAlignment="Left" VerticalAlignment="Top" 
+                  x:Name="MagGrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <generic:FIconButton x:Name="MagMinus" Grid.Column="0" Width="22" Height="22" Margin="2" Content="{material:MaterialIconExt Kind=MagnifyMinus}"
+                                     CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
+                
+                <TextBlock x:Name="MagText" Grid.Column="1" Text="NA%" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
+                
+                <generic:FIconButton x:Name="MagPlus" Grid.Column="2" Width="22" Height="22" Margin="2" Content="{material:MaterialIconExt Kind=MagnifyPlus}"
+                                     CurrentTheme="{x:Bind CurrentTheme, Mode=OneWay}"/>
             </Grid>
             
             <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">

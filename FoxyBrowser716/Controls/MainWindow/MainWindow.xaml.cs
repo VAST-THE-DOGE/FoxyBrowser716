@@ -30,6 +30,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace FoxyBrowser716.Controls.MainWindow;
 
+[ObservableObject]
 public sealed partial class MainWindow : WinUIEx.WindowEx
 {
     public TabManager TabManager { get; private set; }
@@ -246,12 +247,12 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         // }
     }
 
-    internal Theme CurrentTheme
+    public Theme CurrentTheme
     {
         get;
         set
-        {
-            field = value;
+        { 
+            SetProperty(ref field, value);
             ApplyTheme();
         }
     } = DefaultThemes.DaybreakFoxy;
@@ -279,6 +280,10 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         Root.Background = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         BorderGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
         TabHolder.BorderBrush = new SolidColorBrush(CurrentTheme.SecondaryBackgroundColor);
+
+        MagGrid.Background = new SolidColorBrush(CurrentTheme.PrimaryBackgroundColorSlightTransparent);
+        MagGrid.BorderBrush = new SolidColorBrush(CurrentTheme.PrimaryHighlightColor);
+        MagText.Foreground = new SolidColorBrush(CurrentTheme.PrimaryForegroundColor);
     }
 
     #region Window Events
