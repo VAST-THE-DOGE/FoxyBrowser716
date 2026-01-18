@@ -190,6 +190,7 @@ public sealed partial class HomePage : UserControl
                             : _imageIndex % images.Count]);
                         
                         var source = new BitmapImage(uri);
+                        HomeImageUrlChanged?.Invoke(uri);
 
                         _imageControl.Source = source;
                         // ImageBehavior.SetAnimatedSource(_imageControl, source); TODO
