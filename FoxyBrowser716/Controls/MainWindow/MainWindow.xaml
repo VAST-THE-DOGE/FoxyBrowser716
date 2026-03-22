@@ -96,6 +96,8 @@
                 <StackPanel Grid.Row="9" HorizontalAlignment="Stretch" x:Name="PinSuggestions"/>
             </Grid>
             
+            <!-- <Border x:Name="test" Width="400" Height="200" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Black"/> -->
+            
             <Popup x:Name="PopupRootRoot" Width="350" MaxHeight="600" Margin="32,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" LightDismissOverlayMode="On" IsLightDismissEnabled="True">
                 <ScrollViewer x:Name="PopupRoot"
                               CornerRadius="5" BorderThickness="2"

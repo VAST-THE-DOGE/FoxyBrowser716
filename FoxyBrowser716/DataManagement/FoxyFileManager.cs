@@ -94,7 +94,7 @@ public static class FoxyFileManager
 	public enum ItemType
 	{
 		File,
-		Folder
+		Folder,
 	}
 	#endregion
 

@@ -22,7 +22,8 @@ public class SettingInfoAttribute : Attribute
     
     // extra for specific controls
     public /*Func<MainWindow, string[]>?*/ string? Options { get; init; }
-    public FoxyFileManager.ItemType? ItemType { get; init; }
+    public bool PickerEnabled { get; init; } = false;
+    public FoxyFileManager.ItemType ItemType { get; init; }
     public bool AllowWebsiteUris { get; init; } = false;
     //TODO
 }
@@ -142,9 +143,11 @@ public sealed partial class BrowserSettings : ObservableObject
 
     #region General
     //TODO this should be app wide.
-    [SettingInfo(Category = SettingsCategory.General, Name = "Browser Data Folder Path", Description = "The path to the folder where the browser should load data and save data to. Tip: this feature is intended for use with something like OneDrive to sync browsing data across computers without using accounts and whatnot.")]
-    public string BrowserDataPath { get; set => SetProperty(ref field, value); } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/FoxyBrowser716";
-    
+    [SettingInfo(Category = SettingsCategory.General,
+        PickerEnabled = true, ItemType = FoxyFileManager.ItemType.Folder, 
+        Name = "Browser Data Folder Path",
+        Description = "The path to the folder where the browser should load data and save data to. Tip: this feature is intended for use with something like OneDrive to sync browsing data across computers without using accounts and whatnot.")]
+    public string BrowserDataPath { get; set => SetProperty(ref field, value); } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FoxyBrowser716");
     
     [SettingInfo(Category = SettingsCategory.General)]
     public string TestString { get; set => SetProperty(ref field, value); } = "default value here";

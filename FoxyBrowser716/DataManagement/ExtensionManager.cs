@@ -1186,7 +1186,6 @@ public static class ExtensionManager
 
     private const string MicrosoftStoreScript = //TODO a few lines under this in config of the JS:
         """
-        // Inject this with AddScriptToExecuteOnDocumentCreatedAsync(...)
         (function(){
           if (window.__wv2_ext_helper_installed) return;
           window.__wv2_ext_helper_installed = true;

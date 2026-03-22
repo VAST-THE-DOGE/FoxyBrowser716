@@ -117,7 +117,7 @@ public sealed partial class NewLeftBar : UserControl
         SideOpen = true;
         
         await AnimationBuilder.Create()
-            .Size(Axis.X, 260, null, null, TimeSpan.FromSeconds(0.5), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml)
+            .Size(Axis.X, 260, null, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseOut, FrameworkLayer.Xaml)
             .StartAsync(Root);
     }
 
@@ -128,7 +128,7 @@ public sealed partial class NewLeftBar : UserControl
         SideOpen = false;
         
         await AnimationBuilder.Create()
-            .Size(Axis.X, 30, null, null, TimeSpan.FromSeconds(0.5), null, EasingType.Quintic, EasingMode.EaseIn, FrameworkLayer.Xaml)
+            .Size(Axis.X, 30, null, null, TimeSpan.FromSeconds(0.25), null, EasingType.Quintic, EasingMode.EaseIn, FrameworkLayer.Xaml)
             .StartAsync(Root);
     }
 

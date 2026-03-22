@@ -43,7 +43,7 @@ public partial class TabManager : ObservableObject
 		{
 			AreBrowserExtensionsEnabled = true,
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
-			EnableTrackingPrevention = true,
+			//EnableTrackingPrevention = true, login issues sometimes, this might be a reason for that?
 			//TODO: look into these flags and make sure each are secure
 			AdditionalBrowserArguments = $"--disable-features=AudioServiceOutOfProcess" //TODO: 100% something here causing the lag
 				/*"--enable-gpu " +

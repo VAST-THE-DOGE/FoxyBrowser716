@@ -1,5 +1,6 @@
 using System.Threading;
 using FoxyBrowser716.DataManagement;
+using FoxyBrowser716.DataObjects.Settings;
 
 namespace FoxyBrowser716.Controls.HomePage.Widgets;
 
@@ -9,6 +10,10 @@ public partial class TitleWidget : WidgetBase
 	protected TitleWidget()
 	{
 		InitializeComponent();
+		WidgetSettings =
+		[
+			new BoolSetting("a", "b", false, (v) => { }),
+		];
 	}
 	
     protected override async Task Initialize()

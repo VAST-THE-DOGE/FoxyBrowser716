@@ -17,6 +17,7 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using Windows.Win32.Graphics.Dwm;
 using CommunityToolkit.WinUI.Animations;
+using CommunityToolkit.WinUI.UI;
 using FoxyBrowser716.Controls.Helpers;
 using FoxyBrowser716.DataObjects.Settings;
 using FoxyBrowser716.ErrorHandeler;
@@ -42,8 +43,16 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
     private MainWindow()
     {
         InitializeComponent();
-        
-        AppWindow.SetIcon(Path.Combine(Windows.ApplicationModel.Package.Current.InstalledPath, "Assets", "Foxybrowser716.ico"));
+
+        try
+        {
+            AppWindow.SetIcon(Path.Combine(Windows.ApplicationModel.Package.Current.InstalledPath, "Assets", "Foxybrowser716.ico"));
+
+        }
+        catch (Exception e)
+        {
+
+        }
         
         // initial is needed to allow clicks for other buttons
         SetTitleBar(TopBar.DragZone); 
@@ -63,6 +72,8 @@ public sealed partial class MainWindow : WinUIEx.WindowEx
         
         TopBar.UpdateMaximizeRestore(WindowState);
         ApplyTheme();
+
+        //test.Child = new CustomWebView2(this) { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch, MinHeight = 50, MinWidth = 50};
     }
 
     public static async Task<MainWindow> Create(Instance instance)

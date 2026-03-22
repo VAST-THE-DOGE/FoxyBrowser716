@@ -13,6 +13,7 @@ using FoxyBrowser716.ErrorHandeler;
 using Microsoft.Windows.AppLifecycle;
 using static System.Diagnostics.Process;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
+using System.Linq;
 
 namespace FoxyBrowser716;
 
@@ -32,6 +33,13 @@ public partial class App : Application
 
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        var s = "1234";
+        var s2 = @"""
+                
+                """;
+        s2 = s2.Replace("x","BOX");
+            
+            
         try
         {
             // performance optimizations:
