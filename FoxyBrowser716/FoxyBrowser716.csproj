@@ -13,6 +13,12 @@
     <UseWinUI>true</UseWinUI>
 <!--    <UseUwp>false</UseUwp>-->
     <EnableMsixTooling>true</EnableMsixTooling>
+    <!--
+      Automatically calls Bootstrap.Initialize() before Application.Start() when running unpackaged
+      so the Windows App SDK runtime DLLs are resolved without an MSIX package.
+      For packaged builds this is a safe no-op.
+    -->
+    <WindowsAppSdkBootstrapInitialize>true</WindowsAppSdkBootstrapInitialize>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Version />

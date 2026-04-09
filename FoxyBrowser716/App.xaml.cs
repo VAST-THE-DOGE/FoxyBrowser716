@@ -36,7 +36,9 @@ public partial class App : Application
         {
             // performance optimizations:
             // compiles JIT code for the startup profile which is reused after the first launch
-            var profileRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+            var profileRoot = PackageHelper.IsPackaged
+                ? Windows.Storage.ApplicationData.Current.LocalFolder.Path
+                : FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Cache);
             ProfileOptimization.SetProfileRoot(profileRoot);
             ProfileOptimization.StartProfile("Startup.profile");
             
@@ -76,7 +78,8 @@ public partial class App : Application
             
             // performance optimizations:
             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-            CoreApplication.EnablePrelaunch(true);
+            if (PackageHelper.IsPackaged)
+                CoreApplication.EnablePrelaunch(true);
             _ = Task.Run(() =>
             {
                 try
@@ -203,16 +206,38 @@ public partial class App : Application
         try
         {
             var currentPid = Environment.ProcessId;
-            var appUserModelId = Windows.ApplicationModel.AppInfo.Current.AppUserModelId;
 
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi;
+            if (PackageHelper.IsPackaged)
             {
-                FileName = "powershell.exe",
-                Arguments =
-                    $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process shell:AppsFolder\\{appUserModelId}!App\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                var appUserModelId = Windows.ApplicationModel.AppInfo.Current.AppUserModelId;
+                psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments =
+                        $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process shell:AppsFolder\\{appUserModelId}!App\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
+            else
+            {
+                var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+                if (exePath is null)
+                {
+                    // Cannot determine the executable path; skip restart.
+                    Environment.Exit(1);
+                    return;
+                }
+                psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments =
+                        $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process '{exePath}'\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
 
             Process.Start(psi);
             Environment.Exit(1);
