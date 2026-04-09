@@ -15,7 +15,26 @@ FoxyBrowser716 is a WinUI 3 / Windows App SDK application. It runs on Linux thro
 
 ---
 
-## Build an Unpackaged Release
+## Running Unpackaged on Windows (Developer / Tester)
+
+No special installer or MSIX is needed. Just build in Release|x64 and run the exe:
+
+```
+bin\x64\Release\net9.0-windows10.0.22621.0\win-x64\FoxyBrowser716.exe
+```
+
+The custom `Program.cs` entry point automatically calls `Bootstrap.Initialize()` before
+`Application.Start()` when no MSIX package identity is detected, so the app works from
+the plain output folder.
+
+**Rider / Visual Studio:** Use the **"FoxyBrowser716-WinUI (Unpackaged)"** launch profile
+that is already defined in `Properties/launchSettings.json`. In Visual Studio it appears in
+the launch-profile dropdown next to the Run button. In Rider, select it in
+*Run → Edit Configurations → Launch profile*.
+
+---
+
+## Build a Self-Contained Release
 
 On Windows (or in a CI pipeline), publish a self-contained unpackaged build:
 
@@ -112,7 +131,7 @@ $PROTON_BIN/wine64 /path/to/publish/FoxyBrowser716.exe
 
 | Symptom | Fix |
 |---|---|
-| `STATUS_DLL_NOT_FOUND` / missing `Microsoft.ui.xaml.dll` | The bootstrapper was not called. Verify that `WindowsAppSdkBootstrapInitialize` is `true` in the `.csproj` and that the publish folder contains `Microsoft.WindowsAppRuntime.Bootstrap.Net.dll` and the WinAppSDK native DLLs. |
+| `STATUS_DLL_NOT_FOUND` / missing `Microsoft.ui.xaml.dll` | The publish folder is missing WinAppSDK native DLLs. Make sure you used the `UnpackagedWin-x64` publish profile (self-contained). |
 | Blank / crashed WebView2 tab | WebView2 not installed in the prefix — follow the install step above. |
 | GPU rendering issues | Try adding `PROTON_USE_WINED3D=1` or `DXVK_HUD=0` to the launch environment; on some hardware D3D12 via DXVK works better, on others WineD3D is more stable. |
 | Window shows but is entirely transparent | Try `WINEDEBUG=-all DXVK_ASYNC=1`. |

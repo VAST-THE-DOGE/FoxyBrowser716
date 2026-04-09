@@ -14,11 +14,11 @@
 <!--    <UseUwp>false</UseUwp>-->
     <EnableMsixTooling>true</EnableMsixTooling>
     <!--
-      Automatically calls Bootstrap.Initialize() before Application.Start() when running unpackaged
-      so the Windows App SDK runtime DLLs are resolved without an MSIX package.
-      For packaged builds this is a safe no-op.
+      Suppress the auto-generated Main() from App.xaml so that Program.cs provides
+      the entry point, which explicitly calls Bootstrap.Initialize() before
+      Application.Start() for unpackaged execution.
     -->
-    <WindowsAppSdkBootstrapInitialize>true</WindowsAppSdkBootstrapInitialize>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Version />
