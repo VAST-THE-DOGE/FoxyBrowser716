@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.Core;
@@ -36,7 +38,9 @@ public partial class App : Application
         {
             // performance optimizations:
             // compiles JIT code for the startup profile which is reused after the first launch
-            var profileRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+            var profileRoot = PackageHelper.IsPackaged
+                ? Windows.Storage.ApplicationData.Current.LocalFolder.Path
+                : FoxyFileManager.BuildFolderPath(FoxyFileManager.FolderType.Cache);
             ProfileOptimization.SetProfileRoot(profileRoot);
             ProfileOptimization.StartProfile("Startup.profile");
             
@@ -76,7 +80,8 @@ public partial class App : Application
             
             // performance optimizations:
             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-            CoreApplication.EnablePrelaunch(true);
+            if (PackageHelper.IsPackaged)
+                CoreApplication.EnablePrelaunch(true);
             _ = Task.Run(() =>
             {
                 try
@@ -159,12 +164,9 @@ public partial class App : Application
             case ExtendedActivationKind.Launch:
                 if (args.Data is ILaunchActivatedEventArgs launchArgs)
                 {
-                    var arguments = launchArgs.Arguments;
                     await AppServer.HandleLaunchEvent(
-                        arguments?
-                            .Split(" ")
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .ToArray() ?? [], isFirst
+                        ParseLaunchArguments(launchArgs.Arguments, skipFirstToken: false),
+                        isFirst
                         );
                 }
                 break;
@@ -185,16 +187,54 @@ public partial class App : Application
             case ExtendedActivationKind.CommandLineLaunch:
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
-                    var arguments = commandArgs.Operation.Arguments;
                     await AppServer.HandleLaunchEvent(
-                        arguments?
-                            .Split(" ")
-                            .Skip(1 /*command name, such as FoxyBrowser716.exe or FoxyBrowser716*/)
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .ToArray() ?? [], isFirst
+                        ParseLaunchArguments(commandArgs.Operation.Arguments, skipFirstToken: true),
+                        isFirst
                         );
                 }
                 break;
+        }
+    }
+
+    private static string[] ParseLaunchArguments(string? arguments, bool skipFirstToken)
+    {
+        if (string.IsNullOrWhiteSpace(arguments))
+            return [];
+
+        var parts = Regex.Matches(arguments, "\"([^\"]*)\"|\\S+")
+            .Select(match =>
+            {
+                var value = match.Value.Trim();
+                return value.Length >= 2 && value[0] == '"' && value[^1] == '"'
+                    ? value[1..^1]
+                    : value;
+            });
+
+        if (skipFirstToken)
+            parts = parts.Skip(1);
+
+        var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+        return parts.Where(part =>
+            !string.IsNullOrWhiteSpace(part)
+            && !Regex.IsMatch(part, "^-{1,2}[A-Za-z]")
+            && !IsCurrentExecutablePath(part, exePath)).ToArray();
+    }
+
+    private static bool IsCurrentExecutablePath(string argument, string? currentExePath)
+    {
+        if (string.IsNullOrWhiteSpace(currentExePath))
+            return false;
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(argument),
+                Path.GetFullPath(currentExePath),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -203,16 +243,38 @@ public partial class App : Application
         try
         {
             var currentPid = Environment.ProcessId;
-            var appUserModelId = Windows.ApplicationModel.AppInfo.Current.AppUserModelId;
 
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi;
+            if (PackageHelper.IsPackaged)
             {
-                FileName = "powershell.exe",
-                Arguments =
-                    $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process shell:AppsFolder\\{appUserModelId}!App\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                var appUserModelId = Windows.ApplicationModel.AppInfo.Current.AppUserModelId;
+                psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments =
+                        $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process shell:AppsFolder\\{appUserModelId}!App\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
+            else
+            {
+                var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+                if (exePath is null)
+                {
+                    // Cannot determine the executable path; skip restart.
+                    Environment.Exit(1);
+                    return;
+                }
+                psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments =
+                        $"-WindowStyle Hidden -Command \"Wait-Process -Id {currentPid}; Start-Process '{exePath}'\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
 
             Process.Start(psi);
             Environment.Exit(1);

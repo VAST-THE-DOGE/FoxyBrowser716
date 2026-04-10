@@ -13,6 +13,9 @@
     <UseWinUI>true</UseWinUI>
 <!--    <UseUwp>false</UseUwp>-->
     <EnableMsixTooling>true</EnableMsixTooling>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Version />

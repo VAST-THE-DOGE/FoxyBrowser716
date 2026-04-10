@@ -103,16 +103,19 @@ public static class AppServer
 				Console.WriteLine("----------------------------");
 #endif
 				
-				var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
-				
-				switch (startupTask.State)
+				if (PackageHelper.IsPackaged)
 				{
-					case StartupTaskState.Disabled:
-						var newState = await startupTask.RequestEnableAsync();
-						break;
-					case StartupTaskState.DisabledByUser:
-						//TODO: popup to re-enable
-						break;
+					var startupTask = await StartupTask.GetAsync("FoxyBrowserStartup");
+
+					switch (startupTask.State)
+					{
+						case StartupTaskState.Disabled:
+							var newState = await startupTask.RequestEnableAsync();
+							break;
+						case StartupTaskState.DisabledByUser:
+							//TODO: popup to re-enable
+							break;
+					}
 				}
 			
 				UiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
