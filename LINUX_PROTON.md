@@ -65,6 +65,47 @@ $PROTON_BIN/wine64 /path/to/publish/FoxyBrowser716.exe
 
 ---
 
+## Optional: set as Linux default browser
+
+Yes, but it must be done on Linux (desktop integration), not inside Windows app settings.
+
+Create a launcher script:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+cat > "$HOME/.local/bin/foxybrowser-proton" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+export WINEPREFIX="$HOME/.wine-foxybrowser"
+export PROTON_BIN="$HOME/.steam/steam/steamapps/common/Proton 9.0/dist/bin"
+exec "$PROTON_BIN/wine64" "/path/to/publish/FoxyBrowser716.exe" "$@"
+EOF
+chmod +x "$HOME/.local/bin/foxybrowser-proton"
+```
+
+Create a desktop entry:
+
+```bash
+mkdir -p "$HOME/.local/share/applications"
+cat > "$HOME/.local/share/applications/foxybrowser716.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=FoxyBrowser716 (Proton)
+Exec=/home/YOUR_USER/.local/bin/foxybrowser-proton %u
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;
+EOF
+update-desktop-database "$HOME/.local/share/applications" || true
+xdg-settings set default-web-browser foxybrowser716.desktop
+xdg-mime default foxybrowser716.desktop x-scheme-handler/http
+xdg-mime default foxybrowser716.desktop x-scheme-handler/https
+```
+
+Replace `/path/to/publish/FoxyBrowser716.exe` and `/home/YOUR_USER` with your real paths.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |

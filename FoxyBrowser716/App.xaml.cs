@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -162,12 +163,9 @@ public partial class App : Application
             case ExtendedActivationKind.Launch:
                 if (args.Data is ILaunchActivatedEventArgs launchArgs)
                 {
-                    var arguments = launchArgs.Arguments;
                     await AppServer.HandleLaunchEvent(
-                        arguments?
-                            .Split(" ")
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .ToArray() ?? [], isFirst
+                        ParseLaunchArguments(launchArgs.Arguments, skipFirstToken: false),
+                        isFirst
                         );
                 }
                 break;
@@ -188,16 +186,49 @@ public partial class App : Application
             case ExtendedActivationKind.CommandLineLaunch:
                 if (args.Data is ICommandLineActivatedEventArgs commandArgs)
                 {
-                    var arguments = commandArgs.Operation.Arguments;
                     await AppServer.HandleLaunchEvent(
-                        arguments?
-                            .Split(" ")
-                            .Skip(1 /*command name, such as FoxyBrowser716.exe or FoxyBrowser716*/)
-                            .Where(s => !string.IsNullOrWhiteSpace(s))
-                            .ToArray() ?? [], isFirst
+                        ParseLaunchArguments(commandArgs.Operation.Arguments, skipFirstToken: true),
+                        isFirst
                         );
                 }
                 break;
+        }
+    }
+
+    private static string[] ParseLaunchArguments(string? arguments, bool skipFirstToken)
+    {
+        if (string.IsNullOrWhiteSpace(arguments))
+            return [];
+
+        var parts = arguments
+            .Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => s.Trim('"'));
+
+        if (skipFirstToken)
+            parts = parts.Skip(1);
+
+        var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+        return parts.Where(part =>
+            !string.IsNullOrWhiteSpace(part)
+            && !part.StartsWith("-")
+            && !IsCurrentExecutablePath(part, exePath)).ToArray();
+    }
+
+    private static bool IsCurrentExecutablePath(string argument, string? currentExePath)
+    {
+        if (string.IsNullOrWhiteSpace(currentExePath))
+            return false;
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(argument),
+                Path.GetFullPath(currentExePath),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
         }
     }
 
