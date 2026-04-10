@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.Core;
@@ -200,9 +201,14 @@ public partial class App : Application
         if (string.IsNullOrWhiteSpace(arguments))
             return [];
 
-        var parts = arguments
-            .Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(s => s.Trim('"'));
+        var parts = Regex.Matches(arguments, "\"([^\"]*)\"|\\S+")
+            .Select(match =>
+            {
+                var value = match.Value.Trim();
+                return value.Length >= 2 && value[0] == '"' && value[^1] == '"'
+                    ? value[1..^1]
+                    : value;
+            });
 
         if (skipFirstToken)
             parts = parts.Skip(1);
@@ -210,7 +216,7 @@ public partial class App : Application
         var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
         return parts.Where(part =>
             !string.IsNullOrWhiteSpace(part)
-            && !part.StartsWith("-")
+            && !Regex.IsMatch(part, "^-{1,2}[A-Za-z]")
             && !IsCurrentExecutablePath(part, exePath)).ToArray();
     }
 

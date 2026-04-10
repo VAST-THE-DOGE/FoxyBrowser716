@@ -87,11 +87,11 @@ Create a desktop entry:
 
 ```bash
 mkdir -p "$HOME/.local/share/applications"
-cat > "$HOME/.local/share/applications/foxybrowser716.desktop" <<'EOF'
+cat > "$HOME/.local/share/applications/foxybrowser716.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=FoxyBrowser716 (Proton)
-Exec=/home/YOUR_USER/.local/bin/foxybrowser-proton %u
+Exec=$HOME/.local/bin/foxybrowser-proton %u
 Terminal=false
 Categories=Network;WebBrowser;
 MimeType=x-scheme-handler/http;x-scheme-handler/https;text/html;
@@ -102,7 +102,7 @@ xdg-mime default foxybrowser716.desktop x-scheme-handler/http
 xdg-mime default foxybrowser716.desktop x-scheme-handler/https
 ```
 
-Replace `/path/to/publish/FoxyBrowser716.exe` and `/home/YOUR_USER` with your real paths.
+Replace `/path/to/publish/FoxyBrowser716.exe` with your real path.
 
 ---
 
