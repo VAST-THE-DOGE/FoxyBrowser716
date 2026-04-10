@@ -19,6 +19,13 @@
       Application.Start() for unpackaged execution.
     -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!--
+      Prevent the WinAppSDK NuGet package from injecting its own module initializer that
+      calls Bootstrap.Initialize() + DeploymentManager.Initialize() before Main() runs.
+      Program.cs calls Bootstrap.Initialize() explicitly, so auto-init must be off to
+      avoid a REGDB_E_CLASSNOTREG crash when the module initializer fires before ours.
+    -->
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Version />
