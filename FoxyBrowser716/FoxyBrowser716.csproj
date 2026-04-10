@@ -26,6 +26,12 @@
       avoid a REGDB_E_CLASSNOTREG crash when the module initializer fires before ours.
     -->
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <!--
+      Also disable DeploymentManager auto-initialize for unpackaged runs.
+      This otherwise triggers a module initializer (before Main) that can throw
+      REGDB_E_CLASSNOTREG prior to our explicit bootstrap call in Program.cs.
+    -->
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Version />

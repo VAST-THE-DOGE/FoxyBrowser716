@@ -10,6 +10,9 @@ On Windows, publish a self-contained build:
 
 ```powershell
 dotnet publish FoxyBrowser716/FoxyBrowser716.csproj `
+  -c Release `
+  -p:Platform=x64 `
+  -r win-x64 `
   -p:PublishProfile=UnpackagedWin-x64
 ```
 
