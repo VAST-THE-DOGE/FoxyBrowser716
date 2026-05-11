@@ -160,14 +160,21 @@ public partial class WebviewTab : ObservableObject
 		//TODO handle this properly
 	}
 
-	private void CoreWebView2OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs args)
+	private void CoreWebView2OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs args) 
 	{
 		FoxyLogger.AddWarning($"{nameof(CoreWebView2OnProcessFailed)} - {args.Reason} ({args.ExitCode})", 
 			$"{nameof(args.FailureSourceModulePath)}: {args.FailureSourceModulePath}\n{nameof(args.ProcessFailedKind)}: {args.ProcessFailedKind}\n{nameof(args.ProcessDescription)}: {args.ProcessDescription}");
 		
-		//try a recovery
-		TabManager.RemoveTab(Id);
-		TabManager.SwapActiveTabTo(TabManager.AddTab(Core.Source.ToString()));
+		// Only recover if the render process or the main browser process failed.
+		// Ignoring utility process and GPU process failures prevents restart loops.
+		if (args.ProcessFailedKind is CoreWebView2ProcessFailedKind.RenderProcessExited 
+		    or CoreWebView2ProcessFailedKind.RenderProcessUnresponsive 
+		    or CoreWebView2ProcessFailedKind.BrowserProcessExited 
+		    or CoreWebView2ProcessFailedKind.FrameRenderProcessExited)
+		{
+			TabManager.RemoveTab(Id);
+			TabManager.SwapActiveTabTo(TabManager.AddTab(Core.Source.ToString()));
+		}
 	}
 
 	private void CoreWebView2OnWindowCloseRequested(CoreWebView2 sender, object args)
