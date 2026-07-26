@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["FoxyBrowser716/FoxyBrowser716.csproj"],
+          "exclude": ["**/bin/**", "**/obj/**"]
+        }
+      ],
+      "properties": {
+        "Platform": "x64"
+      },
+      "dest": "Docs/api",
+      "outputFormat": "markdown",
+      "memberLayout": "samePage",
+      "enumSortOrder": "declaringOrder",
+      "includePrivateMembers": false,
+      "allowCompilationErrors": true
+    }
+  ]
+}

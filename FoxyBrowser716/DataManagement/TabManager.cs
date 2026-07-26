@@ -45,8 +45,12 @@ public partial class TabManager : ObservableObject
 			AllowSingleSignOnUsingOSPrimaryAccount = true,
 			//EnableTrackingPrevention = true, login issues sometimes, this might be a reason for that?
 			//TODO: look into these flags and make sure each are secure
-			AdditionalBrowserArguments = $"--disable-features=AudioServiceOutOfProcess" //TODO: 100% something here causing the lag
-				/*"--enable-gpu " +
+			AdditionalBrowserArguments = $"--disable-features=AudioServiceOutOfProcess " //TODO: 100% something here causing the lag
+				+ "--site-per-process "
+				+ "--enable-gpu-rasterization "
+				+ "--enable-features=UseSkiaRenderer,CanvasOopRasterization "
+			
+			/*"--enable-gpu " +
 				"--enable-gpu-rasterization " +
 				"--enable-hardware-overlays " +
 				"--enable-webgl2-compute-context " +

@@ -413,3 +413,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Generated API reference (Scripts/GenerateApiDocs.ps1)
+Docs/api/
